@@ -2,22 +2,30 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 
 	"github.com/gorilla/websocket"
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("uso: client ws://HOST:23456/ws")
-		os.Exit(1)
+	server := flag.String("server", "localhost:23456", "endereço do servidor teachat")
+	room := flag.String("room", "geral", "sala para entrar")
+	alias := flag.String("alias", "anonimo", "seu nome no chat")
+	flag.Parse()
+
+	// monta ws://SERVER/ws?room=...&alias=... a partir das flags
+	u := url.URL{
+		Scheme:   "ws",
+		Host:     *server,
+		Path:     "/ws",
+		RawQuery: url.Values{"room": {*room}, "alias": {*alias}}.Encode(),
 	}
 
-	url := os.Args[1]
-
-	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
+	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,7 +38,7 @@ func main() {
 			if err != nil {
 				log.Fatal("conexão encerrada")
 			}
-			fmt.Println(">", string(msg))
+			fmt.Println(string(msg))
 		}
 	}()
 
