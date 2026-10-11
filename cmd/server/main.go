@@ -15,8 +15,8 @@ var upgrader = websocket.Upgrader{
 }
 
 var (
-	mu      sync.Mutex
-	clients = map[*websocket.Conn]bool{}
+	mu    sync.Mutex // protege só o mapa de salas
+	rooms = map[string]*Room{}
 )
 
 func main() {
@@ -28,8 +28,17 @@ func main() {
 		}
 		defer conn.Close()
 
+		name := r.URL.Query().Get("room")
+		alias := r.URL.Query().Get("alias")
+
+		// entrar numa sala que não existe cria a sala
 		mu.Lock()
-		clients[conn] = true
+		room := rooms[name]
+		if room == nil {
+			room = &Room{members: map[*websocket.Conn]string{}}
+			rooms[name] = room
+		}
+		room.join(conn, alias)
 		mu.Unlock()
 
 		for {
@@ -37,18 +46,15 @@ func main() {
 			if err != nil {
 				break
 			}
-			// repassa a mensagem para todos os outros conectados
-			mu.Lock()
-			for c := range clients {
-				if c != conn {
-					c.WriteMessage(websocket.TextMessage, msg)
-				}
-			}
-			mu.Unlock()
+			// repassa a mensagem para os outros da mesma sala
+			room.broadcast(conn, []byte(alias+": "+string(msg)))
 		}
 
+		// sai da sala; sala vazia deixa de existir
 		mu.Lock()
-		clients[conn] = false
+		if room.leave(conn) {
+			delete(rooms, name)
+		}
 		mu.Unlock()
 	})
 
