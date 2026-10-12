@@ -46,6 +46,7 @@ Nesta ordem. Cada um é pequeno de propósito.
 - Sem `--room`, o cliente entra na sala `geral`.
 - O estado das conexões fica em RAM, não num banco de dados: ele só existe enquanto o processo está vivo. O banco entra junto com o histórico.
 - `Room` fica no `package main` (`cmd/server/room.go`) até alguma outra parte além do servidor precisar dela.
+- O módulo se chama `github.com/daniel-cmdline/teachat`, igual ao caminho do repositório, para os imports internos e o `go install` funcionarem.
 
 ## Perguntas em aberto
 

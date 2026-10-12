@@ -2,6 +2,13 @@
 
 Registro das features entregues, da mais nova para a mais antiga. Adicione uma entrada a cada commit.
 
+## 2026-10-12 08:43 — Módulo renomeado para `github.com/daniel-cmdline/teachat`
+
+- O `go.mod` passou de `module httpEndpoint` para `module github.com/daniel-cmdline/teachat`, o mesmo caminho do repositório.
+- **Por quê:** o nome do módulo é o começo de todo import interno. Com pacotes próprios chegando (`internal/ui`), os imports passam a ser `github.com/daniel-cmdline/teachat/internal/...`. E o `go install github.com/daniel-cmdline/teachat/...@latest` só funciona quando o nome do módulo bate com o caminho do repositório.
+- **Por que agora:** hoje é uma linha. Depois de existirem pacotes, renomear exige mexer em todos os imports.
+- Nenhuma mudança de comportamento.
+
 ## 2026-10-11 10:28 — Trava por sala
 
 - `Room` foi para `cmd/server/room.go`, com mutex próprio e os métodos `join`, `leave` e `broadcast`.

@@ -1,4 +1,4 @@
-module httpEndpoint
+module github.com/daniel-cmdline/teachat
 
 go 1.27.1
 
