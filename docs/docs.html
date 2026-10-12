@@ -25,6 +25,7 @@
   <a href="#visao">visão geral</a>
   <a href="#comecando">começando</a>
   <a href="#ref-cliente">cliente</a>
+  <a href="#modo-pipe">modo pipe</a>
   <a href="#ref-servidor">servidor</a>
   <div class="grp">como funciona</div>
   <a href="#arquitetura">arquitetura</a>
@@ -48,9 +49,9 @@
   </div>
   <dl class="ref">
     <dt>servidor</dt><dd><code>cmd/server</code>. Escuta na porta 23456, mantém as salas em memória, repassa cada mensagem para os outros membros da sala.</dd>
-    <dt>cliente</dt><dd><code>cmd/client</code>. Tela cheia no terminal: mensagens em cima, caixa de digitação embaixo.</dd>
+    <dt>cliente</dt><dd><code>cmd/client</code>. Num terminal, abre a tela cheia: mensagens em cima, caixa de digitação embaixo. Num pipe (<code>comando | teachat</code>), envia cada linha e sai.</dd>
     <dt>sala</dt><dd>Um nome qualquer. Entrar numa sala que não existe cria a sala; quando o último membro sai, ela deixa de existir.</dd>
-    <dt>alias</dt><dd>O nome que aparece na frente das suas mensagens: <code>daniel: oi</code>. Não é verificado.</dd>
+    <dt>alias</dt><dd>O nome que aparece na frente das suas mensagens: <code>daniel: oi</code>. Por padrão, o seu usuário do sistema. Não é verificado.</dd>
     <dt>mensagem</dt><dd>Uma linha de texto. Vai só para quem está na sala naquele momento: não há histórico.</dd>
   </dl>
 </section>
@@ -93,7 +94,7 @@ go build -o teachat-server ./cmd/server
       <tbody>
         <tr><td><code>--server</code></td><td><code>localhost:23456</code></td><td>endereço do servidor, <code>host:porta</code></td></tr>
         <tr><td><code>--room</code></td><td><code>geral</code></td><td>sala para entrar. Se não existe, é criada</td></tr>
-        <tr><td><code>--alias</code></td><td><code>anonimo</code></td><td>seu nome no chat, na frente de cada mensagem</td></tr>
+        <tr><td><code>--alias</code></td><td>seu usuário (<code>$USER</code>)</td><td>seu nome no chat, na frente de cada mensagem. Sem <code>$USER</code> (cron, alguns containers): <code>anonimo</code></td></tr>
       </tbody>
     </table>
   </div>
@@ -114,8 +115,8 @@ go build -o teachat-server ./cmd/server
   <dl class="ref">
     <dt>sua mensagem</dt><dd>Aparece na sua tela como <code>alias: texto</code>, escrita pelo próprio cliente. O servidor não devolve a mensagem para quem enviou.</dd>
     <dt>caixa de digitação</dt><dd>Cresce de 1 até 5 linhas conforme o texto e quebra a linha em qualquer caractere. Acima de 5 linhas, rola por dentro.</dd>
-    <dt>área de mensagens</dt><dd>O título é <code>sala · alias</code>. Linhas longas quebram entre palavras. Sem mouse: selecionar e copiar texto funciona como em qualquer terminal.</dd>
-    <dt>terminal</dt><dd>Exige um terminal de verdade. <code>echo oi | teachat</code> falha até o modo pipe chegar.</dd>
+    <dt>área de mensagens</dt><dd>O título é <code>sala · alias</code>. Cada alias tem uma cor fixa, a mesma em qualquer cliente; o seu aparece em negrito nas mensagens que você enviou. Linhas longas quebram entre palavras. Sem mouse: selecionar e copiar texto funciona como em qualquer terminal.</dd>
+    <dt>sem terminal</dt><dd>Se o stdin não é um terminal, o cliente entra no <a href="#modo-pipe">modo pipe</a> em vez de abrir a tela.</dd>
   </dl>
   <h3>Saída e códigos de retorno</h3>
   <div class="scroll">
@@ -125,11 +126,26 @@ go build -o teachat-server ./cmd/server
         <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>—</td><td class="num">0</td></tr>
         <tr><td>a conexão cai (servidor parou, rede caiu)</td><td><code>conexão encerrada</code></td><td class="num">1</td></tr>
         <tr><td>não conseguiu conectar</td><td>o erro da conexão, ex.: <code>connection refused</code></td><td class="num">1</td></tr>
-        <tr><td>sem terminal</td><td>o erro do tview, ex.: <code>terminal entry not found</code></td><td class="num">1</td></tr>
+        <tr><td>modo pipe: a entrada acabou e tudo foi enviado</td><td>—</td><td class="num">0</td></tr>
+        <tr><td>modo pipe: a conexão caiu no meio</td><td><code>conexão encerrada: ...</code></td><td class="num">1</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="note">Em todos os casos o terminal volta ao normal antes da mensagem aparecer.</p>
+  <p class="note">Na tela cheia, o terminal sempre volta ao normal antes da mensagem aparecer.</p>
+
+  <h3 id="modo-pipe">Modo pipe</h3>
+  <p class="read">Quando o stdin não é um terminal, o cliente não abre a tela. Ele envia cada linha da entrada para a sala, repete a linha no seu terminal (como o <code>tee</code>) e sai quando a entrada acaba.</p>
+  <pre style="max-width:88ch">make 2>&amp;1 | teachat --room ops              <span class="c"># a saída do build vai para a sala</span>
+uptime | teachat --room ops                  <span class="c"># uma linha e sai</span>
+tail -f /var/log/app.log | teachat --room ops   <span class="c"># transmite até o Ctrl+C</span></pre>
+  <dl class="ref">
+    <dt>uma mensagem por linha</dt><dd>Cada linha vira uma mensagem <code>alias: linha</code> na sala. Sem agrupar: um log de 5000 linhas são 5000 mensagens.</dd>
+    <dt>eco</dt><dd>Toda linha aparece no seu terminal também, inclusive as vazias. Linhas vazias não vão para a sala.</dd>
+    <dt>tamanho</dt><dd>Sem limite de tamanho de linha. Uma linha de 200 KB chega inteira.</dd>
+    <dt>a sala</dt><dd>O que os outros mandam enquanto o pipe roda não aparece; é lido e descartado.</dd>
+    <dt>nunca abre a tela</dt><dd>Seguro em scripts, CI e cron: ninguém precisa apertar Ctrl+C no fim.</dd>
+    <dt>sem histórico</dt><dd>Se ninguém estiver na sala, as linhas se perdem.</dd>
+  </dl>
 </section>
 
 <section id="ref-servidor">
@@ -164,7 +180,7 @@ go build -o teachat-server ./cmd/server
 <section id="arquitetura">
   <div class="read">
     <div class="sec-head"><span class="sec-num">05</span><h2>Arquitetura</h2></div>
-    <p>O teachat são dois binários, um servidor e um cliente, que conversam por WebSocket. O código próprio tem cerca de 270 linhas porque se apoia em camadas que já fazem o trabalho pesado. Cada mensagem desce por todas elas de um lado e sobe por todas do outro.</p>
+    <p>O teachat são dois binários, um servidor e um cliente, que conversam por WebSocket. O código próprio tem cerca de 380 linhas porque se apoia em camadas que já fazem o trabalho pesado. Cada mensagem desce por todas elas de um lado e sobe por todas do outro.</p>
     <h3>As camadas</h3>
   </div>
   <div class="layers">
@@ -182,6 +198,7 @@ go build -o teachat-server ./cmd/server
     <pre>cmd/server/main.go   <span class="c">servidor: handler de /ws, mapa de salas</span>
 cmd/server/room.go   <span class="c">Room: join, leave, broadcast</span>
 cmd/client/main.go   <span class="c">cliente: flags, conexão, recebimento</span>
+cmd/client/pipe.go   <span class="c">cliente: modo pipe</span>
 internal/ui/ui.go    <span class="c">a tela do cliente (tview)</span>
 docs/                <span class="c">este site e esta documentação</span>
 roadmap.md           <span class="c">próximos passos e decisões</span>
@@ -194,9 +211,10 @@ features.md          <span class="c">registro do que foi entregue</span></pre>
           <tr><td><code>rivo/tview</code></td><td>v0.42.0</td><td>tela do cliente</td></tr>
           <tr><td><code>gdamore/tcell/v2</code></td><td>v2.8.1</td><td>terminal (por baixo do tview)</td></tr>
           <tr><td><code>rivo/uniseg</code></td><td>v0.4.7</td><td>largura do texto na tela</td></tr>
+          <tr><td><code>golang.org/x/term</code></td><td>v0.28.0</td><td>saber se o stdin é um terminal</td></tr>
         </tbody>
       </table>
-      <p class="note">Mais algumas indiretas (<code>x/sys</code>, <code>x/term</code>, <code>x/text</code>, ...). Tudo Go puro: cada lado compila para um binário único, sem dependência de sistema.</p>
+      <p class="note">Mais algumas indiretas (<code>x/sys</code>, <code>x/text</code>, ...). Tudo Go puro: cada lado compila para um binário único, sem dependência de sistema.</p>
     </div>
   </div>
 
@@ -702,16 +720,72 @@ if lines &lt;= 5 {
     </div>
   </div>
 
+  <h3>Cores por alias</h3>
+  <div class="split">
+    <div class="read">
+      <p><b>Hash do alias, não sorteio.</b> O FNV-32a do alias escolhe uma de 12 cores. O mesmo alias tem a mesma cor em qualquer cliente, sem o servidor nem o protocolo saberem de cor nenhuma. Só o alias é colorido; o texto continua na cor normal.</p>
+      <p><b>Sua mensagem, em negrito.</b> Vale para as linhas que você enviou, não para o alias. Se outra pessoa entra com o seu alias, ela aparece colorida, não em negrito: dá para notar.</p>
+      <p><b>Tags de cor viram texto.</b> Para colorir, o tview passa a interpretar tags como <code>[red]</code>. Por isso tudo que vem de fora (alias, texto, nome da sala no título) passa por <code>tview.Escape</code>. Quem manda <code>[red]oi</code> aparece como <code>[red]oi</code>, literal.</p>
+      <p class="muted">O servidor manda <code>alias: texto</code> numa string só, e o cliente acha o alias cortando no primeiro <code>": "</code>. Um alias com <code>": "</code> dentro é cortado errado. Isso some quando as mensagens virarem estruturadas.</p>
+    </div>
+    <div class="panel">
+      <h4>a paleta</h4>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px;font-family:var(--mono);font-size:13px">
+        <span style="color:#e06c75">#e06c75</span><span style="color:#e5a04b">#e5a04b</span><span style="color:#d7c25a">#d7c25a</span><span style="color:#98c379">#98c379</span><span style="color:#4fd6a0">#4fd6a0</span><span style="color:#56b6c2">#56b6c2</span><span style="color:#61afef">#61afef</span><span style="color:#a3a0ff">#a3a0ff</span><span style="color:#c678dd">#c678dd</span><span style="color:#f08fc0">#f08fc0</span><span style="color:#d19a66">#d19a66</span><span style="color:#7fb3d5">#7fb3d5</span>
+      </div>
+      <p class="note" style="margin-bottom:0">Tons médios, legíveis em terminal escuro e claro. Com 12 cores, colisões acontecem: numa sala com 5 pessoas, a chance de duas terem a mesma cor é de uns 60%.</p>
+    </div>
+  </div>
+
+  <h3>Modo pipe por dentro</h3>
+  <div class="split">
+    <div style="min-width:0">
+      <div class="lanes">
+        <div class="lane"><span class="pulse amber"></span><span class="ln">main · pipe()<small>lê o stdin linha a linha, repete no terminal, envia</small></span><span class="st">ReadString()</span></div>
+        <div class="lane"><span class="pulse"></span><span class="ln">leitura da sala<small>lê e descarta o que os outros mandam</small></span><span class="st">ReadMessage()</span></div>
+      </div>
+      <p class="note">Sem tela, sem tview: só duas goroutines. Uma é a única que escreve na conexão, a outra a única que lê. É a regra da gorilla de novo.</p>
+    </div>
+    <div class="read">
+      <p><b>Por que ler o que não vai mostrar.</b> As mensagens da sala continuam chegando para o pipe. Se ninguém lê, os buffers de rede enchem e o broadcast do servidor, que escreve para um membro de cada vez com a trava da sala, fica parado esperando por ele. A sala inteira trava.</p>
+      <p><b>Fim da entrada.</b> Quando o <code>ReadString</code> devolve <code>io.EOF</code>, o pipe manda o frame de close do WebSocket e espera o servidor responder (até 2 s). Sair na hora poderia perder as últimas linhas.</p>
+    </div>
+  </div>
+  <div class="split">
+    <div class="panel">
+      <h4>sala inundada: 5000 mensagens de 2 KB</h4>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>quem mais está na sala</th><th class="num">chegaram aos outros</th></tr></thead>
+          <tbody>
+            <tr><td>um pipe lento do teachat</td><td class="num">5000 de 5000</td></tr>
+            <tr><td>um cliente que nunca lê</td><td class="num">2082 de 5000, sala travada</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="read">
+      <p class="muted">O segundo caso é o limite "<a href="#limites">cliente lento atrasa a sala</a>", agora medido. O cliente do teachat não cai nele porque sempre lê; um cliente mal escrito ainda derruba a sala. A correção de verdade é uma fila de envio por conexão no servidor.</p>
+    </div>
+  </div>
+
   <h3>O código</h3>
   <div class="split">
-    <div style="min-width:0"><div class="file">cmd/client/main.go · depois de abrir a conexão</div><pre class="go">// a tela chama esta função a cada Enter; só a goroutine da tela escreve na
+    <div style="min-width:0"><div class="file">cmd/client/main.go · depois de abrir a conexão</div><pre class="go">// stdin não é um terminal (comando | teachat): modo pipe, sem tela
+if !term.IsTerminal(int(os.Stdin.Fd())) {
+	pipe(conn)
+	return
+}
+
+// a tela chama esta função a cada Enter; só a goroutine da tela escreve na
 // conexão, então a regra da gorilla de um escritor por conexão continua valendo
 screen := ui.New(*room, *alias, func(text string) {
 	conn.WriteMessage(websocket.TextMessage, []byte(text))
 })
 
-// recebe mensagens em paralelo enquanto você digita
+// canal vazio para avisar que a conexão caiu; a goroutine de recebimento fecha o canal
 closed := make(chan struct{})
+// recebe mensagens em paralelo enquanto você digita
 go func() {
 	for {
 		_, msg, err := conn.ReadMessage()
@@ -737,10 +811,22 @@ case &lt;-closed:
 	log.Fatal("conexão encerrada")
 default:
 }</pre></div>
-    <div style="min-width:0"><div class="file">internal/ui/ui.go · trechos</div><pre class="go">// UI guarda a aplicação tview e a área de mensagens, que o Print precisa alcançar
-type UI struct {
-	app      *tview.Application
-	messages *tview.TextView
+    <div style="min-width:0"><div class="file">internal/ui/ui.go · trechos</div><pre class="go">// aliasColor escolhe a cor pelo hash do alias: o mesmo alias tem sempre a mesma cor,
+// em qualquer cliente, sem o servidor precisar saber de cor nenhuma.
+func aliasColor(alias string) string {
+	h := fnv.New32a()
+	h.Write([]byte(alias))
+	return palette[h.Sum32()%uint32(len(palette))]
+}
+
+// format monta a linha com o alias colorido. Tudo que vem de fora passa por
+// tview.Escape: sem isso, qualquer um mandaria "[red]" e mudaria a sua tela.
+func format(alias, text string, mine bool) string {
+	style := "[" + aliasColor(alias) + "]"
+	if mine {
+		style = "[::b]"
+	}
+	return style + tview.Escape(alias) + "[-::-]: " + tview.Escape(text)
 }
 
 // dentro de New: Enter envia em vez de pular linha
@@ -748,26 +834,69 @@ case tcell.KeyEnter:
 	text := input.GetText()
 	if strings.TrimSpace(text) != "" {
 		send(text)
-		// sua própria mensagem aparece igual às dos outros: "alias: texto"
-		fmt.Fprintf(u.messages, "%s: %s\n", alias, text)
+		fmt.Fprintln(u.messages, format(alias, text, true))
 	}
 	input.SetText("", false)
 	return nil
 
-// Print mostra uma linha recebida. Pode ser chamada de outra goroutine:
-// QueueUpdateDraw entrega a mudança para a goroutine da tela, que redesenha.
+// Print mostra uma linha recebida. Pode ser chamada de outra goroutine.
 func (u *UI) Print(line string) {
+	out := tview.Escape(line)
+	if alias, text, ok := strings.Cut(line, ": "); ok {
+		out = format(alias, text, false)
+	}
 	u.app.QueueUpdateDraw(func() {
-		fmt.Fprintln(u.messages, line)
+		fmt.Fprintln(u.messages, out)
 	})
-}
-
-// Run toma conta do terminal e só retorna quando a tela fecha (Ctrl+C ou Stop).
-func (u *UI) Run() error { return u.app.Run() }
-
-// Stop fecha a tela. Pode ser chamada de outra goroutine.
-func (u *UI) Stop() { u.app.Stop() }</pre></div>
+}</pre></div>
   </div>
+  <div style="min-width:0;margin-top:22px"><div class="file">cmd/client/pipe.go</div><pre class="go">// pipe é o modo sem tela (comando | teachat): envia cada linha do stdin para a sala,
+// mostra a linha no terminal (como o tee) e sai quando a entrada acaba.
+// Não abre a tela de propósito: num script ou no cron não tem ninguém para apertar Ctrl+C.
+func pipe(conn *websocket.Conn) {
+	// as mensagens da sala continuam chegando e precisam ser lidas, mesmo sem mostrar.
+	// Sem isso, os buffers de rede enchem e o broadcast do servidor trava a sala inteira
+	// esperando por nós. Esta goroutine é a única que lê; o pipe é o único que escreve.
+	done := make(chan struct{})
+	go func() {
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				close(done)
+				return
+			}
+		}
+	}()
+
+	// ReadString não tem limite de tamanho de linha (o bufio.Scanner para em 64 KB)
+	r := bufio.NewReader(os.Stdin)
+	for {
+		line, err := r.ReadString('\n')
+		if line != "" {
+			line = strings.TrimRight(line, "\r\n")
+			fmt.Println(line) // eco: você continua vendo a saída do comando
+			// linha vazia aparece no eco, mas não vai para a sala
+			if strings.TrimSpace(line) != "" {
+				if err := conn.WriteMessage(websocket.TextMessage, []byte(line)); err != nil {
+					log.Fatal("conexão encerrada: ", err)
+				}
+			}
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatal("erro lendo a entrada: ", err)
+		}
+	}
+
+	// fecha direito: manda o frame de close e espera o servidor responder (aí a goroutine
+	// de leitura termina e fecha done). Sair sem isso pode perder as últimas linhas.
+	conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	select {
+	case &lt;-done:
+	case &lt;-time.After(2 * time.Second):
+	}
+}</pre></div>
 </section>
 
 <section id="capacidade">
@@ -829,8 +958,8 @@ func (u *UI) Stop() { u.app.Stop() }</pre></div>
   </div>
   <div class="limits">
     <div class="limit"><b>Sem criptografia</b><p>O tráfego é <code>ws://</code> em texto aberto. No Wireshark dá para ler as mensagens. Use só em rede confiável até o TLS chegar.</p></div>
-    <div class="limit"><b>Cliente lento atrasa a sala</b><p>O broadcast escreve para um membro de cada vez, com a trava da sala. Uma conexão travada segura a sala dela. A solução é uma fila de envio por conexão.</p></div>
-    <div class="limit"><b>Pipe sem terminal falha</b><p>O tview exige um terminal: <code>echo oi | teachat</code> sai com erro. O modo pipe traz de volta o envio linha a linha.</p></div>
+    <div class="limit"><b>Cliente lento atrasa a sala</b><p>O broadcast escreve para um membro de cada vez, com a trava da sala. Uma conexão que não lê segura a sala dela: medido, a sala travou em 2082 de 5000 mensagens. A solução é uma fila de envio por conexão.</p></div>
+    <div class="limit"><b>Logs grandes inundam a sala</b><p>O modo pipe manda uma mensagem por linha. Um build de 5000 linhas são 5000 mensagens na tela de todo mundo.</p></div>
     <div class="limit"><b>Alias não é verificado</b><p>Qualquer um entra como <code>--alias daniel</code>. A senha vai proteger a sala, mas não prova quem é quem dentro dela.</p></div>
     <div class="limit"><b>Sem histórico</b><p>Mensagem enviada para sala vazia se perde, e quem entra depois não vê o passado. O modo pipe depende disso para registrar logs.</p></div>
     <div class="limit"><b>Qualquer origem</b><p>O servidor aceita WebSocket de qualquer origem, então uma página aberta num navegador da rede consegue conectar nele.</p></div>
@@ -845,8 +974,7 @@ func (u *UI) Stop() { u.app.Stop() }</pre></div>
   </div>
   <ol class="road">
     <li><div><b>--addr no servidor</b><p>A porta 23456 está fixa no código. Para cada empresa rodar a própria instância, ela precisa ser configurável.</p></div></li>
-    <li><div><b>Modo pipe</b><p><code>comando | teachat --room ops</code>. O cliente detecta que o stdin não é um terminal, pula a tela do tview, envia cada linha e sai no fim.</p></div></li>
-    <li><div><b>Salas com senha + TLS, juntos</b><p>Senha nunca trafega em texto aberto. <code>ListenAndServeTLS</code> no servidor, <code>wss://</code> no cliente, com certificado fixado (pinning) para rede local.</p></div></li>
+        <li><div><b>Salas com senha + TLS, juntos</b><p>Senha nunca trafega em texto aberto. <code>ListenAndServeTLS</code> no servidor, <code>wss://</code> no cliente, com certificado fixado (pinning) para rede local.</p></div></li>
     <li><div><b>Histórico de mensagens</b><p>SQLite com <code>modernc.org/sqlite</code>. Necessário para o modo pipe guardar logs e para salas persistentes.</p></div></li>
   </ol>
 </section>

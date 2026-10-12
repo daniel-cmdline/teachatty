@@ -2,6 +2,16 @@
 
 Registro das features entregues, da mais nova para a mais antiga. Adicione uma entrada a cada commit.
 
+## 2026-10-12 11:14 — Site e documentação em dia
+
+- Resolve as pendências de HTML das cores por alias, do alias padrão e do modo pipe.
+- **Site (`docs/index.html`):** o mockup da tela mostra os aliases nas cores reais (calculadas pelo mesmo hash do cliente) e o dono da tela em negrito. Destaque novo "Cada pessoa com sua cor". O card de pipes perdeu o "em breve" e ganhou um exemplo; "Comece em um minuto" mostra o `uptime | teachat`; o modo pipe saiu de "O que vem aí".
+- **Documentação (`docs/docs.html`):**
+  - Referência do cliente: `--alias` com padrão `$USER`, cores na área de mensagens, códigos de saída do modo pipe e uma subseção nova **Modo pipe** (uso, eco, uma mensagem por linha, sem limite de tamanho, seguro em scripts). Link na barra lateral.
+  - Cliente por dentro: subseções novas **Cores por alias** (hash, negrito, `tview.Escape`, a paleta) e **Modo pipe por dentro** (as duas goroutines, por que ler a sala, o close no fim, o teste da sala inundada). O código mostrado foi regenerado a partir dos arquivos atuais, com o `pipe.go` inteiro.
+  - Arquitetura: `pipe.go` no mapa do repositório, `golang.org/x/term` nas dependências, contagem de linhas atualizada (~380).
+  - Limitações: sai "pipe sem terminal falha", entra "logs grandes inundam a sala"; "cliente lento" agora com o número medido (2082 de 5000).
+
 ## 2026-10-12 10:58 — Modo pipe
 
 - Quando o stdin não é um terminal (`comando | teachat`), o cliente não abre a tela: envia cada linha para a sala, repete a linha no terminal (como o `tee`) e sai quando a entrada acaba. Código em `cmd/client/pipe.go`; o `main.go` só ganhou o `term.IsTerminal`.
@@ -12,13 +22,13 @@ Registro das features entregues, da mais nova para a mais antiga. Adicione uma e
 - **Por que lê a sala mesmo sem mostrar nada:** as mensagens dos outros continuam chegando. Sem ler, os buffers de rede enchem e o broadcast do servidor trava a sala inteira esperando pelo pipe. Uma goroutine lê e descarta tudo.
 - **Testado:** 2000 linhas (`seq`) chegam todas, inclusive a última; uma linha de 200 KB chega inteira; servidor fora do ar dá `connection refused` e código 1. Com uma sala inundada por 5000 mensagens de 2 KB e um pipe lento conectado, todas as 5000 chegaram aos outros. Com um cliente que nunca lê no lugar do pipe, a sala travou em 2082 de 5000: é o limite "cliente lento atrasa a sala", agora medido.
 - `golang.org/x/term` passou de dependência indireta para direta (já estava no projeto).
-- **Docs (HTML): pendente.** O site ainda marca pipes como "em breve", e a documentação diz que `echo oi | teachat` falha.
+- **Docs (HTML):** atualizados em 2026-10-12.
 
 ## 2026-10-12 10:06 — Alias padrão é o seu usuário
 
 - Sem `--alias`, o cliente usa o seu usuário do sistema (`$USER`) em vez de `anonimo`. Quem não tem `$USER` definido (cron, alguns containers) continua como `anonimo`.
 - **Por quê:** quase ninguém precisa mais digitar `--alias`. Uma linha (`cmp.Or`), sem dependência.
-- **Docs (HTML): pendente.** A tabela de flags do `docs.html` ainda diz `anonimo`.
+- **Docs (HTML):** atualizados em 2026-10-12.
 
 ## 2026-10-12 09:50 — Cores por alias
 
@@ -28,7 +38,7 @@ Registro das features entregues, da mais nova para a mais antiga. Adicione uma e
 - **Segurança:** para colorir, o tview passou a interpretar tags como `[red]`. Tudo que vem de fora (alias, texto, nome da sala no título) passa por `tview.Escape`, então quem manda `[red]oi` continua vendo e mostrando `[red]oi` literal.
 - **Limites:** com 12 cores, colisões acontecem (5 pessoas numa sala: ~60% de chance de duas terem a mesma cor). O cliente acha o alias cortando a linha no primeiro `": "`, porque o servidor manda `alias: texto` como string única; um alias com `": "` dentro é cortado errado. Os dois somem quando as mensagens virarem estruturadas (JSON) no protocolo.
 - Testado ao vivo com 5 clientes na mesma sala: cores diferentes por alias, negrito só nas próprias mensagens, `[red]oi` aparecendo literal.
-- **Docs (HTML): pendente.** Atualizar o site e a documentação junto com as próximas features de UI.
+- **Docs (HTML):** atualizados em 2026-10-12.
 
 ## 2026-10-12 09:40 — Site e documentação separados
 

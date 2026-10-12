@@ -48,10 +48,10 @@
   </div>
   <div class="split">
     <div class="scroll"><pre class="screen big" role="img" aria-label="Tela do teachat: área de mensagens da sala dev com quatro mensagens, e a caixa de digitação embaixo com o texto boa! vou fechar o ticket">┌─────────────────── dev · mateus ───────────────────┐
-│joao: alguém viu o alerta de disco no db-02?        │
-│daniel: vi, tá em 91%. limpando os logs antigos     │
-│mateus: valeu. o deploy das 10h subiu?              │
-│daniel: subiu, sem erro no healthcheck              │
+│<span style="color:#d19a66">joao</span>: alguém viu o alerta de disco no db-02?        │
+│<span style="color:#d7c25a">daniel</span>: vi, tá em 91%. limpando os logs antigos     │
+│<b style="color:var(--fg)">mateus</b>: valeu. o deploy das 10h subiu?              │
+│<span style="color:#d7c25a">daniel</span>: subiu, sem erro no healthcheck              │
 │                                                    │
 └────────────────────────────────────────────────────┘
 ╔════════════════════════════════════════════════════╗
@@ -61,6 +61,7 @@
       <li><b>Ninguém atropela o que você digita.</b> Mensagens novas chegam em cima; seu texto fica parado na caixa.</li>
       <li><b>A caixa cresce com a mensagem</b>, até 5 linhas, para você ver tudo que escreveu.</li>
       <li><b><kbd>PgUp</kbd> para ler o passado</b> sem ser puxado de volta. Comece a digitar e a tela volta para as mais novas.</li>
+      <li><b>Cada pessoa com sua cor.</b> O alias de cada um tem uma cor fixa, a mesma em qualquer cliente. O seu aparece em negrito.</li>
       <li><b>Uma sala por comando.</b> Entrar numa sala que não existe cria a sala; quando o último sai, ela some.</li>
     </ul>
   </div>
@@ -74,8 +75,8 @@
   <div class="cards">
     <div class="card"><b>Flags, não URLs</b><p>Ninguém digita <code>ws://...?room=x</code>. É <code>teachat --room dev --alias daniel</code>, e o resto é detalhe interno.</p></div>
     <div class="card"><b>Auto-hospedável</b><p>Um binário de servidor numa máquina interna. O tráfego não sai da rede da empresa. O cliente aponta para ela com <code>--server</code>.</p></div>
-    <div class="card"><b>Funciona com pipes<span class="tag-soon">em breve</span></b><p><code>comando | teachat --room ops</code> manda a saída de um comando direto para a sala do time.</p></div>
-    <div class="card"><b>Minimalista</b><p>Só entra feature que se paga. O código todo tem cerca de 270 linhas, apoiadas em bibliotecas que fazem o trabalho pesado.</p></div>
+    <div class="card"><b>Funciona com pipes</b><p><code>make 2>&amp;1 | teachat --room ops</code> manda cada linha para a sala do time, mostra no seu terminal e sai no fim. Seguro em scripts e no cron.</p></div>
+    <div class="card"><b>Minimalista</b><p>Só entra feature que se paga. O código todo tem cerca de 380 linhas, apoiadas em bibliotecas que fazem o trabalho pesado.</p></div>
   </div>
 </section>
 
@@ -166,7 +167,10 @@ cd teachat
 go run ./cmd/server
 
 <span class="c"># em outro terminal, ou em outra máquina</span>
-go run ./cmd/client --room dev --alias daniel</pre>
+go run ./cmd/client --room dev
+
+<span class="c"># mandar a saída de um comando para a sala</span>
+uptime | go run ./cmd/client --room dev</pre>
   <p class="muted" style="margin-top:14px">Flags, teclas, outra máquina na rede e como gerar os binários: na <a href="docs.html#comecando">documentação</a>.</p>
 </section>
 
@@ -177,7 +181,6 @@ go run ./cmd/client --room dev --alias daniel</pre>
   </div>
   <ol class="road">
     <li><div><b>--addr no servidor</b><p>Porta configurável, para cada empresa rodar a própria instância do jeito que quiser.</p></div></li>
-    <li><div><b>Modo pipe</b><p><code>comando | teachat --room ops</code>: manda cada linha para a sala e sai.</p></div></li>
     <li><div><b>Salas com senha + TLS</b><p>Senha nunca trafega aberta: <code>wss://</code> com certificado fixado para rede local.</p></div></li>
     <li><div><b>Histórico de mensagens</b><p>SQLite em Go puro. Quem entra vê o que já foi dito, e o modo pipe guarda logs.</p></div></li>
   </ol>
