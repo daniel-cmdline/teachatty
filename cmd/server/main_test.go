@@ -10,8 +10,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// connect sobe o handleWS num servidor de teste e conecta nele, como o cliente faria.
-// query é o que vai depois do "?": "room=dev&alias=ana", ou "" para não mandar nada.
+// connect connects to handleWS running on a test server, the way the client would.
+// query is what goes after the "?": "room=dev&alias=ana", or "" to send nothing.
 func connect(t *testing.T, srv *httptest.Server, query string) *websocket.Conn {
 	t.Helper()
 	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws?" + query
@@ -22,7 +22,7 @@ func connect(t *testing.T, srv *httptest.Server, query string) *websocket.Conn {
 	return conn
 }
 
-// members conta quem está na sala agora; -1 se a sala não existe
+// members counts who is in the room right now; -1 if the room doesn't exist
 func members(name string) int {
 	mu.Lock()
 	defer mu.Unlock()
@@ -35,8 +35,8 @@ func members(name string) int {
 	return len(room.members)
 }
 
-// eventually espera a condição virar verdade: entrar e sair acontecem na goroutine
-// do servidor, um pouco depois do Dial ou do Close aqui no teste.
+// eventually waits for the condition to become true: joining and leaving happen in the
+// server's goroutine, a little after the Dial or Close here in the test.
 func eventually(t *testing.T, what string, cond func() bool) {
 	t.Helper()
 	for deadline := time.Now().Add(2 * time.Second); time.Now().Before(deadline); {
@@ -58,12 +58,12 @@ func TestNoRoomLandsInLocalAndLocalSurvivesEmpty(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(handleWS))
 	defer srv.Close()
 
-	conn := connect(t, srv, "alias=ana") // sem room
+	conn := connect(t, srv, "alias=ana") // no room
 	eventually(t, "ana joins local", func() bool { return members(defaultRoom) == 1 })
 
 	conn.Close()
 	eventually(t, "ana leaves local", func() bool { return members(defaultRoom) == 0 })
-	// vazia, mas continua existindo (0, não -1)
+	// empty, but still exists (0, not -1)
 }
 
 func TestOtherRoomsVanishWhenEmpty(t *testing.T) {
@@ -83,11 +83,11 @@ func TestMessageInLocalRoom(t *testing.T) {
 
 	ana := connect(t, srv, "alias=ana")
 	defer ana.Close()
-	bia := connect(t, srv, "room=local&alias=bia") // pedir "local" explicitamente dá no mesmo
+	bia := connect(t, srv, "room=local&alias=bia") // asking for "local" explicitly is the same
 	defer bia.Close()
 	eventually(t, "both join", func() bool { return members(defaultRoom) == 2 })
 
-	if err := ana.WriteMessage(websocket.TextMessage, []byte("oi")); err != nil {
+	if err := ana.WriteMessage(websocket.TextMessage, []byte("hi")); err != nil {
 		t.Fatal(err)
 	}
 	bia.SetReadDeadline(time.Now().Add(2 * time.Second))
@@ -95,12 +95,12 @@ func TestMessageInLocalRoom(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(msg) != "ana: oi" {
-		t.Fatalf("bia got %q, want %q", msg, "ana: oi")
+	if string(msg) != "ana: hi" {
+		t.Fatalf("bia got %q, want %q", msg, "ana: hi")
 	}
 }
 
-// limite de tamanho: até maxMessage passa; acima, só a conexão de quem mandou é fechada
+// size limit: up to maxMessage gets through; above it, only the sender's connection is closed
 func TestMessageAtLimitPasses(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(handleWS))
 	defer srv.Close()
@@ -134,7 +134,7 @@ func TestMessageTooBigClosesOnlyThatConnection(t *testing.T) {
 	defer bia.Close()
 	eventually(t, "both join", func() bool { return members("big") == 2 })
 
-	// 1 byte acima do limite
+	// 1 byte over the limit
 	if err := ana.WriteMessage(websocket.TextMessage, make([]byte, maxMessage+1)); err != nil {
 		t.Fatal(err)
 	}
@@ -144,11 +144,11 @@ func TestMessageTooBigClosesOnlyThatConnection(t *testing.T) {
 	}
 	eventually(t, "ana leaves the room", func() bool { return members("big") == 1 })
 
-	// a sala segue funcionando, e a bia nunca recebeu a mensagem grande
+	// the room keeps working, and bia never received the big message
 	carol := connect(t, srv, "room=big&alias=carol")
 	defer carol.Close()
 	eventually(t, "carol joins", func() bool { return members("big") == 2 })
-	if err := carol.WriteMessage(websocket.TextMessage, []byte("oi")); err != nil {
+	if err := carol.WriteMessage(websocket.TextMessage, []byte("hi")); err != nil {
 		t.Fatal(err)
 	}
 	bia.SetReadDeadline(time.Now().Add(2 * time.Second))
@@ -156,7 +156,7 @@ func TestMessageTooBigClosesOnlyThatConnection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(msg) != "carol: oi" {
-		t.Fatalf("bia got %.40q, want %q", msg, "carol: oi")
+	if string(msg) != "carol: hi" {
+		t.Fatalf("bia got %.40q, want %q", msg, "carol: hi")
 	}
 }

@@ -6,8 +6,8 @@ import (
 	"os"
 )
 
-// usage é a ajuda do -h, em inglês para servir a qualquer usuário. Os padrões vêm
-// das próprias flags (flag.VisitAll), então a ajuda nunca fica desatualizada.
+// usage is the -h help. Defaults come from the flags themselves (flag.VisitAll),
+// so the help never drifts out of date.
 func usage() {
 	out := flag.CommandLine.Output()
 	fmt.Fprint(out, `teachat: a terminal chat
@@ -34,10 +34,10 @@ Examples:
 `)
 }
 
-// checkArgs trata o que sobrou depois das flags. Os dois binários não usam argumentos
-// soltos, então qualquer um (ex.: "teachat start") não ativaria nada: mostra a ajuda
-// em vez de seguir em silêncio. "help" é tratado como pedido de ajuda.
-// Flag que não existe já cai na ajuda sozinha, pelo pacote flag.
+// checkArgs handles whatever is left after the flags. Neither binary takes positional
+// arguments, so any of them (e.g. "teachat start") would do nothing: show the help
+// instead of carrying on silently. "help" is treated as a request for help.
+// An unknown flag already lands on the help by itself, through the flag package.
 func checkArgs() {
 	if flag.NArg() == 0 {
 		return

@@ -1,5 +1,5 @@
-// Package ui é a tela do cliente: mensagens em cima, caixa de digitação embaixo.
-// Tudo que é tview fica aqui dentro; o main só conhece New, Print, Run e Stop.
+// Package ui is the client's screen: messages on top, input box at the bottom.
+// Everything tview lives in here; main only knows New, Print, Run and Stop.
 package ui
 
 import (
@@ -12,30 +12,30 @@ import (
 	"github.com/rivo/uniseg"
 )
 
-// UI guarda a aplicação tview e a área de mensagens, que o Print precisa alcançar
+// UI holds the tview application and the message area, which Print needs to reach
 type UI struct {
 	app      *tview.Application
 	messages *tview.TextView
 }
 
-// cores dos aliases. Tons médios, que dá para ler em terminal escuro e claro.
+// alias colors. Mid tones, readable on both dark and light terminals.
 var palette = []string{
 	"#e06c75", "#e5a04b", "#d7c25a", "#98c379", "#4fd6a0", "#56b6c2",
 	"#61afef", "#a3a0ff", "#c678dd", "#f08fc0", "#d19a66", "#7fb3d5",
 }
 
-// aliasColor escolhe a cor pelo hash do alias: o mesmo alias tem sempre a mesma cor,
-// em qualquer cliente, sem o servidor precisar saber de cor nenhuma.
+// aliasColor picks the color from a hash of the alias: the same alias always gets the
+// same color, on any client, without the server knowing anything about colors.
 func aliasColor(alias string) string {
 	h := fnv.New32a()
 	h.Write([]byte(alias))
 	return palette[h.Sum32()%uint32(len(palette))]
 }
 
-// format monta a linha com o alias colorido. Com as cores ligadas, o tview interpreta
-// tags como "[red]" no texto, então tudo que vem de fora passa por tview.Escape:
-// sem isso, qualquer um mandaria "[red]" e mudaria a sua tela.
-// mine = mensagem que você mesmo enviou: alias em negrito, na cor normal do texto.
+// format builds the line with the alias colored. With colors on, tview interprets
+// tags like "[red]" in the text, so everything from outside goes through tview.Escape:
+// without it, anyone could send "[red]" and change your screen.
+// mine = a message you sent yourself: alias in bold, in the normal text color.
 func format(alias, text string, mine bool) string {
 	style := "[" + aliasColor(alias) + "]"
 	if mine {
@@ -44,66 +44,66 @@ func format(alias, text string, mine bool) string {
 	return style + tview.Escape(alias) + "[-::-]: " + tview.Escape(text)
 }
 
-// New monta a tela. send é chamada a cada Enter com o texto digitado.
+// New builds the screen. send is called on every Enter with the typed text.
 func New(room, alias string, send func(text string)) *UI {
 	u := &UI{app: tview.NewApplication()}
 
-	// área de mensagens. Por padrão o TextView do tview NÃO acompanha texto novo:
-	// quando a tela enche, as mensagens novas ficam escondidas embaixo.
-	// ScrollToEnd liga o "seguir o fim". PgUp desliga, para dar para ler o passado.
+	// message area. By default tview's TextView does NOT follow new text:
+	// once the screen fills up, new messages stay hidden below.
+	// ScrollToEnd turns on "follow the end". PgUp turns it off, so you can read older messages.
 	u.messages = tview.NewTextView()
 	u.messages.SetBorder(true).SetTitle(" " + tview.Escape(room) + " · " + tview.Escape(alias) + " ")
 	u.messages.ScrollToEnd()
-	u.messages.SetDynamicColors(true) // liga as tags de cor, usadas no alias
+	u.messages.SetDynamicColors(true) // turn on color tags, used for the alias
 
-	// caixa de digitação: TextArea quebra linhas longas em vez de rolar para o lado.
-	// Sem quebra por palavra: quebrando em qualquer caractere, dá para calcular
-	// quantas linhas o texto ocupa só pela largura dele.
+	// input box: TextArea wraps long lines instead of scrolling sideways.
+	// No word wrap: breaking at any character means the number of lines
+	// can be computed from the text width alone.
 	input := tview.NewTextArea()
 	input.SetBorder(true)
 	input.SetWordWrap(false)
 
-	// mensagens ocupam o que sobrar; a caixa começa com 3 linhas (1 de texto + 2 de borda)
+	// messages take whatever is left; the box starts at 3 rows (1 of text + 2 of border)
 	layout := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(u.messages, 0, 1, false).
 		AddItem(input, 3, 0, true)
 	u.app.SetRoot(layout, true)
 
 	input.SetChangedFunc(func() {
-		// digitou qualquer coisa: volta para as mensagens mais novas e segue o fim de novo
+		// typed anything: jump back to the newest messages and follow the end again
 		u.messages.ScrollToEnd()
 
-		// a caixa cresce com o texto, de 1 até 5 linhas.
-		// StringWidth conta colunas na tela, não bytes: "ã" ocupa 1, um emoji ocupa 2.
-		// O +1 é a linha atual; quando o texto enche a linha, o cursor já pula para a próxima.
+		// the box grows with the text, from 1 to 5 lines.
+		// StringWidth counts screen columns, not bytes: "ã" takes 1, an emoji takes 2.
+		// The +1 is the current line; when the text fills a line, the cursor moves to the next.
 		_, _, width, _ := input.GetInnerRect()
 		if width <= 0 {
-			return // a caixa ainda não foi desenhada
+			return // the box hasn't been drawn yet
 		}
 		lines := uniseg.StringWidth(input.GetText())/width + 1
 		layout.ResizeItem(input, min(lines, 5)+2, 0)
 		if lines <= 5 {
-			// cabe tudo: volta a rolagem interna da caixa para o topo. Sem isso, texto
-			// colado (que chega antes da caixa crescer) deixa a primeira linha escondida.
+			// everything fits: reset the box's internal scroll to the top. Without this,
+			// pasted text (which arrives before the box grows) leaves the first line hidden.
 			input.SetOffset(0, 0)
 		}
 	})
 
-	// intercepta teclas antes do TextArea; devolver nil = o TextArea não vê a tecla
+	// intercept keys before the TextArea; returning nil = the TextArea never sees the key
 	input.SetInputCapture(func(ev *tcell.EventKey) *tcell.EventKey {
 		switch ev.Key() {
 		case tcell.KeyEnter:
-			// Enter envia em vez de pular linha
+			// Enter sends instead of inserting a newline
 			text := input.GetText()
 			if strings.TrimSpace(text) != "" {
 				send(text)
-				// sua própria mensagem aparece igual às dos outros: "alias: texto"
+				// your own message shows up like everyone else's: "alias: text"
 				fmt.Fprintln(u.messages, format(alias, text, true))
 			}
 			input.SetText("", false)
 			return nil
 		case tcell.KeyPgUp, tcell.KeyPgDn:
-			// o foco fica sempre na caixa; a rolagem é repassada para as mensagens
+			// focus always stays in the box; scrolling is forwarded to the messages
 			u.messages.InputHandler()(ev, nil)
 			return nil
 		}
@@ -113,11 +113,11 @@ func New(room, alias string, send func(text string)) *UI {
 	return u
 }
 
-// Print mostra uma linha recebida. Pode ser chamada de outra goroutine:
-// QueueUpdateDraw entrega a mudança para a goroutine da tela, que redesenha.
+// Print shows a received line. Safe to call from another goroutine:
+// QueueUpdateDraw hands the change to the screen's goroutine, which redraws.
 func (u *UI) Print(line string) {
-	// o servidor manda "alias: texto" como uma string só; o alias é o que vem
-	// antes do primeiro ": ". Sem ": ", a linha aparece inteira, sem cor.
+	// the server sends "alias: text" as a single string; the alias is whatever comes
+	// before the first ": ". Without ": ", the whole line is shown uncolored.
 	out := tview.Escape(line)
 	if alias, text, ok := strings.Cut(line, ": "); ok {
 		out = format(alias, text, false)
@@ -127,13 +127,13 @@ func (u *UI) Print(line string) {
 	})
 }
 
-// Run toma conta do terminal e só retorna quando a tela fecha (Ctrl+C ou Stop).
-// Quando retorna, o terminal já voltou ao normal.
+// Run takes over the terminal and only returns when the screen closes (Ctrl+C or Stop).
+// By the time it returns, the terminal is back to normal.
 func (u *UI) Run() error {
 	return u.app.Run()
 }
 
-// Stop fecha a tela. Pode ser chamada de outra goroutine.
+// Stop closes the screen. Safe to call from another goroutine.
 func (u *UI) Stop() {
 	u.app.Stop()
 }

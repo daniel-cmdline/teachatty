@@ -1,75 +1,76 @@
 # teachat — roadmap
 
-Chat de terminal para desenvolvedores e sysadmins. Minimalista: leve, sem distrações, usado do jeito que se usa qualquer ferramenta Linux.
+A terminal chat for developers and sysadmins. Minimalist: lightweight, no distractions, used the way you use any Linux tool.
 
-## Princípios
+## Principles
 
-- **Flags, não URLs.** O usuário nunca digita `ws://...?room=x`:
+- **Flags, not URLs.** Users never type `ws://...?room=x`:
   ```bash
-  teachat --room minhaempresa --password xxx --alias daniel
+  teachat --room mycompany --password xxx --alias daniel
   ```
-  O jeito como isso chega ao servidor é detalhe interno do cliente.
-- **Funciona com pipes.** O teachat é uma ferramenta Unix como qualquer outra.
-- **Auto-hospedável.** Uma empresa pode rodar a própria instância num servidor interno, sem tráfego indo para a internet (`--server`).
-- **Minimalista.** Só entra feature que se paga.
+  How that reaches the server is an internal detail of the client.
+- **Works with pipes.** teachat is a Unix tool like any other.
+- **Self-hostable.** A company can run its own instance on an internal server, with no traffic going out to the internet (`--server`).
+- **Minimalist.** A feature only goes in if it pays for itself.
 
-## Estado atual (2026-10-12)
+## Current state (2026-10-12)
 
-- **Servidor** (`cmd/server`): salas em memória, um mutex por sala, porta 7347 por padrão (`--addr` para mudar), mensagens até 1 MB. A sala `local` nasce com o servidor e nunca é apagada.
-- **Cliente** (`cmd/client`): flags `--server`, `--room` e `--alias`. Tela cheia com tview (`internal/ui`): mensagens em cima, caixa de digitação embaixo.
-- Modo pipe: `comando | teachat` envia cada linha para a sala, mostra no terminal e sai no fim da entrada.
-- Ainda sem criptografia: o tráfego é `ws://` em texto aberto.
-- As features entregues ficam registradas em [features.md](features.md).
+- **Server** (`cmd/server`): rooms in memory, one mutex per room, port 7347 by default (`--addr` to change it), messages up to 1 MB. The `local` room starts with the server and is never deleted.
+- **Client** (`cmd/client`): flags `--server`, `--room` and `--alias`. Full screen with tview (`internal/ui`): messages on top, input box at the bottom.
+- Pipe mode: `command | teachat` sends each line to the room, echoes it to the terminal and exits when the input ends.
+- No encryption yet: traffic is plain-text `ws://`.
+- Shipped features are logged in [features.md](features.md).
 
-## Próximos passos
+## Next steps
 
-Nesta ordem. Cada um é pequeno de propósito.
+In this order. Each one is small on purpose.
 
-1. **Salas com senha + TLS, juntos.** Senha nunca deve trafegar em `ws://` aberto. TLS significa `ListenAndServeTLS` no servidor e `wss://` no cliente, com um certificado autoassinado fixado no cliente (pinning) para uso em rede local.
-2. **Histórico de mensagens.** Necessário para o modo pipe ser útil quando não há ninguém na sala, e para salas persistentes. Plano: SQLite com `modernc.org/sqlite` (Go puro, então continua sendo um binário único).
+1. **Password-protected rooms + TLS, together.** A password must never travel over plain `ws://`. TLS means `ListenAndServeTLS` on the server and `wss://` on the client, with a self-signed certificate pinned in the client for use on a local network.
+2. **Message history.** Needed for pipe mode to be useful when nobody is in the room, and for persistent rooms. Plan: SQLite with `modernc.org/sqlite` (pure Go, so it stays a single binary).
 
-## Futuro
+## Future
 
-- **Ponte com o Discord.** Assinar canais do Discord (que tenham o bot do teachat) e ler as mensagens no terminal, em vez de no app do Discord, que é pesado e tem muito ruído. Só leitura no começo.
-- **Listagem de salas** (`teachat --list`) para salas públicas.
-- **Mensagens estruturadas** (`{"alias": ..., "text": ...}` em vez de `alias: texto`). Tira o parsing frágil do cliente e abre espaço para avisos de entrada/saída, histórico e cores escolhidas.
-- **Arquivo de configuração**, para não depender de flags (e para o empacotamento em apt/dnf). Já decidido: `/etc/teachat/teachat.conf` (padrões da máquina, instalado pelo pacote) e `~/.config/teachat/config` (preferências de cada um). Precedência: padrões do código → `/etc` → arquivo do usuário → flags. Formato `chave = valor` com comentários `#`, sem dependência. Cores aceitam nomes e hex (o tcell já entende os dois); valor inválido dá erro com arquivo e linha. Senha nunca em `/etc`, só no arquivo do usuário com permissão 0600. Vale quando vier o empacotamento, a senha ou mais opções no servidor; até lá, um `alias` do shell resolve.
-- **UI:** agrupar mensagens seguidas da mesma pessoa (alias só na primeira), destacar menções (`@daniel`), horário nas mensagens.
+- **Discord bridge.** Subscribe to Discord channels (that have the teachat bot) and read messages in the terminal instead of the Discord app, which is heavy and noisy. Read-only at first.
+- **Room listing** (`teachat --list`) for public rooms.
+- **Structured messages** (`{"alias": ..., "text": ...}` instead of `alias: text`). Removes the fragile parsing in the client and makes room for join/leave notices, history and chosen colors.
+- **Config file**, so you don't depend on flags (and for apt/dnf packaging). Already decided: `/etc/teachat/teachat.conf` (machine defaults, installed by the package) and `~/.config/teachat/config` (each user's preferences). Precedence: code defaults → `/etc` → user file → flags. Format `key = value` with `#` comments, no dependency. Colors accept names and hex (tcell already understands both); an invalid value is an error with file and line. Passwords never in `/etc`, only in the user's file with 0600 permissions. Worth it once packaging, passwords or more server options arrive; until then, a shell `alias` does the job.
+- **UI:** group consecutive messages from the same person (alias only on the first), highlight mentions (`@daniel`), timestamps on messages.
 
-## Decisões tomadas
+## Decisions made
 
-- Entrar numa sala que não existe cria a sala.
-- A sala é apagada quando o último membro sai, menos a sala padrão.
-- A sala padrão é a `local`: nasce com o servidor, nunca é apagada, e é para onde vai quem não passa `--room` (no cliente) ou não manda sala na URL (no servidor). Assim todo mundo se encontra sem combinar nada. Antes era `geral`, criada e apagada como as outras.
-- O estado das conexões fica em RAM, não num banco de dados: ele só existe enquanto o processo está vivo. O banco entra junto com o histórico.
-- `Room` fica no `package main` (`cmd/server/room.go`) até alguma outra parte além do servidor precisar dela.
-- O cliente é tela cheia (tview), não inline. Inline, o chat iria para o scrollback do terminal e se perderia no meio da saída de comandos.
-- Na tela: Enter envia, PgUp/PgDn rolam as mensagens, Ctrl+C sai. A própria mensagem é mostrada pelo cliente, não devolvida pelo servidor.
-- Sem mouse na tela, para selecionar e copiar texto do chat continuar funcionando normalmente.
-- A tela fica em `internal/ui`. O `Room` do servidor sai do `package main` depois, como mudança separada.
-- Modo pipe sai quando a entrada acaba, sem nunca abrir a tela. Entrar no chat depois travaria scripts e cron (ninguém para apertar Ctrl+C), e o stdin já é o pipe, não o teclado.
-- Modo pipe repete cada linha no terminal (como o `tee`), para quem roda o comando continuar vendo a saída. Uma mensagem por linha, sem agrupar: o caminho mais simples. Logs grandes inundam a sala; agrupar fica para depois, se incomodar.
-- Porta padrão 7347 (antes 23456).
-- `-h` nos dois binários, com os padrões lidos das próprias flags para a ajuda nunca ficar desatualizada. Tudo que o programa mostra no terminal (ajuda, logs, erros, mensagens de início, saída dos testes) é em inglês, por ser mais universal. Em português, por enquanto: comentários do código, o site e a documentação (`docs/`), e os registros do projeto.
-- Comando que não ativa nada (argumento solto, flag que não existe) mostra a ajuda, nos dois binários, com código 2. `help` mostra a ajuda com código 0.
-- Limite de 1 MB por mensagem no servidor (`SetReadLimit`). 64 KB bastaria para quem digita, mas quebraria linhas grandes de log no modo pipe (stack traces, JSON). Acima do limite, o servidor fecha só aquela conexão (close 1009).
-- `--addr` no servidor no formato do Go, `host:porta`: sem host escuta em todas as interfaces, com host só naquela.
-- O módulo se chama `github.com/daniel-cmdline/teachat`, igual ao caminho do repositório, para os imports internos e o `go install` funcionarem.
+- Joining a room that doesn't exist creates it.
+- A room is deleted when its last member leaves, except the default room.
+- The default room is `local`: it starts with the server, is never deleted, and is where you land if you don't pass `--room` (client) or don't send a room in the URL (server). That way everyone meets without arranging anything. It used to be `geral`, created and deleted like the others.
+- Connection state lives in RAM, not in a database: it only exists while the process is alive. A database comes with history.
+- `Room` stays in `package main` (`cmd/server/room.go`) until something other than the server needs it.
+- The client is full screen (tview), not inline. Inline, the chat would go into the terminal scrollback and get lost among command output.
+- On screen: Enter sends, PgUp/PgDn scroll the messages, Ctrl+C quits. Your own message is shown by the client, not echoed back by the server.
+- No mouse on screen, so selecting and copying chat text keeps working normally.
+- The screen lives in `internal/ui`. The server's `Room` moves out of `package main` later, as a separate change.
+- Pipe mode exits when the input ends and never opens the screen. Joining the chat afterwards would hang scripts and cron (nobody to press Ctrl+C), and stdin is already the pipe, not the keyboard.
+- Pipe mode echoes each line to the terminal (like `tee`), so whoever runs the command still sees the output. One message per line, no grouping: the simplest path. Large logs flood the room; grouping can come later if it becomes a problem.
+- Default port 7347 (previously 23456).
+- `-h` on both binaries, with defaults read from the flags themselves so the help never drifts out of date.
+- Everything is in English: what the program shows in the terminal (help, logs, errors, startup messages, test output), code comments, the site and documentation (`docs/`), and these project notes. Until 2026-10-12, comments, docs and notes were in Portuguese.
+- A command that does nothing (stray argument, unknown flag) shows the help on both binaries, with exit code 2. `help` shows the help with exit code 0.
+- 1 MB limit per message on the server (`SetReadLimit`). 64 KB would be enough for typing, but would break large log lines in pipe mode (stack traces, JSON). Over the limit, the server closes only that connection (close 1009).
+- `--addr` on the server in Go's `host:port` format: no host listens on all interfaces, a host listens only on that one.
+- The module is `github.com/daniel-cmdline/teachat`, matching the repository path, so internal imports and `go install` work.
 
-## Perguntas em aberto
+## Open questions
 
-- Salas com senha vs. apagar sala vazia: se a sala some quando esvazia, qualquer um pode recriá-la com outra senha. Salas com senha devem ser persistentes?
-- A senha pode ir na URL de conexão, ou deve ir num cabeçalho ou numa primeira mensagem para não aparecer em logs?
-- O alias não é verificado: qualquer um entra como `--alias daniel`. A senha protege a sala, mas não prova quem é quem dentro dela. Precisa de identidade?
+- Password rooms vs. deleting empty rooms: if a room disappears when it empties, anyone can recreate it with a different password. Should password rooms be persistent?
+- Can the password go in the connection URL, or should it go in a header or a first message so it doesn't show up in logs?
+- Aliases aren't verified: anyone can join as `--alias daniel`. A password protects the room, but doesn't prove who's who inside it. Do we need identity?
 
-## Capacidade (teste de carga, 2026-10-11)
+## Capacity (load test, 2026-10-11)
 
-Servidor e clientes na mesma máquina, mensagens curtas. Mostra a ordem de grandeza, não números precisos.
+Server and clients on the same machine, short messages. Shows the order of magnitude, not precise numbers.
 
-| Conexões | RAM do servidor | 1 mensagem para a sala inteira |
+| Connections | Server RAM | 1 message to the whole room |
 |---|---|---|
-| 1.000 | 28 MB | 5,7 ms |
-| 10.000 | 183 MB | 59 ms |
-| 50.000 | 875 MB | 309 ms |
+| 1,000 | 28 MB | 5.7 ms |
+| 10,000 | 183 MB | 59 ms |
+| 50,000 | 875 MB | 309 ms |
 
-Cerca de 17 KB por conexão, quase tudo pilha de goroutine e buffers do WebSocket. O tempo de broadcast cresce em linha reta com o tamanho da sala. Um cliente lento ainda atrasa a própria sala. Resolver isso exige uma fila de envio por conexão.
+About 17 KB per connection, almost all of it goroutine stack and WebSocket buffers. Broadcast time grows linearly with room size. A slow client still delays its own room (measured: a client that never reads stalled a room at 2,082 of 5,000 messages). Fixing that requires a send queue per connection.

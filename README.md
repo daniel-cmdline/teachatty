@@ -101,8 +101,8 @@ internal/ui/  the client's screen (built on tview)
 docs/         project site and documentation
 ```
 
-Documentation lives in [docs/](docs/): `index.html` is the project site and `docs.html` is the full documentation (usage, client and server reference, protocol, internals). Both are in Portuguese.
+Documentation lives in [docs/](docs/): `index.html` is the project site and `docs.html` is the full documentation (usage, client and server reference, protocol, internals).
 
 Run the tests with `go test ./...`.
 
-The roadmap and the feature log are in [roadmap.md](roadmap.md) and [features.md](features.md). Both are written in Portuguese for now.
+The roadmap and the feature log are in [roadmap.md](roadmap.md) and [features.md](features.md).

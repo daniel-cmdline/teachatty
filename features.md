@@ -1,137 +1,144 @@
 # Features
 
-Registro das features entregues, da mais nova para a mais antiga. Adicione uma entrada a cada commit.
+Log of shipped features, newest first. Add an entry with every commit.
 
-## 2026-10-12 12:07 — `--addr` no servidor e limite de 1 MB por mensagem
+## 2026-10-12 13:05 — Everything in English
 
-- **`--addr`:** o servidor escuta onde você mandar, no formato `host:porta`. `--addr :9000` = porta 9000 em todas as interfaces; `--addr 10.0.0.5:7347` = só na rede interna. Padrão `:7347`. O `-h` do servidor agora lista as flags (lidas das próprias flags, como no cliente) e tem exemplos.
-- O servidor abre a porta **antes** de anunciar `listening on ...`. Antes, com a porta ocupada ou o endereço inválido, ele anunciava e só depois falhava. Agora sai direto com o erro (`address already in use`, `missing port in address`) e código 1.
-- **Limite de 1 MB por mensagem** (`conn.SetReadLimit`, constante `maxMessage`). Sem limite, alguém mandava 1 GB e o servidor tentava guardar tudo na memória. Acima do limite, a gorilla responde close 1009 (`message too big`) e só aquela conexão sai; a sala segue normal. 1 MB e não 64 KB para não quebrar linhas grandes de log no modo pipe.
-- **O modo pipe agora percebe quando a conexão cai ou o servidor recusa uma linha.** Antes, uma linha de 2 MB era recusada e o pipe saía com código 0, como se tivesse dado certo: a escrita vai para o buffer e "funciona", e quem via o close era só a goroutine de leitura. Agora ela guarda o erro (`readErr`), o pipe confere antes de cada linha e no fim, e sai com `connection closed: websocket: close 1009 (message too big)` e código 1.
-- A tela cheia também mostra o motivo da queda: `connection closed: ` + o erro.
-- **Testes novos:** mensagem exatamente no limite passa; 1 byte acima fecha só aquela conexão com 1009, e a sala continua funcionando. Conferido que o teste falha sem o `SetReadLimit`. Agora são 6 testes, todos com `-race`.
-- **Testado ponta a ponta:** `--addr :9000` e `--addr 127.0.0.1:9001` (só loopback, conferido no `ss`), porta ocupada, endereço inválido, pipe com 2 MB (recusado, código 1), 900 KB (passa), servidor caindo no meio de um pipe lento (código 1 com o motivo).
-- **Docs:** README (seção de flags do servidor), roadmap (`--addr` sai dos próximos passos), e o HTML: flags e limite na referência do servidor, `--addr` no "Começando" e no site, códigos de saída novos, limitação "sem limite de tamanho" removida, trechos de código regenerados.
+- Code comments, the site and documentation (`docs/index.html`, `docs/docs.html`), `roadmap.md` and this log are now in English, like the terminal output already was. Older entries below were translated; quoted strings that used to be in Portuguese (`conexão encerrada`, `teachat-server escutando em ...`) are kept as they were, since that's what the program printed back then.
+- Test data changed from `"oi"` to `"hi"`.
+- `gofmt` is now clean across the repo: the two older comments missing a space after `//` were fixed while translating them.
+- Code shown in `docs.html` was regenerated from the translated source files.
 
-## 2026-10-12 11:45 — Ajuda quando o comando não ativa nada
+## 2026-10-12 12:07 — `--addr` on the server and a 1 MB message limit
 
-- Argumento solto (`teachat dev`, `teachat-server start`) era ignorado em silêncio: o servidor subia e o cliente tentava conectar. Agora os dois mostram `unknown argument: ...` e a ajuda, e saem com código 2 sem fazer nada.
-- `teachat help` e `teachat-server help` mostram a ajuda com código 0.
-- Flag que não existe (`--romm`) já mostrava a ajuda, pelo pacote `flag` do Go.
-- Código: `checkArgs()` no `usage.go` de cada binário, chamado logo depois do `flag.Parse()`.
-- Docs: tabela de códigos de saída e referência do servidor no `docs.html`, README e roadmap.
+- **`--addr`:** the server listens wherever you tell it, as `host:port`. `--addr :9000` = port 9000 on all interfaces; `--addr 10.0.0.5:7347` = only on the internal network. Default `:7347`. The server's `-h` now lists its flags (read from the flags themselves, as in the client) and has examples.
+- The server opens the port **before** announcing `listening on ...`. Previously, with a busy port or a bad address, it announced first and failed afterwards. Now it exits right away with the error (`address already in use`, `missing port in address`) and code 1.
+- **1 MB limit per message** (`conn.SetReadLimit`, constant `maxMessage`). Without a limit, someone could send 1 GB and the server would try to hold it all in memory. Over the limit, gorilla answers close 1009 (`message too big`) and only that connection leaves; the room carries on. 1 MB rather than 64 KB so large log lines in pipe mode don't break.
+- **Pipe mode now notices when the connection drops or the server refuses a line.** Previously a 2 MB line was refused and the pipe exited with code 0, as if it had worked: writes go to a buffer and "succeed", and only the reader goroutine saw the close. Now it records the error (`readErr`), the pipe checks it before each line and at the end, and exits with `connection closed: websocket: close 1009 (message too big)` and code 1.
+- Full screen also shows why the connection dropped: `connection closed: ` + the error.
+- **New tests:** a message exactly at the limit gets through; 1 byte over closes only that connection with 1009, and the room keeps working. Checked that the test fails without `SetReadLimit`. 6 tests now, all with `-race`.
+- **Tested end to end:** `--addr :9000` and `--addr 127.0.0.1:9001` (loopback only, checked with `ss`), busy port, bad address, a 2 MB pipe line (refused, code 1), 900 KB (gets through), server dying in the middle of a slow pipe (code 1 with the reason).
+- **Docs:** README (server flags section), roadmap (`--addr` leaves the next steps), and the HTML: flags and limit in the server reference, `--addr` in "Getting started" and on the site, new exit codes, the "no size limit" limitation removed, code excerpts regenerated.
 
-## 2026-10-12 11:43 — Saída do terminal em inglês
+## 2026-10-12 11:45 — Help when a command does nothing
 
-- Tudo que o programa mostra no terminal passou para o inglês: `connection closed` (antes `conexão encerrada`), `error reading input`, a linha de início do servidor (`teachat-server listening on :7347 · default room: local`), e os nomes e mensagens dos testes.
-- O alias de quem não tem `$USER` passou de `anonimo` para `anonymous`, porque aparece no chat.
-- Continuam em português: comentários do código, o site e a documentação (`docs/`), e estes registros.
-- O site e a documentação foram ajustados para citar as mensagens novas, e os trechos de código do cliente foram regenerados.
+- A stray argument (`teachat dev`, `teachat-server start`) was silently ignored: the server started and the client tried to connect. Now both print `unknown argument: ...` and the help, and exit with code 2 without doing anything.
+- `teachat help` and `teachat-server help` show the help with code 0.
+- An unknown flag (`--romm`) already showed the help, through Go's `flag` package.
+- Code: `checkArgs()` in each binary's `usage.go`, called right after `flag.Parse()`.
+- Docs: exit code table and server reference in `docs.html`, README and roadmap.
 
-## 2026-10-12 11:38 — Porta 7347, ajuda no -h e primeiros testes
+## 2026-10-12 11:43 — Terminal output in English
 
-- **Porta 7347** no servidor e no padrão do cliente (antes 23456). A porta virou a constante `addr` no servidor.
-- **`-h` nos dois binários**, em inglês (mais universal; os comentários do código continuam em português): o que é, como usar, flags com padrão, teclas e exemplos. As descrições das flags também foram para o inglês, porque aparecem na ajuda. No cliente, os padrões vêm das próprias flags (`flag.Lookup`/`VisitAll`), então a ajuda acompanha qualquer mudança. O servidor não lia flags: `server -h` subia o servidor. Agora mostra a ajuda e sai.
-- A mensagem de início do servidor diz a porta e a sala padrão: `teachat-server escutando em :7347 · sala padrão: local`.
-- O handler de `/ws` saiu de dentro do `main` e virou a função `handleWS`, para os testes conseguirem usá-lo. Sem mudança de comportamento.
-- **Primeiros testes automatizados** (`cmd/server/main_test.go`, `go test ./...`): a sala `local` existe antes de qualquer conexão; quem conecta sem sala cai nela e ela sobrevive vazia; outras salas somem quando esvaziam; uma mensagem na `local` chega como `ana: oi`. Rodam com `-race`. Conferido que pegam erro: tirando a proteção da `local` no `leave`, o teste falha.
-- **Testado ponta a ponta** com os binários: cliente sem nenhuma flag abre em `local · del`; outro cliente na `local` recebe a mensagem; `echo ... | teachat` sem flags chega na `local`; todo mundo sai, alguém entra de novo, a `local` continua lá.
-- **Docs:** README, roadmap e o HTML (porta, sala padrão `local`, `-h`, testes no mapa do repositório, e o código do servidor regenerado a partir do `handleWS`).
+- Everything the program prints to the terminal moved to English: `connection closed` (previously `conexão encerrada`), `error reading input`, the server's startup line (`teachat-server listening on :7347 · default room: local`), and test names and messages.
+- The alias for users without `$USER` changed from `anonimo` to `anonymous`, since it shows up in the chat.
+- Code comments, the site and documentation (`docs/`), and these notes stayed in Portuguese at this point.
+- The site and documentation were adjusted to quote the new messages, and the client code excerpts were regenerated.
 
-## 2026-10-12 11:29 — Sala padrão `local`
+## 2026-10-12 11:38 — Port 7347, -h help and first tests
 
-- O servidor cria a sala `local` quando sobe, e ela nunca é apagada, mesmo vazia. As outras salas continuam nascendo e sumindo como antes.
-- Sem `--room`, o cliente entra na `local` (antes era `geral`). No servidor, uma conexão sem sala na URL também cai na `local`, em vez de numa sala de nome vazio.
-- **Por quê:** é só rodar `teachat` para todo mundo do mesmo servidor estar na mesma sala, sem combinar nome.
-- **Por que permanente:** criar a sala ao subir o servidor não adiantaria se ela fosse apagada na primeira saída.
-- No código: a constante `defaultRoom`, o mapa `rooms` já começa com ela, `cmp.Or` para o nome vazio, e o `leave` não apaga a sala padrão.
-- **Testado:** cliente sem `--room` abre com o título `local · ana`; uma conexão crua sem sala recebe as mensagens dela; sair e voltar mantém a sala funcionando; a sala `dev` continua igual. Sem race no servidor.
-- **Docs (HTML):** atualizados na entrada seguinte.
+- **Port 7347** on the server and as the client default (previously 23456). The port became the `addr` constant on the server.
+- **`-h` on both binaries**, in English: what it is, how to use it, flags with defaults, keys and examples. Flag descriptions went to English too, since they show up in the help. In the client, defaults come from the flags themselves (`flag.Lookup`/`VisitAll`), so the help follows any change. The server didn't read flags at all: `server -h` started the server. Now it shows the help and exits.
+- The server's startup message states the port and default room: `teachat-server escutando em :7347 · sala padrão: local` (translated to English in the next entry).
+- The `/ws` handler moved out of `main` into the `handleWS` function, so the tests can use it. No behavior change.
+- **First automated tests** (`cmd/server/main_test.go`, `go test ./...`): the `local` room exists before any connection; connecting without a room lands in it and it survives empty; other rooms disappear when they empty; a message in `local` arrives as `ana: oi`. They run with `-race`. Checked that they catch bugs: removing the `local` protection in `leave` makes a test fail.
+- **Tested end to end** with the binaries: a client with no flags opens on `local · del`; another client in `local` receives the message; `echo ... | teachat` with no flags reaches `local`; everyone leaves, someone joins again, and `local` is still there.
+- **Docs:** README, roadmap and the HTML (port, default room `local`, `-h`, tests in the repository map, and the server code regenerated from `handleWS`).
 
-## 2026-10-12 11:14 — Site e documentação em dia
+## 2026-10-12 11:29 — Default room `local`
 
-- Resolve as pendências de HTML das cores por alias, do alias padrão e do modo pipe.
-- **Site (`docs/index.html`):** o mockup da tela mostra os aliases nas cores reais (calculadas pelo mesmo hash do cliente) e o dono da tela em negrito. Destaque novo "Cada pessoa com sua cor". O card de pipes perdeu o "em breve" e ganhou um exemplo; "Comece em um minuto" mostra o `uptime | teachat`; o modo pipe saiu de "O que vem aí".
-- **Documentação (`docs/docs.html`):**
-  - Referência do cliente: `--alias` com padrão `$USER`, cores na área de mensagens, códigos de saída do modo pipe e uma subseção nova **Modo pipe** (uso, eco, uma mensagem por linha, sem limite de tamanho, seguro em scripts). Link na barra lateral.
-  - Cliente por dentro: subseções novas **Cores por alias** (hash, negrito, `tview.Escape`, a paleta) e **Modo pipe por dentro** (as duas goroutines, por que ler a sala, o close no fim, o teste da sala inundada). O código mostrado foi regenerado a partir dos arquivos atuais, com o `pipe.go` inteiro.
-  - Arquitetura: `pipe.go` no mapa do repositório, `golang.org/x/term` nas dependências, contagem de linhas atualizada (~380).
-  - Limitações: sai "pipe sem terminal falha", entra "logs grandes inundam a sala"; "cliente lento" agora com o número medido (2082 de 5000).
+- The server creates the `local` room when it starts, and it's never deleted, even when empty. Other rooms keep appearing and disappearing as before.
+- Without `--room`, the client joins `local` (previously `geral`). On the server, a connection with no room in the URL also lands in `local`, instead of a room with an empty name.
+- **Why:** just run `teachat` and everyone on the same server is in the same room, without agreeing on a name.
+- **Why permanent:** creating the room at server start would be pointless if it got deleted on the first departure.
+- In the code: the `defaultRoom` constant, the `rooms` map starts with it, `cmp.Or` for the empty name, and `leave` doesn't delete the default room.
+- **Tested:** a client without `--room` opens with the title `local · ana`; a raw connection with no room receives its messages; leaving and coming back keeps the room working; room `dev` is unchanged. No races on the server.
+- **Docs (HTML):** updated in the next entry.
 
-## 2026-10-12 10:58 — Modo pipe
+## 2026-10-12 11:14 — Site and documentation up to date
 
-- Quando o stdin não é um terminal (`comando | teachat`), o cliente não abre a tela: envia cada linha para a sala, repete a linha no terminal (como o `tee`) e sai quando a entrada acaba. Código em `cmd/client/pipe.go`; o `main.go` só ganhou o `term.IsTerminal`.
-- `tail -f app.log | teachat --room ops` funciona como transmissão contínua, até o Ctrl+C.
-- Linha vazia aparece no eco, mas não vai para a sala. Linha sem `\n` no fim também é enviada.
-- Sem limite de tamanho de linha: `bufio.Reader.ReadString` em vez do `bufio.Scanner`, que desiste em 64 KB.
-- **Saída limpa:** no fim, manda o frame de close do WebSocket e espera o servidor responder (até 2 s), para as últimas linhas não se perderem. Código de saída 0; falha ao conectar ou conexão caindo no meio: 1, com o erro no stderr.
-- **Por que lê a sala mesmo sem mostrar nada:** as mensagens dos outros continuam chegando. Sem ler, os buffers de rede enchem e o broadcast do servidor trava a sala inteira esperando pelo pipe. Uma goroutine lê e descarta tudo.
-- **Testado:** 2000 linhas (`seq`) chegam todas, inclusive a última; uma linha de 200 KB chega inteira; servidor fora do ar dá `connection refused` e código 1. Com uma sala inundada por 5000 mensagens de 2 KB e um pipe lento conectado, todas as 5000 chegaram aos outros. Com um cliente que nunca lê no lugar do pipe, a sala travou em 2082 de 5000: é o limite "cliente lento atrasa a sala", agora medido.
-- `golang.org/x/term` passou de dependência indireta para direta (já estava no projeto).
-- **Docs (HTML):** atualizados em 2026-10-12.
+- Clears the pending HTML updates for alias colors, the default alias and pipe mode.
+- **Site (`docs/index.html`):** the screen mockup shows aliases in their real colors (computed with the same hash as the client) and the screen's owner in bold. New highlight "Each person gets a color". The pipes card lost its "coming soon" tag and gained an example; "Start in a minute" shows `uptime | teachat`; pipe mode left "What's next".
+- **Documentation (`docs/docs.html`):**
+  - Client reference: `--alias` defaulting to `$USER`, colors in the message area, pipe mode exit codes and a new **Pipe mode** subsection (usage, echo, one message per line, no size limit, safe in scripts). Linked from the sidebar.
+  - Client internals: new subsections **Colors per alias** (hash, bold, `tview.Escape`, the palette) and **Pipe mode internals** (the two goroutines, why it reads the room, the close at the end, the flooded-room test). Code shown was regenerated from the current files, with the whole `pipe.go`.
+  - Architecture: `pipe.go` in the repository map, `golang.org/x/term` in the dependencies, updated line count (~380).
+  - Limitations: "pipe without a terminal fails" removed, "large logs flood the room" added; "slow client" now with the measured number (2,082 of 5,000).
 
-## 2026-10-12 10:06 — Alias padrão é o seu usuário
+## 2026-10-12 10:58 — Pipe mode
 
-- Sem `--alias`, o cliente usa o seu usuário do sistema (`$USER`) em vez de `anonimo`. Quem não tem `$USER` definido (cron, alguns containers) continua como `anonimo`.
-- **Por quê:** quase ninguém precisa mais digitar `--alias`. Uma linha (`cmp.Or`), sem dependência.
-- **Docs (HTML):** atualizados em 2026-10-12.
+- When stdin is not a terminal (`command | teachat`), the client doesn't open the screen: it sends each line to the room, echoes it to the terminal (like `tee`) and exits when the input ends. Code in `cmd/client/pipe.go`; `main.go` only gained `term.IsTerminal`.
+- `tail -f app.log | teachat --room ops` works as a continuous stream, until Ctrl+C.
+- An empty line is echoed but not sent to the room. A last line without `\n` is still sent.
+- No line length limit: `bufio.Reader.ReadString` instead of `bufio.Scanner`, which gives up at 64 KB.
+- **Clean exit:** at the end it sends the WebSocket close frame and waits for the server's answer (up to 2 s), so the last lines aren't lost. Exit code 0; failing to connect or the connection dropping midway: 1, with the error on stderr.
+- **Why it reads the room without showing anything:** other people's messages keep arriving. Without reading, the network buffers fill up and the server's broadcast stalls the whole room waiting on the pipe. One goroutine reads and discards everything.
+- **Tested:** 2,000 lines (`seq`) all arrive, including the last; a 200 KB line arrives whole; with the server down it prints `connection refused` and exits 1. With a room flooded by 5,000 messages of 2 KB and a slow pipe connected, all 5,000 reached the others. With a client that never reads in the pipe's place, the room stalled at 2,082 of 5,000: the "slow client stalls the room" limitation, now measured.
+- `golang.org/x/term` went from an indirect to a direct dependency (it was already in the project).
+- **Docs (HTML):** updated on 2026-10-12.
 
-## 2026-10-12 09:50 — Cores por alias
+## 2026-10-12 10:06 — Default alias is your user
 
-- Na área de mensagens, o alias de cada pessoa aparece numa cor própria, escolhida pelo hash do alias (FNV-32a) numa paleta de 12 cores. O mesmo alias tem sempre a mesma cor, em qualquer cliente, sem mudar o servidor nem o protocolo.
-- Suas próprias mensagens: alias em negrito, na cor normal do texto. Vale só para as linhas que você enviou, não para o alias: se outra pessoa entra com o seu alias, ela aparece colorida, não em negrito.
-- Só o alias é colorido; o texto da mensagem continua na cor normal.
-- **Segurança:** para colorir, o tview passou a interpretar tags como `[red]`. Tudo que vem de fora (alias, texto, nome da sala no título) passa por `tview.Escape`, então quem manda `[red]oi` continua vendo e mostrando `[red]oi` literal.
-- **Limites:** com 12 cores, colisões acontecem (5 pessoas numa sala: ~60% de chance de duas terem a mesma cor). O cliente acha o alias cortando a linha no primeiro `": "`, porque o servidor manda `alias: texto` como string única; um alias com `": "` dentro é cortado errado. Os dois somem quando as mensagens virarem estruturadas (JSON) no protocolo.
-- Testado ao vivo com 5 clientes na mesma sala: cores diferentes por alias, negrito só nas próprias mensagens, `[red]oi` aparecendo literal.
-- **Docs (HTML):** atualizados em 2026-10-12.
+- Without `--alias`, the client uses your system user (`$USER`) instead of `anonimo`. Without `$USER` set (cron, some containers), it stays `anonimo` (later renamed `anonymous`).
+- **Why:** almost nobody needs to type `--alias` anymore. One line (`cmp.Or`), no dependency.
+- **Docs (HTML):** updated on 2026-10-12.
 
-## 2026-10-12 09:40 — Site e documentação separados
+## 2026-10-12 09:50 — Colors per alias
 
-- A página única `teachat-por-dentro.html` virou duas, em `docs/`, com o CSS compartilhado em `docs/style.css`:
-  - `index.html`, o site: o que é o teachat, a tela, os princípios, os números medidos, a animação de como uma mensagem viaja, como começar e o que vem aí. Botão **docs** no topo e no hero.
-  - `docs.html`, a documentação, com barra lateral: visão geral, começando, referência do cliente (flags, teclas, códigos de saída) e do servidor (endpoint, formato das mensagens, ciclo de vida das salas), arquitetura, protocolo, servidor e cliente por dentro, capacidade, limitações e roadmap.
-- **Por quê:** a página única misturava apresentação com referência. Quem quer conhecer o projeto e quem quer consultar como algo funciona procuram coisas diferentes.
-- Os docs agora estão no git. O `.gitignore`, que só ignorava a página antiga, foi apagado.
-- Limitações novas documentadas: o servidor aceita WebSocket de qualquer origem e não limita o tamanho das mensagens.
+- In the message area, each person's alias shows in its own color, picked by hashing the alias (FNV-32a) into a 12-color palette. The same alias always gets the same color, on any client, without changing the server or the protocol.
+- Your own messages: alias in bold, in the normal text color. This applies only to lines you sent, not to the alias: if someone else joins with your alias, they show up colored, not bold.
+- Only the alias is colored; the message text stays in the normal color.
+- **Security:** to color text, tview now interprets tags like `[red]`. Everything that comes from outside (alias, text, room name in the title) goes through `tview.Escape`, so whoever sends `[red]oi` still sees and shows a literal `[red]oi`.
+- **Limits:** with 12 colors, collisions happen (5 people in a room: ~60% chance two share a color). The client finds the alias by splitting the line at the first `": "`, because the server sends `alias: text` as a single string; an alias containing `": "` is split wrongly. Both go away once messages are structured (JSON) in the protocol.
+- Tested live with 5 clients in the same room: different colors per alias, bold only on your own messages, `[red]oi` shown literally.
+- **Docs (HTML):** updated on 2026-10-12.
 
-## 2026-10-12 09:26 — Tela cheia no cliente (tview)
+## 2026-10-12 09:40 — Site and documentation split
 
-- O cliente virou uma tela cheia feita com `tview`, no pacote novo `internal/ui`: mensagens em cima, numa área com o título `sala · alias`, e uma caixa de digitação embaixo.
-- **O atropelo acabou:** a mensagem recebida não escreve mais por cima do que você está digitando. O terminal fica em modo raw e só a goroutine da tela desenha. A goroutine de recebimento entrega cada mensagem com `QueueUpdateDraw`.
-- Enter envia. Sua própria mensagem aparece como `alias: texto`, igual às dos outros. O servidor continua sem devolver a mensagem para quem enviou; o cliente mostra a sua localmente.
-- A área de mensagens segue as mais novas. PgUp e PgDn rolam. Com PgUp ela para de seguir, para dar para ler o passado sem ser puxado de volta. Digitar qualquer coisa volta para o fim.
-- A caixa cresce com o texto, de 1 até 5 linhas, e volta para 1 depois do Enter. Ela quebra a linha em qualquer caractere, não só entre palavras, porque assim a altura sai de uma conta: largura do texto na tela ÷ largura da caixa.
-- Ctrl+C sai (antes era Ctrl+D). Se a conexão cai, a tela fecha, o terminal volta ao normal e só então aparece `conexão encerrada`. O `log.Fatal` de antes sairia sem restaurar o terminal.
-- O `main.go` do cliente só conhece `ui.New`, `Print`, `Run` e `Stop`. Tudo que é tview fica em `internal/ui`.
-- **Bug achado no teste ao vivo:** o `TextView` do tview não acompanha texto novo por padrão. Quando a tela enchia, as mensagens novas ficavam escondidas até apertar PgDn. Resolvido com `ScrollToEnd()`.
-- **Dependências novas:** `rivo/tview` v0.42.0, `gdamore/tcell/v2` v2.8.1, `rivo/uniseg` (largura do texto na tela) e as indiretas delas. Tudo Go puro: o cliente continua um binário único.
-- **Quebrou:** `echo oi | teachat` falha, porque o tview exige um terminal. Volta com o fallback linha a linha, primeiro passo do modo pipe.
-- Sem mouse, de propósito: com o mouse ligado, selecionar e copiar texto do chat passaria a exigir Shift.
+- The single page `teachat-por-dentro.html` became two, in `docs/`, with shared CSS in `docs/style.css`:
+  - `index.html`, the site: what teachat is, the screen, the principles, the measured numbers, the animation of how a message travels, how to get started and what's next. A **docs** button in the top bar and the hero.
+  - `docs.html`, the documentation, with a sidebar: overview, getting started, client reference (flags, keys, exit codes) and server reference (endpoint, message format, room lifecycle), architecture, protocol, server and client internals, capacity, limitations and roadmap.
+- **Why:** the single page mixed presentation with reference. People getting to know the project and people looking up how something works want different things.
+- The docs are now in git. The `.gitignore`, which only ignored the old page, was deleted.
+- New limitations documented: the server accepts WebSocket from any origin and doesn't limit message size.
 
-## 2026-10-12 08:43 — Módulo renomeado para `github.com/daniel-cmdline/teachat`
+## 2026-10-12 09:26 — Full-screen client (tview)
 
-- O `go.mod` passou de `module httpEndpoint` para `module github.com/daniel-cmdline/teachat`, o mesmo caminho do repositório.
-- **Por quê:** o nome do módulo é o começo de todo import interno. Com pacotes próprios chegando (`internal/ui`), os imports passam a ser `github.com/daniel-cmdline/teachat/internal/...`. E o `go install github.com/daniel-cmdline/teachat/...@latest` só funciona quando o nome do módulo bate com o caminho do repositório.
-- **Por que agora:** hoje é uma linha. Depois de existirem pacotes, renomear exige mexer em todos os imports.
-- Nenhuma mudança de comportamento.
+- The client became a full screen built with `tview`, in the new `internal/ui` package: messages on top, in an area titled `room · alias`, and an input box at the bottom.
+- **No more overwriting:** an incoming message no longer writes over what you're typing. The terminal is in raw mode and only the screen's goroutine draws. The receiving goroutine hands each message over with `QueueUpdateDraw`.
+- Enter sends. Your own message shows up as `alias: text`, like everyone else's. The server still doesn't echo a message back to its sender; the client shows yours locally.
+- The message area follows the newest messages. PgUp and PgDn scroll. PgUp stops following, so you can read older messages without being pulled back. Typing anything jumps back to the end.
+- The input box grows with the text, from 1 to 5 lines, and goes back to 1 after Enter. It breaks lines at any character, not just between words, because that way the height comes from one calculation: text width on screen ÷ box width.
+- Ctrl+C quits (previously Ctrl+D). If the connection drops, the screen closes, the terminal goes back to normal and only then does `conexão encerrada` appear. The previous `log.Fatal` would have exited without restoring the terminal.
+- The client's `main.go` only knows `ui.New`, `Print`, `Run` and `Stop`. Everything tview lives in `internal/ui`.
+- **Bug found in the live test:** tview's `TextView` doesn't follow new text by default. Once the screen filled up, new messages stayed hidden until you pressed PgDn. Fixed with `ScrollToEnd()`.
+- **New dependencies:** `rivo/tview` v0.42.0, `gdamore/tcell/v2` v2.8.1, `rivo/uniseg` (text width on screen) and their indirect dependencies. All pure Go: the client is still a single binary.
+- **Broke:** `echo oi | teachat` fails, because tview requires a terminal. It comes back with the line-by-line fallback, the first step of pipe mode.
+- No mouse, on purpose: with the mouse on, selecting and copying chat text would require Shift.
 
-## 2026-10-11 10:28 — Trava por sala
+## 2026-10-12 08:43 — Module renamed to `github.com/daniel-cmdline/teachat`
 
-- `Room` foi para `cmd/server/room.go`, com mutex próprio e os métodos `join`, `leave` e `broadcast`.
-- O mutex global agora protege só o mapa `rooms`. O broadcast trava apenas a própria sala.
-- **Por quê:** com uma trava global única, o broadcast numa sala grande bloqueava todas as outras.
-- **Resultado:** com 50 mil clientes numa sala recebendo mensagens, a latência numa sala pequena caiu de ~265 ms para ~0,1 ms. O detector de race condition não encontra problemas.
+- `go.mod` changed from `module httpEndpoint` to `module github.com/daniel-cmdline/teachat`, the same path as the repository.
+- **Why:** the module name is the start of every internal import. With our own packages arriving (`internal/ui`), imports become `github.com/daniel-cmdline/teachat/internal/...`. And `go install github.com/daniel-cmdline/teachat/...@latest` only works when the module name matches the repository path.
+- **Why now:** today it's one line. Once packages exist, renaming means touching every import.
+- No behavior change.
 
-## 2026-10-11 09:45 — Salas e alias
+## 2026-10-11 10:28 — Per-room lock
 
-- O cliente recebe as flags `--server`, `--room` e `--alias` (padrões: `localhost:23456`, `geral`, `anonimo`) em vez de uma URL `ws://` crua. A URL é montada internamente.
-- O `--server` permite que uma empresa aponte o cliente para a própria instância do teachat.
-- As mensagens vão só para quem está na mesma sala de quem enviou, com o alias na frente (`daniel: oi`).
-- Entrar numa sala que não existe cria a sala. A sala é apagada quando o último membro sai.
+- `Room` moved to `cmd/server/room.go`, with its own mutex and the `join`, `leave` and `broadcast` methods.
+- The global mutex now guards only the `rooms` map. A broadcast locks only its own room.
+- **Why:** with a single global lock, a broadcast in a large room blocked all the others.
+- **Result:** with 50,000 clients in one room receiving messages, latency in a small room dropped from ~265 ms to ~0.1 ms. The race detector finds no problems.
 
-## 2026-10-11 09:34 — Primeiro commit: chat WebSocket
+## 2026-10-11 09:45 — Rooms and aliases
 
-- Servidor (`cmd/server`) e cliente (`cmd/client`) como binários separados num mesmo módulo.
-- WebSocket com `gorilla/websocket`. O servidor repassa cada mensagem para todos os outros clientes conectados.
-- O cliente envia uma mensagem a cada Enter e mostra as mensagens recebidas em paralelo.
+- The client takes the `--server`, `--room` and `--alias` flags (defaults: `localhost:23456`, `geral`, `anonimo`) instead of a raw `ws://` URL. The URL is built internally.
+- `--server` lets a company point the client at its own teachat instance.
+- Messages only go to people in the sender's room, with the alias in front (`daniel: oi`).
+- Joining a room that doesn't exist creates it. A room is deleted when its last member leaves.
+
+## 2026-10-11 09:34 — First commit: WebSocket chat
+
+- Server (`cmd/server`) and client (`cmd/client`) as separate binaries in one module.
+- WebSocket with `gorilla/websocket`. The server relays each message to every other connected client.
+- The client sends a message on every Enter and shows incoming messages in parallel.

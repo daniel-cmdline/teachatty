@@ -12,40 +12,40 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-//Instancia do Upgrader para atualizar a conexão HTTP para WebSocket
+// Upgrader instance that upgrades the HTTP connection to WebSocket
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true }, // aceita qualquer origem
+	CheckOrigin: func(r *http.Request) bool { return true }, // accepts any origin
 }
 
 const (
-	// endereço padrão: porta 7347 em todas as interfaces. Muda com --addr.
+	// default address: port 7347 on all interfaces. Change it with --addr.
 	defaultAddr = ":7347"
 
-	// maior mensagem aceita, em bytes. Sem limite, alguém manda 1 GB e o servidor tenta
-	// guardar tudo na memória antes de repassar. 1 MB passa folgado qualquer mensagem
-	// digitada e quase toda linha de log no modo pipe (stack trace, JSON).
+	// largest accepted message, in bytes. Without a limit, someone sends 1 GB and the
+	// server tries to hold it all in memory before relaying. 1 MB easily fits any typed
+	// message and almost any log line in pipe mode (stack traces, JSON).
 	maxMessage = 1 << 20
 
-	// sala padrão: nasce junto com o servidor e nunca é apagada, mesmo vazia.
-	// Quem conecta sem dizer a sala cai nela, então todo mundo se encontra sem combinar nada.
+	// default room: created with the server and never deleted, even when empty.
+	// Anyone who connects without naming a room lands in it, so people meet without arranging anything.
 	defaultRoom = "local"
 )
 
 var (
-	mu    sync.Mutex // protege só o mapa de salas
+	mu    sync.Mutex // guards only the rooms map
 	rooms = map[string]*Room{defaultRoom: {members: map[*websocket.Conn]string{}}}
 )
 
 func main() {
-	// --addr: onde escutar. ":9000" = porta 9000 em todas as interfaces;
-	// "10.0.0.5:7347" = só nessa interface (por exemplo, só a rede interna)
+	// --addr: where to listen. ":9000" = port 9000 on all interfaces;
+	// "10.0.0.5:7347" = only that interface (for example, only the internal network)
 	addr := flag.String("addr", defaultAddr, "address to listen on, host:port (empty host = all interfaces)")
 	flag.Usage = usage
 	flag.Parse()
 	checkArgs()
 
-	// abre a porta antes de anunciar: com a porta ocupada ou o endereço errado,
-	// o erro aparece sozinho, sem um "listening" enganoso antes
+	// open the port before announcing: with a busy port or a bad address,
+	// the error shows up on its own, with no misleading "listening" first
 	ln, err := net.Listen("tcp", *addr)
 	if err != nil {
 		log.Fatal(err)
@@ -55,8 +55,8 @@ func main() {
 	log.Fatal(http.Serve(ln, nil))
 }
 
-// handleWS atende cada conexão em /ws, na goroutine que o net/http cria para ela.
-// Tem nome (em vez de ser uma função anônima no main) para os testes conseguirem usá-lo.
+// handleWS serves each connection on /ws, in the goroutine net/http creates for it.
+// It's a named function (not an anonymous one inside main) so the tests can use it.
 func handleWS(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -65,15 +65,15 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	// mensagem maior que o limite: o ReadMessage devolve erro, a gorilla responde com
-	// close 1009 ("message too big") e esta conexão sai do loop e da sala como qualquer outra
+	// a message over the limit: ReadMessage returns an error, gorilla answers with
+	// close 1009 ("message too big") and this connection leaves the loop and the room like any other
 	conn.SetReadLimit(maxMessage)
 
-	// sem sala na URL (cliente antigo, outro programa): vai para a sala padrão
+	// no room in the URL (old client, another program): goes to the default room
 	name := cmp.Or(r.URL.Query().Get("room"), defaultRoom)
 	alias := r.URL.Query().Get("alias")
 
-	// entrar numa sala que não existe cria a sala
+	// joining a room that doesn't exist creates it
 	mu.Lock()
 	room := rooms[name]
 	if room == nil {
@@ -88,11 +88,11 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			break
 		}
-		// repassa a mensagem para os outros da mesma sala
+		// relay the message to the others in the same room
 		room.broadcast(conn, []byte(alias+": "+string(msg)))
 	}
 
-	// sai da sala; sala vazia deixa de existir, menos a padrão
+	// leave the room; an empty room stops existing, except the default one
 	mu.Lock()
 	if room.leave(conn) && name != defaultRoom {
 		delete(rooms, name)

@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>teachat · docs</title>
-<meta name="description" content="Documentação do teachat: uso, referência do cliente e do servidor, protocolo e como tudo funciona por dentro.">
+<meta name="description" content="teachat documentation: usage, client and server reference, protocol, and how everything works inside.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
@@ -20,69 +20,69 @@
 </nav>
 
 <div class="docs-grid">
-<aside class="side" aria-label="Documentação">
-  <div class="grp">uso</div>
-  <a href="#visao">visão geral</a>
-  <a href="#comecando">começando</a>
-  <a href="#ref-cliente">cliente</a>
-  <a href="#modo-pipe">modo pipe</a>
-  <a href="#ref-servidor">servidor</a>
-  <div class="grp">como funciona</div>
-  <a href="#arquitetura">arquitetura</a>
-  <a href="#conexao">conexão</a>
+<aside class="side" aria-label="Documentation">
+  <div class="grp">usage</div>
+  <a href="#overview">overview</a>
+  <a href="#getting-started">getting started</a>
+  <a href="#client-ref">client</a>
+  <a href="#pipe-mode">pipe mode</a>
+  <a href="#server-ref">server</a>
+  <div class="grp">how it works</div>
+  <a href="#architecture">architecture</a>
+  <a href="#connection">connection</a>
   <a href="#frame">frame</a>
-  <a href="#servidor">servidor por dentro</a>
-  <a href="#travas">travas</a>
-  <a href="#saida">quando alguém sai</a>
-  <a href="#cliente">cliente por dentro</a>
-  <div class="grp">projeto</div>
-  <a href="#capacidade">capacidade</a>
-  <a href="#limites">limitações</a>
+  <a href="#server">server internals</a>
+  <a href="#locks">locks</a>
+  <a href="#leaving">when someone leaves</a>
+  <a href="#client">client internals</a>
+  <div class="grp">project</div>
+  <a href="#capacity">capacity</a>
+  <a href="#limits">limitations</a>
   <a href="#roadmap">roadmap</a>
 </aside>
 <main>
-<section id="visao">
+<section id="overview">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">01</span><h2>Visão geral</h2></div>
-    <p>O teachat é um chat de terminal para desenvolvedores e sysadmins. Um servidor guarda as salas em memória e repassa as mensagens; cada pessoa roda o cliente no próprio terminal, entra numa sala e conversa. Foi feito para rodar no servidor da própria empresa.</p>
-    <div class="callout"><p><b>Estado:</b> desenvolvimento inicial. Funciona para conversar entre máquinas, mas ainda <b>sem criptografia</b> (o tráfego é <code>ws://</code> aberto) e com mudanças incompatíveis a caminho. Use só em rede confiável. Veja as <a href="#limites">limitações</a>.</p></div>
+    <div class="sec-head"><span class="sec-num">01</span><h2>Overview</h2></div>
+    <p>teachat is a terminal chat for developers and sysadmins. A server keeps rooms in memory and relays messages; each person runs the client in their own terminal, joins a room and talks. It's built to run on your own company's server.</p>
+    <div class="callout"><p><b>Status:</b> early development. It works for chatting between machines, but there's <b>no encryption yet</b> (traffic is plain <code>ws://</code>) and breaking changes are on the way. Only use it on networks you trust. See the <a href="#limits">limitations</a>.</p></div>
   </div>
   <dl class="ref">
-    <dt>servidor</dt><dd><code>cmd/server</code>. Escuta na porta 7347, mantém as salas em memória, repassa cada mensagem para os outros membros da sala.</dd>
-    <dt>cliente</dt><dd><code>cmd/client</code>. Num terminal, abre a tela cheia: mensagens em cima, caixa de digitação embaixo. Num pipe (<code>comando | teachat</code>), envia cada linha e sai.</dd>
-    <dt>sala</dt><dd>Um nome qualquer. Entrar numa sala que não existe cria a sala; quando o último membro sai, ela deixa de existir. A exceção é a <code>local</code>, a sala padrão: nasce com o servidor e existe enquanto ele rodar. Quem não escolhe sala cai nela.</dd>
-    <dt>alias</dt><dd>O nome que aparece na frente das suas mensagens: <code>daniel: oi</code>. Por padrão, o seu usuário do sistema. Não é verificado.</dd>
-    <dt>mensagem</dt><dd>Uma linha de texto. Vai só para quem está na sala naquele momento: não há histórico.</dd>
+    <dt>server</dt><dd><code>cmd/server</code>. Listens on port 7347, keeps rooms in memory, relays each message to the other members of the room.</dd>
+    <dt>client</dt><dd><code>cmd/client</code>. In a terminal, it opens the full screen: messages on top, input box at the bottom. In a pipe (<code>command | teachat</code>), it sends each line and exits.</dd>
+    <dt>room</dt><dd>Any name. Joining a room that doesn't exist creates it; when the last member leaves, it stops existing. The exception is <code>local</code>, the default room: it starts with the server and exists as long as it runs. Anyone who doesn't pick a room lands there.</dd>
+    <dt>alias</dt><dd>The name in front of your messages: <code>daniel: hi</code>. Defaults to your system user. Not verified.</dd>
+    <dt>message</dt><dd>One line of text. It only goes to whoever is in the room at that moment: there's no history.</dd>
   </dl>
 </section>
 
-<section id="comecando">
+<section id="getting-started">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">02</span><h2>Começando</h2></div>
-    <p>Requisitos: Go 1.27 ou mais novo, um terminal com UTF-8 e a porta 7347 liberada na máquina do servidor.</p>
+    <div class="sec-head"><span class="sec-num">02</span><h2>Getting started</h2></div>
+    <p>Requirements: Go 1.27 or newer, a UTF-8 terminal, and port 7347 open on the server machine.</p>
   </div>
-  <h3>Rodar a partir do código</h3>
+  <h3>Run from source</h3>
   <pre style="max-width:88ch">git clone https://github.com/daniel-cmdline/teachat.git
 cd teachat
 
-<span class="c"># servidor</span>
+<span class="c"># server</span>
 go run ./cmd/server
 <span class="c"># teachat-server listening on :7347 · default room: local</span>
 
-<span class="c"># cliente, em outro terminal: sem flags, entra na sala local</span>
+<span class="c"># client, in another terminal: no flags, joins the local room</span>
 go run ./cmd/client
 
-<span class="c"># ajuda, nos dois</span>
+<span class="c"># help, on both</span>
 go run ./cmd/client -h
 go run ./cmd/server -h</pre>
-  <h3>Outra máquina na rede</h3>
-  <p class="read">Aponte o cliente para o endereço do servidor e garanta que a porta 7347 está aberta no firewall dele:</p>
+  <h3>Another machine on the network</h3>
+  <p class="read">Point the client at the server's address and make sure port 7347 is open in its firewall:</p>
   <pre style="max-width:88ch">go run ./cmd/client --server 192.168.0.10:7347</pre>
-  <p class="read">Para usar outra porta, ou escutar só numa interface, o servidor tem <code>--addr</code>. O cliente aponta para o mesmo endereço com <code>--server</code>:</p>
+  <p class="read">To use another port, or listen on a single interface, the server has <code>--addr</code>. The client points at the same address with <code>--server</code>:</p>
   <pre style="max-width:88ch">go run ./cmd/server --addr :9000
 go run ./cmd/client --server 192.168.0.10:9000</pre>
-  <h3>Gerar os binários</h3>
-  <p class="read">O <code>go build</code> nomeia o binário pela pasta (<code>client</code>, <code>server</code>). Para ter o nome <code>teachat</code>:</p>
+  <h3>Build the binaries</h3>
+  <p class="read"><code>go build</code> names the binary after the folder (<code>client</code>, <code>server</code>). To get the name <code>teachat</code>:</p>
   <pre style="max-width:88ch">go build -o teachat ./cmd/client
 go build -o teachat-server ./cmd/server
 
@@ -90,199 +90,199 @@ go build -o teachat-server ./cmd/server
 ./teachat --room dev --alias daniel</pre>
 </section>
 
-<section id="ref-cliente">
+<section id="client-ref">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">03</span><h2>Referência do cliente</h2></div>
+    <div class="sec-head"><span class="sec-num">03</span><h2>Client reference</h2></div>
   </div>
   <h3>Flags</h3>
   <div class="scroll">
     <table>
-      <thead><tr><th>flag</th><th>padrão</th><th>descrição</th></tr></thead>
+      <thead><tr><th>flag</th><th>default</th><th>description</th></tr></thead>
       <tbody>
-        <tr><td><code>--server</code></td><td><code>localhost:7347</code></td><td>endereço do servidor, <code>host:porta</code></td></tr>
-        <tr><td><code>--room</code></td><td><code>local</code></td><td>sala para entrar. Se não existe, é criada. A <code>local</code> existe sempre</td></tr>
-        <tr><td><code>--alias</code></td><td>seu usuário (<code>$USER</code>)</td><td>seu nome no chat, na frente de cada mensagem. Sem <code>$USER</code> (cron, alguns containers): <code>anonymous</code></td></tr>
+        <tr><td><code>--server</code></td><td><code>localhost:7347</code></td><td>server address, <code>host:port</code></td></tr>
+        <tr><td><code>--room</code></td><td><code>local</code></td><td>room to join. Created if it doesn't exist. <code>local</code> always exists</td></tr>
+        <tr><td><code>--alias</code></td><td>your user (<code>$USER</code>)</td><td>your name in the chat, in front of each message. Without <code>$USER</code> (cron, some containers): <code>anonymous</code></td></tr>
       </tbody>
     </table>
   </div>
-  <h3>Teclas</h3>
+  <h3>Keys</h3>
   <div class="scroll">
     <table>
-      <thead><tr><th>tecla</th><th>ação</th></tr></thead>
+      <thead><tr><th>key</th><th>action</th></tr></thead>
       <tbody>
-        <tr><td><kbd>Enter</kbd></td><td>envia a mensagem. Mensagens vazias ou só com espaços são ignoradas</td></tr>
-        <tr><td><kbd>PgUp</kbd> / <kbd>PgDn</kbd></td><td>rolam a área de mensagens. Com <kbd>PgUp</kbd>, ela para de seguir as mais novas</td></tr>
-        <tr><td>qualquer digitação</td><td>volta a área de mensagens para o fim e segue as mais novas de novo</td></tr>
-        <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>sai</td></tr>
-        <tr><td>setas, <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>Backspace</kbd></td><td>editam o texto da caixa</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>sends the message. Empty or whitespace-only messages are ignored</td></tr>
+        <tr><td><kbd>PgUp</kbd> / <kbd>PgDn</kbd></td><td>scroll the message area. With <kbd>PgUp</kbd>, it stops following the newest</td></tr>
+        <tr><td>any typing</td><td>jumps the message area back to the end and follows the newest again</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>quits</td></tr>
+        <tr><td>arrows, <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>Backspace</kbd></td><td>edit the text in the box</td></tr>
       </tbody>
     </table>
   </div>
-  <h3>Comportamento</h3>
+  <h3>Behavior</h3>
   <dl class="ref">
-    <dt>sua mensagem</dt><dd>Aparece na sua tela como <code>alias: texto</code>, escrita pelo próprio cliente. O servidor não devolve a mensagem para quem enviou.</dd>
-    <dt>caixa de digitação</dt><dd>Cresce de 1 até 5 linhas conforme o texto e quebra a linha em qualquer caractere. Acima de 5 linhas, rola por dentro.</dd>
-    <dt>área de mensagens</dt><dd>O título é <code>sala · alias</code>. Cada alias tem uma cor fixa, a mesma em qualquer cliente; o seu aparece em negrito nas mensagens que você enviou. Linhas longas quebram entre palavras. Sem mouse: selecionar e copiar texto funciona como em qualquer terminal.</dd>
-    <dt>sem terminal</dt><dd>Se o stdin não é um terminal, o cliente entra no <a href="#modo-pipe">modo pipe</a> em vez de abrir a tela.</dd>
+    <dt>your message</dt><dd>Shows on your screen as <code>alias: text</code>, written by the client itself. The server doesn't echo a message back to its sender.</dd>
+    <dt>input box</dt><dd>Grows from 1 to 5 lines with the text and breaks lines at any character. Above 5 lines, it scrolls inside.</dd>
+    <dt>message area</dt><dd>The title is <code>room · alias</code>. Each alias has a fixed color, the same on every client; yours is bold on the messages you sent. Long lines wrap between words. No mouse: selecting and copying text works like in any terminal.</dd>
+    <dt>no terminal</dt><dd>If stdin isn't a terminal, the client goes into <a href="#pipe-mode">pipe mode</a> instead of opening the screen.</dd>
   </dl>
-  <h3>Saída e códigos de retorno</h3>
+  <h3>Output and exit codes</h3>
   <div class="scroll">
     <table>
-      <thead><tr><th>situação</th><th>mensagem</th><th class="num">código</th></tr></thead>
+      <thead><tr><th>situation</th><th>message</th><th class="num">code</th></tr></thead>
       <tbody>
         <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>—</td><td class="num">0</td></tr>
-        <tr><td>a conexão cai (servidor parou, rede caiu)</td><td><code>connection closed: </code> + o motivo, ex.: <code>close 1006 (abnormal closure)</code></td><td class="num">1</td></tr>
-        <tr><td>não conseguiu conectar</td><td>o erro da conexão, ex.: <code>connection refused</code></td><td class="num">1</td></tr>
-        <tr><td><code>teachat help</code></td><td>a ajuda</td><td class="num">0</td></tr>
-        <tr><td>argumento solto ou flag que não existe (<code>teachat dev</code>, <code>--romm</code>)</td><td><code>unknown argument: dev</code> + a ajuda</td><td class="num">2</td></tr>
-        <tr><td>modo pipe: a entrada acabou e tudo foi enviado</td><td>—</td><td class="num">0</td></tr>
-        <tr><td>modo pipe: a conexão caiu no meio</td><td><code>connection closed: </code> + o motivo</td><td class="num">1</td></tr>
-        <tr><td>modo pipe: uma linha passou de 1 MB</td><td><code>connection closed: websocket: close 1009 (message too big)</code></td><td class="num">1</td></tr>
+        <tr><td>the connection drops (server stopped, network down)</td><td><code>connection closed: </code> + the reason, e.g. <code>close 1006 (abnormal closure)</code></td><td class="num">1</td></tr>
+        <tr><td>couldn't connect</td><td>the connection error, e.g. <code>connection refused</code></td><td class="num">1</td></tr>
+        <tr><td><code>teachat help</code></td><td>the help</td><td class="num">0</td></tr>
+        <tr><td>stray argument or unknown flag (<code>teachat dev</code>, <code>--romm</code>)</td><td><code>unknown argument: dev</code> + the help</td><td class="num">2</td></tr>
+        <tr><td>pipe mode: input ended and everything was sent</td><td>—</td><td class="num">0</td></tr>
+        <tr><td>pipe mode: the connection dropped midway</td><td><code>connection closed: </code> + the reason</td><td class="num">1</td></tr>
+        <tr><td>pipe mode: a line was over 1 MB</td><td><code>connection closed: websocket: close 1009 (message too big)</code></td><td class="num">1</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="note">Na tela cheia, o terminal sempre volta ao normal antes da mensagem aparecer.</p>
+  <p class="note">In full screen, the terminal is always restored before the message appears.</p>
 
-  <h3 id="modo-pipe">Modo pipe</h3>
-  <p class="read">Quando o stdin não é um terminal, o cliente não abre a tela. Ele envia cada linha da entrada para a sala, repete a linha no seu terminal (como o <code>tee</code>) e sai quando a entrada acaba.</p>
-  <pre style="max-width:88ch">make 2>&amp;1 | teachat --room ops              <span class="c"># a saída do build vai para a sala</span>
-uptime | teachat --room ops                  <span class="c"># uma linha e sai</span>
-tail -f /var/log/app.log | teachat --room ops   <span class="c"># transmite até o Ctrl+C</span></pre>
+  <h3 id="pipe-mode">Pipe mode</h3>
+  <p class="read">When stdin isn't a terminal, the client doesn't open the screen. It sends each input line to the room, echoes it to your terminal (like <code>tee</code>) and exits when the input ends.</p>
+  <pre style="max-width:88ch">make 2>&amp;1 | teachat --room ops              <span class="c"># the build output goes to the room</span>
+uptime | teachat --room ops                  <span class="c"># one line, then exit</span>
+tail -f /var/log/app.log | teachat --room ops   <span class="c"># streams until Ctrl+C</span></pre>
   <dl class="ref">
-    <dt>uma mensagem por linha</dt><dd>Cada linha vira uma mensagem <code>alias: linha</code> na sala. Sem agrupar: um log de 5000 linhas são 5000 mensagens.</dd>
-    <dt>eco</dt><dd>Toda linha aparece no seu terminal também, inclusive as vazias. Linhas vazias não vão para a sala.</dd>
-    <dt>tamanho</dt><dd>Até 1 MB por linha, o limite do servidor. Uma linha maior é recusada: o pipe para e sai com código 1, dizendo <code>message too big</code>.</dd>
-    <dt>a sala</dt><dd>O que os outros mandam enquanto o pipe roda não aparece; é lido e descartado.</dd>
-    <dt>nunca abre a tela</dt><dd>Seguro em scripts, CI e cron: ninguém precisa apertar Ctrl+C no fim.</dd>
-    <dt>sem histórico</dt><dd>Se ninguém estiver na sala, as linhas se perdem.</dd>
+    <dt>one message per line</dt><dd>Each line becomes an <code>alias: line</code> message in the room. No grouping: a 5,000-line log is 5,000 messages.</dd>
+    <dt>echo</dt><dd>Every line also shows in your terminal, empty ones included. Empty lines aren't sent to the room.</dd>
+    <dt>size</dt><dd>Up to 1 MB per line, the server's limit. A bigger line is refused: the pipe stops and exits with code 1, saying <code>message too big</code>.</dd>
+    <dt>the room</dt><dd>What others send while the pipe runs isn't shown; it's read and discarded.</dd>
+    <dt>never opens the screen</dt><dd>Safe in scripts, CI and cron: nobody needs to press Ctrl+C at the end.</dd>
+    <dt>no history</dt><dd>If nobody is in the room, the lines are lost.</dd>
   </dl>
 </section>
 
-<section id="ref-servidor">
+<section id="server-ref">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">04</span><h2>Referência do servidor</h2></div>
-    <p>Uma flag, <code>--addr</code>, além do <code>-h</code> (<code>help</code> também mostra a ajuda, e qualquer outro argumento mostra a ajuda e sai com código 2, sem subir o servidor). Ele escuta em <code>:7347</code>, em todas as interfaces, e expõe um único endpoint.</p>
+    <div class="sec-head"><span class="sec-num">04</span><h2>Server reference</h2></div>
+    <p>One flag, <code>--addr</code>, besides <code>-h</code> (<code>help</code> also shows the help, and any other argument shows the help and exits with code 2, without starting the server). It listens on <code>:7347</code>, on all interfaces, and exposes a single endpoint.</p>
   </div>
   <h3>Flags</h3>
   <div class="scroll">
     <table>
-      <thead><tr><th>flag</th><th>padrão</th><th>descrição</th></tr></thead>
+      <thead><tr><th>flag</th><th>default</th><th>description</th></tr></thead>
       <tbody>
-        <tr><td><code>--addr</code></td><td><code>:7347</code></td><td>onde escutar, <code>host:porta</code>. Sem host, todas as interfaces: <code>--addr :9000</code>. Com host, só aquela: <code>--addr 10.0.0.5:7347</code> escuta só na rede interna</td></tr>
+        <tr><td><code>--addr</code></td><td><code>:7347</code></td><td>where to listen, <code>host:port</code>. No host means all interfaces: <code>--addr :9000</code>. With a host, only that one: <code>--addr 10.0.0.5:7347</code> listens only on the internal network</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="note">Porta ocupada ou endereço inválido: o servidor sai com o erro (<code>address already in use</code>, <code>missing port in address</code>) e código 1, sem anunciar nada antes.</p>
+  <p class="note">Busy port or bad address: the server exits with the error (<code>address already in use</code>, <code>missing port in address</code>) and code 1, without announcing anything first.</p>
   <h3>Endpoint</h3>
-  <pre style="max-width:88ch">GET /ws?room=&lt;sala&gt;&amp;alias=&lt;alias&gt;   <span class="c">upgrade para WebSocket</span></pre>
+  <pre style="max-width:88ch">GET /ws?room=&lt;room&gt;&amp;alias=&lt;alias&gt;   <span class="c">upgrade to WebSocket</span></pre>
   <dl class="ref">
-    <dt>room</dt><dd>Nome da sala. Qualquer texto. Não existe → é criada. Ausente ou vazio → sala <code>local</code>.</dd>
-    <dt>alias</dt><dd>Nome de quem conecta. Qualquer texto, inclusive vazio. Não é validado nem precisa ser único.</dd>
-    <dt>origem</dt><dd>Aceita conexões de qualquer origem (<code>CheckOrigin</code> sempre retorna verdadeiro).</dd>
+    <dt>room</dt><dd>Room name. Any text. Doesn't exist → it's created. Missing or empty → room <code>local</code>.</dd>
+    <dt>alias</dt><dd>Name of whoever connects. Any text, even empty. Not validated, and doesn't need to be unique.</dd>
+    <dt>origin</dt><dd>Accepts connections from any origin (<code>CheckOrigin</code> always returns true).</dd>
   </dl>
-  <h3>Mensagens</h3>
+  <h3>Messages</h3>
   <dl class="ref">
-    <dt>cliente → servidor</dt><dd>Um frame de texto com a mensagem pura: <code>oi</code>.</dd>
-    <dt>servidor → cliente</dt><dd>Um frame de texto com o alias na frente: <code>daniel: oi</code>. Vai para todos os membros da sala, menos quem enviou.</dd>
-    <dt>tamanho</dt><dd>Até 1 MB por mensagem (<code>maxMessage</code>). Acima disso, o servidor responde com close 1009 (<code>message too big</code>) e fecha só aquela conexão; a sala segue normal.</dd>
-    <dt>histórico</dt><dd>Nenhum. A sala é uma lista de conexões, não guarda mensagens.</dd>
+    <dt>client → server</dt><dd>A text frame with the bare message: <code>hi</code>.</dd>
+    <dt>server → client</dt><dd>A text frame with the alias in front: <code>daniel: hi</code>. Goes to every member of the room except the sender.</dd>
+    <dt>size</dt><dd>Up to 1 MB per message (<code>maxMessage</code>). Above that, the server answers with close 1009 (<code>message too big</code>) and closes only that connection; the room carries on.</dd>
+    <dt>history</dt><dd>None. A room is a list of connections; it doesn't store messages.</dd>
   </dl>
-  <h3>Ciclo de vida das salas</h3>
+  <h3>Room lifecycle</h3>
   <dl class="ref">
-    <dt>entrar</dt><dd>Se a sala não existe no mapa, é criada, e a conexão vira membro.</dd>
-    <dt>sair</dt><dd>Quando a conexão termina, sai da sala. Sala vazia é apagada do mapa, menos a <code>local</code>.</dd>
-    <dt>sala padrão</dt><dd>A <code>local</code> já está no mapa quando o servidor sobe e nunca é apagada. É para onde vai quem não pede sala.</dd>
-    <dt>estado</dt><dd>Tudo em memória. Reiniciar o servidor derruba todo mundo e apaga todas as salas.</dd>
+    <dt>join</dt><dd>If the room isn't in the map, it's created, and the connection becomes a member.</dd>
+    <dt>leave</dt><dd>When the connection ends, it leaves the room. An empty room is removed from the map, except <code>local</code>.</dd>
+    <dt>default room</dt><dd><code>local</code> is already in the map when the server starts and is never removed. It's where anyone who doesn't ask for a room goes.</dd>
+    <dt>state</dt><dd>Everything in memory. Restarting the server disconnects everyone and wipes all rooms.</dd>
   </dl>
-  <h3>Saída no terminal</h3>
-  <p class="read">Imprime <code>teachat-server listening on :7347 · default room: local</code> ao subir e registra erros de upgrade com <code>log</code>. Se a porta estiver ocupada, sai com o erro do <code>ListenAndServe</code>.</p>
+  <h3>Terminal output</h3>
+  <p class="read">Prints <code>teachat-server listening on :7347 · default room: local</code> on startup (only after the port is open) and logs upgrade errors with <code>log</code>. If the port is busy or the address is invalid, it exits with that error.</p>
 </section>
 
-<section id="arquitetura">
+<section id="architecture">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">05</span><h2>Arquitetura</h2></div>
-    <p>O teachat são dois binários, um servidor e um cliente, que conversam por WebSocket. O código próprio tem cerca de 380 linhas porque se apoia em camadas que já fazem o trabalho pesado. Cada mensagem desce por todas elas de um lado e sobe por todas do outro.</p>
-    <h3>As camadas</h3>
+    <div class="sec-head"><span class="sec-num">05</span><h2>Architecture</h2></div>
+    <p>teachat is two binaries, a server and a client, that talk over WebSocket. Its own code is about 380 lines because it leans on layers that already do the heavy lifting. Each message goes down through all of them on one side and up through all of them on the other.</p>
+    <h3>The layers</h3>
   </div>
   <div class="layers">
-    <div class="layer"><span class="name">cmd/client · cmd/server · internal/ui</span><span class="what">Flags, salas, alias, broadcast e a tela do cliente. É o código do teachat: <code>main.go</code>, <code>room.go</code> e <code>ui.go</code>.</span><span class="tag you">nosso código</span></div>
-    <div class="layer"><span class="name">gorilla/websocket</span><span class="what">Handshake de upgrade, montagem e leitura de frames, máscara, ping/pong, close. Entrega <code>ReadMessage</code> e <code>WriteMessage</code>.</span><span class="tag lib">biblioteca</span></div>
-    <div class="layer"><span class="name">tview + tcell</span><span class="what">Só no cliente. Põe o terminal em modo raw, lê cada tecla, desenha a tela (área de mensagens, caixa de digitação, bordas) e devolve o terminal ao normal na saída.</span><span class="tag lib">biblioteca</span></div>
-    <div class="layer"><span class="name">net/http</span><span class="what">Aceita conexões TCP, cria uma goroutine para cada uma, lê a requisição HTTP e chama o handler de <code>/ws</code>.</span><span class="tag go">stdlib do Go</span></div>
-    <div class="layer"><span class="name">runtime do Go</span><span class="what">Escalona milhares de goroutines em poucas threads. Uma goroutine parada num <code>ReadMessage</code> não ocupa thread: o runtime espera os sockets com <code>epoll</code> e acorda só quem recebeu dados.</span><span class="tag go">runtime</span></div>
-    <div class="layer"><span class="name">kernel Linux</span><span class="what">Sockets como arquivos (<code>fd</code>), buffers de envio e recebimento, TCP (ordem, reenvio, controle de fluxo), IP.</span><span class="tag os">sistema operacional</span></div>
-    <div class="layer"><span class="name">rede</span><span class="what">Placa de rede, cabo ou Wi-Fi, switch. Ou a interface de loopback, quando tudo roda na mesma máquina.</span><span class="tag os">hardware</span></div>
+    <div class="layer"><span class="name">cmd/client · cmd/server · internal/ui</span><span class="what">Flags, rooms, aliases, broadcast and the client's screen. This is teachat's code: <code>main.go</code>, <code>room.go</code> and <code>ui.go</code>.</span><span class="tag you">our code</span></div>
+    <div class="layer"><span class="name">gorilla/websocket</span><span class="what">Upgrade handshake, building and reading frames, masking, ping/pong, close. Provides <code>ReadMessage</code> and <code>WriteMessage</code>.</span><span class="tag lib">library</span></div>
+    <div class="layer"><span class="name">tview + tcell</span><span class="what">Client only. Puts the terminal in raw mode, reads each key, draws the screen (message area, input box, borders) and restores the terminal on exit.</span><span class="tag lib">library</span></div>
+    <div class="layer"><span class="name">net/http</span><span class="what">Accepts TCP connections, creates a goroutine for each one, reads the HTTP request and calls the <code>/ws</code> handler.</span><span class="tag go">Go stdlib</span></div>
+    <div class="layer"><span class="name">Go runtime</span><span class="what">Schedules thousands of goroutines on a few threads. A goroutine blocked in <code>ReadMessage</code> doesn't hold a thread: the runtime waits on the sockets with <code>epoll</code> and wakes only those that received data.</span><span class="tag go">runtime</span></div>
+    <div class="layer"><span class="name">Linux kernel</span><span class="what">Sockets as files (<code>fd</code>), send and receive buffers, TCP (ordering, retransmission, flow control), IP.</span><span class="tag os">operating system</span></div>
+    <div class="layer"><span class="name">network</span><span class="what">Network card, cable or Wi-Fi, switch. Or the loopback interface, when everything runs on one machine.</span><span class="tag os">hardware</span></div>
   </div>
 
-  <h3>Organização do repositório</h3>
+  <h3>Repository layout</h3>
   <div class="split">
-    <pre>cmd/server/main.go   <span class="c">servidor: handler de /ws, mapa de salas</span>
+    <pre>cmd/server/main.go   <span class="c">server: /ws handler, rooms map</span>
 cmd/server/room.go   <span class="c">Room: join, leave, broadcast</span>
-cmd/server/main_test.go  <span class="c">testes da sala padrão (go test ./...)</span>
-cmd/client/main.go   <span class="c">cliente: flags, conexão, recebimento</span>
-cmd/client/pipe.go   <span class="c">cliente: modo pipe</span>
-internal/ui/ui.go    <span class="c">a tela do cliente (tview)</span>
-docs/                <span class="c">este site e esta documentação</span>
-roadmap.md           <span class="c">próximos passos e decisões</span>
-features.md          <span class="c">registro do que foi entregue</span></pre>
+cmd/server/main_test.go  <span class="c">tests (go test ./...)</span>
+cmd/client/main.go   <span class="c">client: flags, connection, receiving</span>
+cmd/client/pipe.go   <span class="c">client: pipe mode</span>
+internal/ui/ui.go    <span class="c">the client's screen (tview)</span>
+docs/                <span class="c">this site and this documentation</span>
+roadmap.md           <span class="c">next steps and decisions</span>
+features.md          <span class="c">log of what shipped</span></pre>
     <div class="scroll">
       <table>
-        <thead><tr><th>dependência</th><th>versão</th><th>usada em</th></tr></thead>
+        <thead><tr><th>dependency</th><th>version</th><th>used for</th></tr></thead>
         <tbody>
-          <tr><td><code>gorilla/websocket</code></td><td>v1.5.3</td><td>cliente e servidor</td></tr>
-          <tr><td><code>rivo/tview</code></td><td>v0.42.0</td><td>tela do cliente</td></tr>
-          <tr><td><code>gdamore/tcell/v2</code></td><td>v2.8.1</td><td>terminal (por baixo do tview)</td></tr>
-          <tr><td><code>rivo/uniseg</code></td><td>v0.4.7</td><td>largura do texto na tela</td></tr>
-          <tr><td><code>golang.org/x/term</code></td><td>v0.28.0</td><td>saber se o stdin é um terminal</td></tr>
+          <tr><td><code>gorilla/websocket</code></td><td>v1.5.3</td><td>client and server</td></tr>
+          <tr><td><code>rivo/tview</code></td><td>v0.42.0</td><td>the client's screen</td></tr>
+          <tr><td><code>gdamore/tcell/v2</code></td><td>v2.8.1</td><td>terminal (under tview)</td></tr>
+          <tr><td><code>rivo/uniseg</code></td><td>v0.4.7</td><td>text width on screen</td></tr>
+          <tr><td><code>golang.org/x/term</code></td><td>v0.28.0</td><td>telling whether stdin is a terminal</td></tr>
         </tbody>
       </table>
-      <p class="note">Mais algumas indiretas (<code>x/sys</code>, <code>x/text</code>, ...). Tudo Go puro: cada lado compila para um binário único, sem dependência de sistema.</p>
+      <p class="note">A few more indirect ones (<code>x/sys</code>, <code>x/text</code>, ...). All pure Go: each side compiles to a single binary with no system dependencies.</p>
     </div>
   </div>
 
-  <h3>O caminho de uma mensagem</h3>
-  <p class="read muted">Daniel e Mateus estão na sala <code>dev</code>. Daniel digita <code>oi</code> e aperta <kbd>Enter</kbd>. A versão animada, passo a passo, está no <a href="index.html#mensagem">site</a>.</p>
+  <h3>The path of a message</h3>
+  <p class="read muted">Daniel and Mateus are in room <code>dev</code>. Daniel types <code>hi</code> and presses <kbd>Enter</kbd>. The animated, step-by-step version is on the <a href="index.html#message">site</a>.</p>
   <ol class="road">
-    <li><div><b>Tecla a tecla</b><p>O terminal do Daniel está em modo raw. O tcell entrega cada tecla ao loop de eventos do tview, e o texto fica na caixa de digitação. No <kbd>Enter</kbd>, o cliente chama <code>send</code>, mostra <code>daniel: oi</code> na própria tela e limpa a caixa (<a href="#cliente">cliente por dentro</a>).</p></div></li>
-    <li><div><b>Frame mascarado</b><p><code>WriteMessage</code> monta um frame de texto mascarado e o kernel envia pelo socket TCP (<a href="#frame">anatomia de um frame</a>).</p></div></li>
-    <li><div><b>A goroutine do Daniel no servidor acorda</b><p>Ela estava parada no <code>ReadMessage</code>. Recebe <code>oi</code> e monta <code>daniel: oi</code> (<a href="#servidor">servidor por dentro</a>).</p></div></li>
-    <li><div><b>Broadcast na sala</b><p>Trava só o mutex da sala <code>dev</code> e escreve em cada membro, menos no próprio Daniel (<a href="#travas">travas</a>).</p></div></li>
-    <li><div><b>A goroutine de recebimento do Mateus acorda</b><p>Chama <code>screen.Print</code>, que põe a linha na fila do tview. O loop de eventos escreve a mensagem e redesenha, sem tocar no que o Mateus está digitando.</p></div></li>
+    <li><div><b>Key by key</b><p>Daniel's terminal is in raw mode. tcell hands each key to tview's event loop, and the text sits in the input box. On <kbd>Enter</kbd>, the client calls <code>send</code>, shows <code>daniel: hi</code> on its own screen and clears the box (<a href="#client">client internals</a>).</p></div></li>
+    <li><div><b>Masked frame</b><p><code>WriteMessage</code> builds a masked text frame and the kernel sends it over the TCP socket (<a href="#frame">anatomy of a frame</a>).</p></div></li>
+    <li><div><b>Daniel's goroutine on the server wakes up</b><p>It was blocked in <code>ReadMessage</code>. It receives <code>hi</code> and builds <code>daniel: hi</code> (<a href="#server">server internals</a>).</p></div></li>
+    <li><div><b>Broadcast in the room</b><p>It locks only room <code>dev</code>'s mutex and writes to each member except Daniel himself (<a href="#locks">locks</a>).</p></div></li>
+    <li><div><b>Mateus's receiving goroutine wakes up</b><p>It calls <code>screen.Print</code>, which queues the line for tview. The event loop writes the message and redraws, without touching what Mateus is typing.</p></div></li>
   </ol>
 </section>
 
-<section id="conexao">
+<section id="connection">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">06</span><h2>A conexão: TCP, depois HTTP, depois WebSocket</h2></div>
-    <p>Antes de qualquer mensagem, o cliente abre uma conexão que passa por três protocolos, um em cima do outro. O WebSocket começa como uma requisição HTTP comum e, quando o servidor responde <code>101</code>, aquele mesmo socket TCP deixa de falar HTTP para sempre.</p>
+    <div class="sec-head"><span class="sec-num">06</span><h2>The connection: TCP, then HTTP, then WebSocket</h2></div>
+    <p>Before any message, the client opens a connection that goes through three protocols, one on top of the other. WebSocket starts as an ordinary HTTP request and, once the server answers <code>101</code>, that same TCP socket stops speaking HTTP for good.</p>
   </div>
 
-  <h3>Das flags até a URL</h3>
-  <p class="read muted">O usuário nunca digita URL. O cliente monta a URL a partir das flags, e o servidor lê os parâmetros dela.</p>
+  <h3>From flags to URL</h3>
+  <p class="read muted">Users never type a URL. The client builds it from the flags, and the server reads the parameters from it.</p>
   <div class="pipeline">
-    <div class="panel"><h4>você digita</h4><pre>teachat \
+    <div class="panel"><h4>you type</h4><pre>teachat \
   --room dev \
   --alias daniel</pre></div>
     <div class="arrow" aria-hidden="true">→</div>
-    <div class="panel"><h4>cliente monta</h4><pre>ws://localhost:7347
+    <div class="panel"><h4>client builds</h4><pre>ws://localhost:7347
   /ws?alias=daniel
      &amp;room=dev</pre></div>
     <div class="arrow" aria-hidden="true">→</div>
-    <div class="panel"><h4>servidor lê</h4><pre><span class="f">r</span>.URL.Query()
+    <div class="panel"><h4>server reads</h4><pre><span class="f">r</span>.URL.Query()
   .Get(<span class="s">"room"</span>)  <span class="c">// dev</span>
 <span class="f">r</span>.URL.Query()
   .Get(<span class="s">"alias"</span>) <span class="c">// daniel</span></pre></div>
   </div>
 
-  <h3>O diálogo na rede</h3>
+  <h3>The conversation on the wire</h3>
   <div class="split">
     <div class="panel scroll">
-      <svg class="ladder" viewBox="0 0 560 430" style="min-width:460px;width:100%;height:auto;display:block" role="img" aria-label="Diagrama de sequência: handshake TCP, upgrade HTTP e frames WebSocket entre cliente e servidor">
+      <svg class="ladder" viewBox="0 0 560 430" style="min-width:460px;width:100%;height:auto;display:block" role="img" aria-label="Sequence diagram: TCP handshake, HTTP upgrade and WebSocket frames between client and server">
         <defs>
           <marker id="ar-tcp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--rose)"></path></marker><marker id="ar-http" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--sky)"></path></marker><marker id="ar-ws" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--mint)"></path></marker>
         </defs>
-        <text class="who" x="90" y="22" text-anchor="middle">cliente</text>
-        <text class="who" x="470" y="22" text-anchor="middle">servidor</text>
+        <text class="who" x="90" y="22" text-anchor="middle">client</text>
+        <text class="who" x="470" y="22" text-anchor="middle">server</text>
         <line class="life" x1="90" y1="34" x2="90" y2="420"></line>
         <line class="life" x1="470" y1="34" x2="470" y2="420"></line>
 
@@ -292,13 +292,13 @@ features.md          <span class="c">registro do que foi entregue</span></pre>
         <path id="p3" class="arrow a-tcp" d="M92,144 L466,164" marker-end="url(#ar-tcp)"></path><text class="lbl" x="280" y="146" text-anchor="middle">ACK</text>
 
         <text class="grp" x="10" y="214" style="fill:var(--sky)">HTTP</text>
-        <path id="p4" class="arrow a-http" d="M92,200 L466,220" marker-end="url(#ar-http)"></path><text class="lbl" x="280" y="200" text-anchor="middle">GET /ws · Upgrade: websocket</text><text class="sub" x="280" y="238" text-anchor="middle">Sec-WebSocket-Key: (16 bytes aleatórios)</text>
-        <path id="p5" class="arrow a-http" d="M468,260 L94,280" marker-end="url(#ar-http)"></path><text class="lbl" x="280" y="262" text-anchor="middle">101 Switching Protocols</text><text class="sub" x="280" y="298" text-anchor="middle">Sec-WebSocket-Accept: (prova calculada)</text>
+        <path id="p4" class="arrow a-http" d="M92,200 L466,220" marker-end="url(#ar-http)"></path><text class="lbl" x="280" y="200" text-anchor="middle">GET /ws · Upgrade: websocket</text><text class="sub" x="280" y="238" text-anchor="middle">Sec-WebSocket-Key: (16 random bytes)</text>
+        <path id="p5" class="arrow a-http" d="M468,260 L94,280" marker-end="url(#ar-http)"></path><text class="lbl" x="280" y="262" text-anchor="middle">101 Switching Protocols</text><text class="sub" x="280" y="298" text-anchor="middle">Sec-WebSocket-Accept: (computed proof)</text>
 
         <text class="grp" x="10" y="350" style="fill:var(--mint)">WS</text>
-        <path id="p6" class="arrow a-ws" d="M92,330 L466,350" marker-end="url(#ar-ws)"></path><text class="lbl" x="280" y="332" text-anchor="middle">frame texto "oi" (mascarado)</text>
-        <path id="p7" class="arrow a-ws" d="M468,378 L94,398" marker-end="url(#ar-ws)"></path><text class="lbl" x="280" y="380" text-anchor="middle">frame texto "mateus: e aí"</text>
-        <text class="sub" x="280" y="420" text-anchor="middle">… mão dupla, pelo tempo que a conexão durar</text>
+        <path id="p6" class="arrow a-ws" d="M92,330 L466,350" marker-end="url(#ar-ws)"></path><text class="lbl" x="280" y="332" text-anchor="middle">text frame "hi" (masked)</text>
+        <path id="p7" class="arrow a-ws" d="M468,378 L94,398" marker-end="url(#ar-ws)"></path><text class="lbl" x="280" y="380" text-anchor="middle">text frame "mateus: hey"</text>
+        <text class="sub" x="280" y="420" text-anchor="middle">… both ways, for as long as the connection lasts</text>
 
         <circle class="run" r="4" style="fill:var(--rose)"><animateMotion dur="6s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.12;1" calcMode="linear"><mpath href="#p1"></mpath></animateMotion></circle>
         <circle class="run" r="4" style="fill:var(--rose)"><animateMotion dur="6s" repeatCount="indefinite" begin="0.7s" keyPoints="0;1;1" keyTimes="0;0.12;1" calcMode="linear"><mpath href="#p2"></mpath></animateMotion></circle>
@@ -310,30 +310,30 @@ features.md          <span class="c">registro do que foi entregue</span></pre>
       </svg>
     </div>
     <div style="display:grid;gap:14px;min-width:0">
-      <div><div class="file">cliente → servidor</div><pre>GET /ws?alias=daniel&amp;room=dev HTTP/1.1
+      <div><div class="file">client → server</div><pre>GET /ws?alias=daniel&amp;room=dev HTTP/1.1
 Host: localhost:7347
 <span class="f">Upgrade: websocket</span>
 <span class="f">Connection: Upgrade</span>
 Sec-WebSocket-Key: <span class="s">dGhlIHNhbXBsZSBub25jZQ==</span>
 Sec-WebSocket-Version: 13</pre></div>
-      <div><div class="file">servidor → cliente</div><pre>HTTP/1.1 <span class="f">101 Switching Protocols</span>
+      <div><div class="file">server → client</div><pre>HTTP/1.1 <span class="f">101 Switching Protocols</span>
 Upgrade: websocket
 Connection: Upgrade
 Sec-WebSocket-Accept: <span class="s">s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</span></pre></div>
-      <p class="muted" style="margin:0;font-size:14.5px">No servidor, tudo isso acontece dentro de uma linha: <code>upgrader.Upgrade(w, r, nil)</code>. No cliente, dentro de <code>websocket.DefaultDialer.Dial(...)</code>.</p>
+      <p class="muted" style="margin:0;font-size:14.5px">On the server, all of this happens in one line: <code>upgrader.Upgrade(w, r, nil)</code>. On the client, inside <code>websocket.DefaultDialer.Dial(...)</code>.</p>
     </div>
   </div>
 
-  <h3>A prova do Sec-WebSocket-Accept</h3>
+  <h3>The Sec-WebSocket-Accept proof</h3>
   <div class="split">
     <div class="read">
-      <p>O servidor pega a chave que o cliente mandou, cola nela um GUID fixo definido no RFC 6455, tira o SHA-1 e codifica em base64. O cliente faz a mesma conta e compara.</p>
-      <p>Isso não é segurança. Serve para provar que o servidor entende WebSocket de verdade, e não é um servidor HTTP qualquer ou um cache no meio do caminho respondendo por engano. O GUID é o mesmo em todo servidor WebSocket do mundo.</p>
+      <p>The server takes the key the client sent, appends a fixed GUID defined in RFC 6455, takes the SHA-1 and encodes it in base64. The client does the same calculation and compares.</p>
+      <p>This isn't security. It proves the server really speaks WebSocket, and isn't just any HTTP server or a cache along the way answering by mistake. The GUID is the same on every WebSocket server in the world.</p>
     </div>
     <div class="panel">
-      <h4>calcule você mesmo</h4>
+      <h4>calculate it yourself</h4>
       <div class="calc">
-        <label for="wskey">Sec-WebSocket-Key (exemplo do RFC)</label>
+        <label for="wskey">Sec-WebSocket-Key (RFC example)</label>
         <input id="wskey" type="text" value="dGhlIHNhbXBsZSBub25jZQ==" spellcheck="false" autocomplete="off">
         <div class="flow-arrow">+ "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" → SHA-1 → base64</div>
         <div class="out" id="wsaccept">s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</div>
@@ -344,80 +344,80 @@ Sec-WebSocket-Accept: <span class="s">s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</span></pre><
 
 <section id="frame">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">07</span><h2>Anatomia de um frame</h2></div>
-    <p>O TCP é um fluxo de bytes sem fronteiras: ele não sabe onde uma mensagem termina e a próxima começa. O WebSocket resolve isso colocando um cabeçalho de 2 a 14 bytes na frente de cada mensagem. É isso que o <code>WriteMessage</code> monta e o <code>ReadMessage</code> desmonta. Digite uma mensagem e veja os bytes exatos que vão pelo socket.</p>
+    <div class="sec-head"><span class="sec-num">07</span><h2>Anatomy of a frame</h2></div>
+    <p>TCP is a stream of bytes with no boundaries: it doesn't know where one message ends and the next begins. WebSocket solves that by putting a 2-to-14-byte header in front of each message. That's what <code>WriteMessage</code> builds and <code>ReadMessage</code> takes apart. Type a message and see the exact bytes that go through the socket.</p>
   </div>
 
   <div class="panel" style="margin-top:20px">
     <div class="fb-controls">
       <div>
-        <label for="fbmsg" class="bitcap">mensagem</label>
-        <input id="fbmsg" type="text" value="oi" spellcheck="false" autocomplete="off" maxlength="300">
+        <label for="fbmsg" class="bitcap">message</label>
+        <input id="fbmsg" type="text" value="hi" spellcheck="false" autocomplete="off" maxlength="300">
       </div>
-      <div class="seg" role="group" aria-label="Direção do frame">
-        <button type="button" id="dir-c" aria-pressed="true">cliente → servidor</button>
-        <button type="button" id="dir-s" aria-pressed="false">servidor → cliente</button>
+      <div class="seg" role="group" aria-label="Frame direction">
+        <button type="button" id="dir-c" aria-pressed="true">client → server</button>
+        <button type="button" id="dir-s" aria-pressed="false">server → client</button>
       </div>
     </div>
     <div class="bytes" id="bytes"></div>
-    <div class="legend"><span class="l1">FIN + opcode</span><span class="l2">MASK + tamanho</span><span class="l3">chave de máscara</span><span class="l4">conteúdo</span></div>
+    <div class="legend"><span class="l1">FIN + opcode</span><span class="l2">MASK + length</span><span class="l3">masking key</span><span class="l4">payload</span></div>
     <div class="bits">
-      <div><div class="bitcap">byte 0</div><div class="bitrow" id="bits0"></div><div class="bitcap" id="cap0">FIN=1 · RSV=000 · opcode=0001 (texto)</div></div>
-      <div><div class="bitcap">byte 1</div><div class="bitrow" id="bits1"></div><div class="bitcap" id="cap1">MASK=1 · tamanho=2</div></div>
+      <div><div class="bitcap">byte 0</div><div class="bitrow" id="bits0"></div><div class="bitcap" id="cap0">FIN=1 · RSV=000 · opcode=0001 (text)</div></div>
+      <div><div class="bitcap">byte 1</div><div class="bitrow" id="bits1"></div><div class="bitcap" id="cap1">MASK=1 · length=2</div></div>
     </div>
-    <p class="note" id="fbnote">Frames do cliente vão mascarados: cada byte do conteúdo passa por XOR com a chave de 4 bytes. Na vida real a chave é sorteada a cada frame; aqui ela está fixa em 37 fa 21 3d para o exemplo ficar estável.</p>
+    <p class="note" id="fbnote">Client frames are masked: each payload byte is XORed with the 4-byte key. In real life the key is random for every frame; here it's fixed at 37 fa 21 3d so the example stays stable.</p>
   </div>
 
   <div class="split">
     <div class="read">
-      <h3 style="margin-top:6px">Por que só o cliente mascara</h3>
-      <p>A regra é do RFC: tudo que vai do cliente para o servidor precisa estar mascarado, e o que vai do servidor para o cliente, nunca. O motivo não é criptografia, já que a chave viaja junto com o frame. É proteção para proxies antigos: sem máscara, um JavaScript malicioso num navegador poderia montar bytes que um proxy leria como uma requisição HTTP e guardaria lixo no cache dele.</p>
+      <h3 style="margin-top:6px">Why only the client masks</h3>
+      <p>The rule comes from the RFC: everything from client to server must be masked, and nothing from server to client ever is. The reason isn't encryption, since the key travels with the frame. It protects old proxies: without masking, malicious JavaScript in a browser could craft bytes that a proxy would read as an HTTP request and store garbage in its cache.</p>
     </div>
     <div class="read">
-      <h3 style="margin-top:6px">O tamanho em 7, 16 ou 64 bits</h3>
-      <p>Até 125 bytes, o tamanho cabe nos 7 bits do byte 1. Com o valor 126, os 2 bytes seguintes dizem o tamanho real (até 65.535). Com 127, são os 8 bytes seguintes. Digite mais de 125 caracteres no campo acima para ver o cabeçalho crescer.</p>
+      <h3 style="margin-top:6px">Length in 7, 16 or 64 bits</h3>
+      <p>Up to 125 bytes, the length fits in byte 1's 7 bits. With the value 126, the next 2 bytes hold the real length (up to 65,535). With 127, it's the next 8 bytes. Type more than 125 characters in the field above to watch the header grow.</p>
     </div>
   </div>
 </section>
 
-<section id="servidor">
+<section id="server">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">08</span><h2>O servidor por dentro</h2></div>
-    <p>Um processo só, várias goroutines. O loop de <code>Accept</code> do <code>net/http</code> recebe cada conexão TCP nova e faz <code>go c.serve(...)</code>: a conexão ganha uma goroutine própria, que roda o handler de <code>/ws</code> pelo tempo que a pessoa ficar no chat.</p>
+    <div class="sec-head"><span class="sec-num">08</span><h2>Server internals</h2></div>
+    <p>One process, many goroutines. <code>net/http</code>'s <code>Accept</code> loop receives each new TCP connection and runs <code>go c.serve(...)</code>: the connection gets its own goroutine, which runs the <code>/ws</code> handler for as long as the person stays in the chat.</p>
   </div>
 
   <div class="split">
     <div style="min-width:0">
-      <div class="file">goroutines vivas com três pessoas conectadas</div>
+      <div class="file">live goroutines with three people connected</div>
       <div class="lanes">
-        <div class="lane"><span class="pulse amber"></span><span class="ln">main · loop do Accept<small>espera a próxima conexão chegar</small></span><span class="st">Accept()</span></div>
-        <div class="lane"><span class="pulse"></span><span class="ln">handler /ws · daniel<small>conn = fd 5 · room = dev</small></span><span class="st">ReadMessage()</span></div>
-        <div class="lane"><span class="pulse"></span><span class="ln">handler /ws · mateus<small>conn = fd 8 · room = dev</small></span><span class="st">ReadMessage()</span></div>
-        <div class="lane"><span class="pulse"></span><span class="ln">handler /ws · joão<small>conn = fd 9 · room = geral</small></span><span class="st">ReadMessage()</span></div>
+        <div class="lane"><span class="pulse amber"></span><span class="ln">main · Accept loop<small>waits for the next connection</small></span><span class="st">Accept()</span></div>
+        <div class="lane"><span class="pulse"></span><span class="ln">/ws handler · daniel<small>conn = fd 5 · room = dev</small></span><span class="st">ReadMessage()</span></div>
+        <div class="lane"><span class="pulse"></span><span class="ln">/ws handler · mateus<small>conn = fd 8 · room = dev</small></span><span class="st">ReadMessage()</span></div>
+        <div class="lane"><span class="pulse"></span><span class="ln">/ws handler · joão<small>conn = fd 9 · room = geral</small></span><span class="st">ReadMessage()</span></div>
       </div>
-      <p class="note">Cada goroutine tem as próprias variáveis locais: <code>conn</code>, <code>name</code>, <code>alias</code>, <code>msg</code>. O que é compartilhado entre elas, o mapa <code>rooms</code> e cada <code>*Room</code>, precisa de trava.</p>
+      <p class="note">Each goroutine has its own local variables: <code>conn</code>, <code>name</code>, <code>alias</code>, <code>msg</code>. What they share, the <code>rooms</code> map and each <code>*Room</code>, needs a lock.</p>
     </div>
     <div class="panel">
-      <h4>/proc/PID/fd do servidor (medido)</h4>
+      <h4>the server's /proc/PID/fd (measured)</h4>
       <div class="fdlist">
-        <div><span class="fd">4</span><span>socket:[2305506] <em>· porta 7347 escutando</em></span></div>
-        <div><span class="fd">5</span><span>socket:[2306269] <em>· conexão com o cliente 1</em></span></div>
-        <div><span class="fd">6</span><span>anon_inode:[eventpoll] <em>· o epoll do runtime</em></span></div>
-        <div><span class="fd">7</span><span>anon_inode:[eventfd] <em>· acorda o epoll</em></span></div>
-        <div><span class="fd">8</span><span>socket:[2297779] <em>· conexão com o cliente 2</em></span></div>
+        <div><span class="fd">4</span><span>socket:[2305506] <em>· port 7347 listening</em></span></div>
+        <div><span class="fd">5</span><span>socket:[2306269] <em>· connection to client 1</em></span></div>
+        <div><span class="fd">6</span><span>anon_inode:[eventpoll] <em>· the runtime's epoll</em></span></div>
+        <div><span class="fd">7</span><span>anon_inode:[eventfd] <em>· wakes the epoll</em></span></div>
+        <div><span class="fd">8</span><span>socket:[2297779] <em>· connection to client 2</em></span></div>
       </div>
-      <p class="note" style="margin-bottom:0">Cada <code>*websocket.Conn</code> no mapa é, no fundo, um desses números. O <code>WriteMessage</code> termina num <code>write()</code> nesse descritor, a mesma chamada de sistema usada para escrever num arquivo.</p>
+      <p class="note" style="margin-bottom:0">Each <code>*websocket.Conn</code> in the map is, underneath, one of these numbers. <code>WriteMessage</code> ends in a <code>write()</code> on that descriptor, the same system call used to write to a file.</p>
     </div>
   </div>
 
-  <h3>A memória</h3>
+  <h3>Memory</h3>
   <div class="split">
     <div class="mem">
       <div class="mapbox">
-        <div class="cap">rooms map[string]*Room · protegido por mu (global)</div>
+        <div class="cap">rooms map[string]*Room · guarded by mu (global)</div>
         <div class="entry"><span class="key">"dev"</span><span class="ptr">→ 0xc000a1</span>
           <div class="roombox"><div class="rt">Room</div>
-            <div class="field">mu <b>sync.Mutex</b> <span class="ptr">// valor zero = destravado</span></div>
+            <div class="field">mu <b>sync.Mutex</b> <span class="ptr">// zero value = unlocked</span></div>
             <div class="field">members <b>map[*websocket.Conn]string</b></div>
             <div class="member"><span>connDaniel</span><span>→ "daniel"</span></div>
             <div class="member"><span>connMateus</span><span>→ "mateus"</span></div>
@@ -433,18 +433,18 @@ Sec-WebSocket-Accept: <span class="s">s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</span></pre><
       </div>
     </div>
     <div class="read">
-      <p><b>O mapa guarda ponteiros.</b> As goroutines do Daniel e do Mateus recebem o mesmo endereço e mexem na mesma <code>Room</code>. Com a struct guardada por valor, cada uma teria uma cópia, com um <code>members</code> e um mutex próprios, e uma não enxergaria a outra.</p>
-      <p><b>A chave de <code>members</code> é a conexão, não o alias.</b> Cada conexão é um objeto único na memória, então duas pessoas nunca colidem, mesmo com o mesmo alias. E é exatamente o que o <code>broadcast</code> precisa para saber onde escrever.</p>
-      <p><b>A sala não guarda mensagens.</b> Ela é uma lista de contatos. A mensagem passa pela goroutine de quem enviou e sai na hora, uma cópia por conexão. Quem entra depois não vê o que já foi dito.</p>
+      <p><b>The map stores pointers.</b> Daniel's and Mateus's goroutines get the same address and work on the same <code>Room</code>. If the struct were stored by value, each would get a copy, with its own <code>members</code> and mutex, and neither would see the other.</p>
+      <p><b>The key in <code>members</code> is the connection, not the alias.</b> Each connection is a unique object in memory, so two people never collide, even with the same alias. And it's exactly what <code>broadcast</code> needs to know where to write.</p>
+      <p><b>A room doesn't store messages.</b> It's a contact list. A message passes through the sender's goroutine and goes out right away, one copy per connection. Whoever joins later doesn't see what was already said.</p>
     </div>
   </div>
 
-  <h3>O código</h3>
+  <h3>The code</h3>
   <div class="split">
-    <div style="min-width:0"><div class="file">cmd/server/room.go</div><pre class="go">// Room tem seu próprio mutex: uma sala enviando não trava as outras
+    <div style="min-width:0"><div class="file">cmd/server/room.go</div><pre class="go">// Room has its own mutex: one room broadcasting doesn't block the others
 type Room struct {
 	mu      sync.Mutex
-	members map[*websocket.Conn]string // conexão -> alias
+	members map[*websocket.Conn]string // connection -&gt; alias
 }
 
 func (r *Room) join(conn *websocket.Conn, alias string) {
@@ -453,7 +453,7 @@ func (r *Room) join(conn *websocket.Conn, alias string) {
 	r.members[conn] = alias
 }
 
-// leave remove a conexão e diz se a sala ficou vazia
+// leave removes the connection and reports whether the room is now empty
 func (r *Room) leave(conn *websocket.Conn) (empty bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -478,15 +478,15 @@ func (r *Room) broadcast(myOwnConn *websocket.Conn, msg []byte) {
 	}
 	defer conn.Close()
 
-	// mensagem maior que o limite: o ReadMessage devolve erro, a gorilla responde com
-	// close 1009 ("message too big") e esta conexão sai do loop e da sala como qualquer outra
+	// a message over the limit: ReadMessage returns an error, gorilla answers with
+	// close 1009 ("message too big") and this connection leaves the loop and the room like any other
 	conn.SetReadLimit(maxMessage)
 
-	// sem sala na URL (cliente antigo, outro programa): vai para a sala padrão
+	// no room in the URL (old client, another program): goes to the default room
 	name := cmp.Or(r.URL.Query().Get("room"), defaultRoom)
 	alias := r.URL.Query().Get("alias")
 
-	// entrar numa sala que não existe cria a sala
+	// joining a room that doesn't exist creates it
 	mu.Lock()
 	room := rooms[name]
 	if room == nil {
@@ -501,11 +501,11 @@ func (r *Room) broadcast(myOwnConn *websocket.Conn, msg []byte) {
 		if err != nil {
 			break
 		}
-		// repassa a mensagem para os outros da mesma sala
+		// relay the message to the others in the same room
 		room.broadcast(conn, []byte(alias+": "+string(msg)))
 	}
 
-	// sai da sala; sala vazia deixa de existir, menos a padrão
+	// leave the room; an empty room stops existing, except the default one
 	mu.Lock()
 	if room.leave(conn) &amp;&amp; name != defaultRoom {
 		delete(rooms, name)
@@ -515,40 +515,40 @@ func (r *Room) broadcast(myOwnConn *websocket.Conn, msg []byte) {
   </div>
 </section>
 
-<section id="travas">
+<section id="locks">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">09</span><h2>Duas travas, uma ordem</h2></div>
-    <p>O servidor tem dois níveis de <code>sync.Mutex</code>. A trava global <code>mu</code> protege só o mapa <code>rooms</code> e é usada para entrar e sair. A trava de cada sala, <code>r.mu</code>, protege a lista de membros e é a única que o broadcast usa. Assim, uma sala ocupada não atrasa as outras.</p>
-    <p>A regra que evita deadlock: <b>sempre global primeiro, depois sala</b>. Se uma goroutine travasse global→sala e outra sala→global, cada uma poderia segurar a trava que a outra espera, para sempre.</p>
+    <div class="sec-head"><span class="sec-num">09</span><h2>Two locks, one order</h2></div>
+    <p>The server has two levels of <code>sync.Mutex</code>. The global lock <code>mu</code> guards only the <code>rooms</code> map and is used for joining and leaving. Each room's lock, <code>r.mu</code>, guards its member list and is the only one broadcast uses. That way, a busy room doesn't slow down the others.</p>
+    <p>The rule that prevents deadlock: <b>always global first, then room</b>. If one goroutine locked global→room and another room→global, each could hold the lock the other is waiting for, forever.</p>
   </div>
 
-  <h3>Por que entrar e sair usam a trava global: a sala fantasma</h3>
+  <h3>Why joining and leaving use the global lock: the ghost room</h3>
   <div class="race">
     <div class="panel">
-      <h4>sem a trava global</h4>
+      <h4>without the global lock</h4>
       <div class="tl">
-        <div><span class="who">joão</span><span>room := rooms["dev"] → acha a sala</span></div>
-        <div><span class="who">mateus</span><span>leave → sala vazia → delete(rooms, "dev")</span></div>
-        <div class="bad"><span class="who">joão</span><span>room.join(...) → entra numa sala que não está mais no mapa</span></div>
+        <div><span class="who">joão</span><span>room := rooms["dev"] → finds the room</span></div>
+        <div><span class="who">mateus</span><span>leave → room empty → delete(rooms, "dev")</span></div>
+        <div class="bad"><span class="who">joão</span><span>room.join(...) → joins a room that's no longer in the map</span></div>
       </div>
-      <div class="verdict bad">✗ joão fica sozinho numa sala que ninguém mais acha</div>
+      <div class="verdict bad">✗ joão is alone in a room nobody else can find</div>
     </div>
     <div class="panel">
-      <h4>com a trava global</h4>
+      <h4>with the global lock</h4>
       <div class="tl">
         <div><span class="who">mateus</span><span>mu.Lock · leave · delete · mu.Unlock</span></div>
-        <div><span class="who wait">joão</span><span class="wait">esperando mu…</span></div>
-        <div class="good"><span class="who">joão</span><span>mu.Lock · rooms["dev"] é nil → cria sala nova · join</span></div>
+        <div><span class="who wait">joão</span><span class="wait">waiting for mu…</span></div>
+        <div class="good"><span class="who">joão</span><span>mu.Lock · rooms["dev"] is nil → creates a new room · join</span></div>
       </div>
-      <div class="verdict good">✓ as duas operações acontecem uma depois da outra</div>
+      <div class="verdict good">✓ the two operations happen one after the other</div>
     </div>
   </div>
 
-  <h3>Resultado medido</h3>
+  <h3>Measured result</h3>
   <div class="split">
     <div class="panel">
-      <h4>latência na sala pequena · 50 mil pessoas na sala grande</h4>
-      <svg class="chart" viewBox="0 0 640 210" role="img" aria-label="Gráfico de barras: com trava global, média de 265 ms e pior caso de 568 ms; com trava por sala, média de 0,111 ms e pior caso de 0,139 ms">
+      <h4>latency in the small room · 50,000 people in the big room</h4>
+      <svg class="chart" viewBox="0 0 640 210" role="img" aria-label="Bar chart: with a global lock, 265 ms average and 568 ms worst case; with per-room locks, 0.111 ms average and 0.139 ms worst case">
         <line class="gridl" x1="130" y1="20" x2="130" y2="170"></line>
         <line class="gridl" x1="241.7" y1="20" x2="241.7" y2="170"></line>
         <line class="gridl" x1="353.3" y1="20" x2="353.3" y2="170"></line>
@@ -560,146 +560,146 @@ func (r *Room) broadcast(myOwnConn *websocket.Conn, msg []byte) {
         <text x="465" y="190" text-anchor="middle">450 ms</text>
         <text x="576.7" y="190" text-anchor="middle">600 ms</text>
 
-        <text x="120" y="44" text-anchor="end">trava global</text>
-        <text x="120" y="58" text-anchor="end" style="font-size:10px">média</text>
+        <text x="120" y="44" text-anchor="end">global lock</text>
+        <text x="120" y="58" text-anchor="end" style="font-size:10px">average</text>
         <rect x="130" y="32" width="197.3" height="22" rx="3" style="fill:var(--rose)"></rect>
         <text class="val" x="335" y="48">265 ms</text>
-        <text x="120" y="84" text-anchor="end" style="font-size:10px">pior</text>
+        <text x="120" y="84" text-anchor="end" style="font-size:10px">worst</text>
         <rect x="130" y="70" width="422.9" height="14" rx="3" style="fill:var(--rose)" opacity="0.45"></rect>
         <text class="val" x="560" y="81">568 ms</text>
 
-        <text x="120" y="124" text-anchor="end">trava por sala</text>
-        <text x="120" y="138" text-anchor="end" style="font-size:10px">média</text>
+        <text x="120" y="124" text-anchor="end">per-room lock</text>
+        <text x="120" y="138" text-anchor="end" style="font-size:10px">average</text>
         <rect x="130" y="112" width="2" height="22" rx="1" style="fill:var(--mint)"></rect>
-        <text class="val" x="140" y="128" style="fill:var(--mint)">0,111 ms · ~2.400× menor</text>
-        <text x="120" y="160" text-anchor="end" style="font-size:10px">pior</text>
+        <text class="val" x="140" y="128" style="fill:var(--mint)">0.111 ms · ~2,400× lower</text>
+        <text x="120" y="160" text-anchor="end" style="font-size:10px">worst</text>
         <rect x="130" y="148" width="2" height="14" rx="1" style="fill:var(--mint)" opacity="0.6"></rect>
-        <text class="val" x="140" y="159">0,139 ms</text>
+        <text class="val" x="140" y="159">0.139 ms</text>
       </svg>
     </div>
     <div class="read">
-      <p>O teste: 50 mil conexões numa sala recebendo 10 mensagens seguidas, enquanto duas pessoas numa sala pequena trocavam mensagens. Com a trava global, cada broadcast da sala grande segurava o servidor inteiro por centenas de milissegundos, e a sala pequena ficava na fila.</p>
-      <p>Com uma trava por sala, a barra verde quase não aparece no gráfico, e é esse o resultado. O detector de race condition do Go (<code>go build -race</code>) não encontrou problemas com 30 clientes entrando e saindo de 4 salas ao mesmo tempo.</p>
-      <p class="muted">Um detalhe: a trava de cada sala também garante a regra da gorilla de um escritor por conexão. Cada conexão pertence a uma única sala, e só o broadcast dessa sala escreve nela.</p>
+      <p>The test: 50,000 connections in one room receiving 10 messages in a row, while two people in a small room exchanged messages. With the global lock, each broadcast in the big room held the whole server for hundreds of milliseconds, and the small room waited in line.</p>
+      <p>With one lock per room, the green bar barely shows on the chart, and that's the result. Go's race detector (<code>go build -race</code>) found no problems with 30 clients joining and leaving 4 rooms at the same time.</p>
+      <p class="muted">A detail: each room's lock also guarantees gorilla's one-writer-per-connection rule. Each connection belongs to a single room, and only that room's broadcast writes to it.</p>
     </div>
   </div>
 </section>
 
-<section id="saida">
+<section id="leaving">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">10</span><h2>Quando alguém sai</h2></div>
-    <p>Sair é o caminho de entrada ao contrário, e boa parte dele acontece sozinha.</p>
+    <div class="sec-head"><span class="sec-num">10</span><h2>When someone leaves</h2></div>
+    <p>Leaving is the way in, backwards, and most of it happens on its own.</p>
   </div>
   <ol class="road" style="margin-top:14px">
-    <li><div><b>A conexão termina</b><p>A pessoa aperta <kbd>Ctrl</kbd>+<kbd>C</kbd>, fecha o terminal ou a rede cai. O cliente devolve o terminal ao normal e fecha o socket (<a href="#cliente">cliente por dentro</a>).</p></div></li>
-    <li><div><b>ReadMessage devolve erro</b><p>A goroutine dessa pessoa no servidor, parada no <code>ReadMessage</code>, acorda com erro. O <code>break</code> sai do loop.</p></div></li>
-    <li><div><b>leave e, se for o caso, delete</b><p>Com a trava global: <code>room.leave(conn)</code> tira a conexão de <code>members</code> e diz se a sala ficou vazia. Se ficou, <code>delete(rooms, name)</code> apaga a sala.</p></div></li>
-    <li><div><b>defer conn.Close()</b><p>O handler retorna, e o <code>defer</code> agendado logo depois do upgrade fecha a conexão do lado do servidor.</p></div></li>
-    <li><div><b>A goroutine termina</b><p>Ela só existia para rodar esse handler. A pilha dela, de alguns KB, é liberada.</p></div></li>
+    <li><div><b>The connection ends</b><p>The person presses <kbd>Ctrl</kbd>+<kbd>C</kbd>, closes the terminal or the network drops. The client restores the terminal and closes the socket (<a href="#client">client internals</a>).</p></div></li>
+    <li><div><b>ReadMessage returns an error</b><p>That person's goroutine on the server, blocked in <code>ReadMessage</code>, wakes up with an error. The <code>break</code> leaves the loop.</p></div></li>
+    <li><div><b>leave and, if needed, delete</b><p>Under the global lock: <code>room.leave(conn)</code> removes the connection from <code>members</code> and reports whether the room is now empty. If it is, and it isn't <code>local</code>, <code>delete(rooms, name)</code> removes the room.</p></div></li>
+    <li><div><b>defer conn.Close()</b><p>The handler returns, and the <code>defer</code> scheduled right after the upgrade closes the connection on the server side.</p></div></li>
+    <li><div><b>The goroutine ends</b><p>It only existed to run that handler. Its stack, a few KB, is freed.</p></div></li>
   </ol>
 </section>
 
-<section id="cliente">
+<section id="client">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">11</span><h2>O cliente por dentro</h2></div>
-    <p>O cliente é uma tela cheia, como o <code>vim</code> ou o <code>htop</code>: mensagens em cima, caixa de digitação embaixo. Quem desenha é o <code>tview</code>, uma biblioteca de widgets de terminal construída sobre o <code>tcell</code>. Tudo que é tview fica no pacote <code>internal/ui</code>. O <code>main.go</code> do cliente só conhece quatro funções.</p>
+    <div class="sec-head"><span class="sec-num">11</span><h2>Client internals</h2></div>
+    <p>The client is a full screen, like <code>vim</code> or <code>htop</code>: messages on top, input box at the bottom. Drawing is done by <code>tview</code>, a terminal widget library built on <code>tcell</code>. Everything tview lives in the <code>internal/ui</code> package. The client's <code>main.go</code> only knows four functions.</p>
   </div>
 
   <div class="split">
     <div style="min-width:0">
-      <div class="file">a tela do Mateus na sala dev</div>
-      <pre class="screen" role="img" aria-label="Tela do cliente: área de mensagens com o título dev · mateus e três mensagens, e embaixo a caixa de digitação com o texto tô vendo os logs ago">┌──────────── dev · mateus ────────────┐
-│daniel: oi                            │
-│mateus: e aí, tudo bem?               │
-│daniel: subiu o deploy                │
+      <div class="file">Mateus's screen in room dev</div>
+      <pre class="screen" role="img" aria-label="Client screen: a message area titled dev · mateus with three messages, and below it the input box with the text looking at the logs no">┌──────────── dev · mateus ────────────┐
+│daniel: hi                            │
+│mateus: hey, how's it going?          │
+│daniel: the deploy is up              │
 │                                      │
 └──────────────────────────────────────┘
 ╔══════════════════════════════════════╗
-║tô vendo os logs ago█                 ║
+║looking at the logs no█               ║
 ╚══════════════════════════════════════╝</pre>
-      <p class="note">A borda dupla marca a caixa com o foco, que nunca sai dela. A linha vazia no fim da área de mensagens é de propósito: separa a última mensagem da borda.</p>
+      <p class="note">The double border marks the box with focus, which never leaves it. The empty line at the end of the message area is on purpose: it separates the last message from the border.</p>
     </div>
     <div class="panel">
-      <h4>o que o main.go enxerga</h4>
+      <h4>what main.go sees</h4>
       <div class="scroll">
         <table>
-          <thead><tr><th>função</th><th>o que faz</th></tr></thead>
+          <thead><tr><th>function</th><th>what it does</th></tr></thead>
           <tbody>
-            <tr><td><code>ui.New(room, alias, send)</code></td><td>monta a tela. <code>send</code> é chamada a cada Enter com o texto digitado</td></tr>
-            <tr><td><code>screen.Print(line)</code></td><td>mostra uma mensagem recebida. Pode ser chamada de outra goroutine</td></tr>
-            <tr><td><code>screen.Run()</code></td><td>toma conta do terminal e só retorna quando a tela fecha</td></tr>
-            <tr><td><code>screen.Stop()</code></td><td>fecha a tela, para quando a conexão cai</td></tr>
+            <tr><td><code>ui.New(room, alias, send)</code></td><td>builds the screen. <code>send</code> is called on every Enter with the typed text</td></tr>
+            <tr><td><code>screen.Print(line)</code></td><td>shows a received message. Safe to call from another goroutine</td></tr>
+            <tr><td><code>screen.Run()</code></td><td>takes over the terminal and only returns when the screen closes</td></tr>
+            <tr><td><code>screen.Stop()</code></td><td>closes the screen, for when the connection drops</td></tr>
           </tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <h3>Por que o atropelo acabou</h3>
+  <h3>Why typing no longer gets overwritten</h3>
   <div class="race">
     <div class="panel">
-      <h4>antes: modo canônico + fmt.Println</h4>
+      <h4>before: canonical mode + fmt.Println</h4>
       <div class="tl">
-        <div><span class="who">kernel</span><span>guarda "tô ven" e ecoa na tela; o programa não vê nada</span></div>
-        <div><span class="who">receb.</span><span>fmt.Println("daniel: oi") escreve onde o cursor está</span></div>
-        <div class="bad"><span class="who">tela</span><span>tô vendaniel: oi</span></div>
+        <div><span class="who">kernel</span><span>holds "looking a" and echoes it; the program sees nothing</span></div>
+        <div><span class="who">recv</span><span>fmt.Println("daniel: hi") writes wherever the cursor is</span></div>
+        <div class="bad"><span class="who">screen</span><span>looking adaniel: hi</span></div>
       </div>
-      <div class="verdict bad">✗ o programa não sabe o que você já digitou, então não tem como redesenhar</div>
+      <div class="verdict bad">✗ the program doesn't know what you've typed, so it can't redraw</div>
     </div>
     <div class="panel">
-      <h4>agora: modo raw + tview</h4>
+      <h4>now: raw mode + tview</h4>
       <div class="tl">
-        <div><span class="who">tcell</span><span>cada tecla chega na hora; "tô ven" fica na caixa, na memória do programa</span></div>
-        <div><span class="who">receb.</span><span>screen.Print("daniel: oi") → fila do tview</span></div>
-        <div class="good"><span class="who">tela</span><span>o loop de eventos escreve a mensagem e redesenha tudo, caixa intacta</span></div>
+        <div><span class="who">tcell</span><span>each key arrives immediately; "looking a" lives in the box, in the program's memory</span></div>
+        <div><span class="who">recv</span><span>screen.Print("daniel: hi") → tview's queue</span></div>
+        <div class="good"><span class="who">screen</span><span>the event loop writes the message and redraws everything, box intact</span></div>
       </div>
-      <div class="verdict good">✓ uma goroutine só desenha, e ela sabe tudo que está na tela</div>
+      <div class="verdict good">✓ a single goroutine draws, and it knows everything on screen</div>
     </div>
   </div>
 
-  <h3>As goroutines do cliente</h3>
+  <h3>The client's goroutines</h3>
   <div class="split">
     <div style="min-width:0">
       <div class="lanes">
-        <div class="lane"><span class="pulse amber"></span><span class="ln">main · loop de eventos do tview<small>processa teclas e a fila de atualizações, redesenha</small></span><span class="st">Run()</span></div>
-        <div class="lane"><span class="pulse"></span><span class="ln">leitura do terminal<small>tcell lê o stdin em modo raw e gera eventos de tecla</small></span><span class="st">read(stdin)</span></div>
-        <div class="lane"><span class="pulse"></span><span class="ln">recebimento<small>o go func() do main.go</small></span><span class="st">ReadMessage()</span></div>
+        <div class="lane"><span class="pulse amber"></span><span class="ln">main · tview event loop<small>handles keys and the update queue, redraws</small></span><span class="st">Run()</span></div>
+        <div class="lane"><span class="pulse"></span><span class="ln">terminal reader<small>tcell reads stdin in raw mode and produces key events</small></span><span class="st">read(stdin)</span></div>
+        <div class="lane"><span class="pulse"></span><span class="ln">receiver<small>the go func() in main.go</small></span><span class="st">ReadMessage()</span></div>
       </div>
     </div>
     <div class="read">
-      <p><b>Só o loop de eventos mexe na tela.</b> Duas goroutines escrevendo no mesmo <code>TextView</code> ao mesmo tempo seria race condition. Por isso a de recebimento não desenha: o <code>Print</code> empacota a mudança numa função e usa <code>QueueUpdateDraw</code> para colocá-la na fila. O loop executa a função na vez dele e redesenha.</p>
-      <p><b>Só o loop de eventos escreve na conexão.</b> O <code>send</code> é chamado no Enter, dentro do loop. Assim a regra da gorilla de um escritor por conexão vale também do lado do cliente.</p>
+      <p><b>Only the event loop touches the screen.</b> Two goroutines writing to the same <code>TextView</code> at once would be a race condition. That's why the receiver doesn't draw: <code>Print</code> wraps the change in a function and uses <code>QueueUpdateDraw</code> to queue it. The loop runs the function on its turn and redraws.</p>
+      <p><b>Only the event loop writes to the connection.</b> <code>send</code> is called on Enter, inside the loop. So gorilla's one-writer-per-connection rule holds on the client side too.</p>
     </div>
   </div>
 
-  <h3>Seguir o fim</h3>
+  <h3>Following the end</h3>
   <div class="split">
     <div class="read">
-      <p>O <code>TextView</code> do tview <b>não acompanha texto novo por padrão</b>. Quando a tela enche, as mensagens novas ficam escondidas embaixo até alguém rolar. Isso apareceu num teste ao vivo, quando a conversa passou de uma tela. Uma chamada a <code>ScrollToEnd()</code> na criação liga o "seguir o fim".</p>
-      <p>Com PgUp, o tview desliga o seguir, para dar para ler o passado sem ser puxado de volta a cada mensagem nova. Qualquer mudança na caixa de digitação chama <code>ScrollToEnd()</code> de novo.</p>
-      <p class="muted">Descer até o fim com PgDn não religa o seguir: é o jeito do tview. Digitar resolve.</p>
+      <p>tview's <code>TextView</code> <b>doesn't follow new text by default</b>. Once the screen fills up, new messages stay hidden below until someone scrolls. This showed up in a live test, when the conversation grew past one screen. One call to <code>ScrollToEnd()</code> at creation turns on "follow the end".</p>
+      <p>With PgUp, tview stops following, so you can read older messages without being pulled back on every new one. Any change in the input box calls <code>ScrollToEnd()</code> again.</p>
+      <p class="muted">Scrolling to the end with PgDn doesn't turn following back on: that's how tview works. Typing does.</p>
     </div>
     <div class="panel">
-      <h4>teclas</h4>
+      <h4>keys</h4>
       <div class="scroll">
         <table>
-          <thead><tr><th>tecla</th><th>faz</th><th>segue o fim?</th></tr></thead>
+          <thead><tr><th>key</th><th>does</th><th>follows the end?</th></tr></thead>
           <tbody>
-            <tr><td><kbd>Enter</kbd></td><td>envia</td><td>sim</td></tr>
-            <tr><td><kbd>PgUp</kbd></td><td>sobe uma página</td><td>não, para de seguir</td></tr>
-            <tr><td><kbd>PgDn</kbd></td><td>desce uma página</td><td>fica como estava</td></tr>
-            <tr><td>digitar</td><td>escreve na caixa</td><td>sim, volta para o fim</td></tr>
-            <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>sai</td><td>—</td></tr>
+            <tr><td><kbd>Enter</kbd></td><td>sends</td><td>yes</td></tr>
+            <tr><td><kbd>PgUp</kbd></td><td>up one page</td><td>no, stops following</td></tr>
+            <tr><td><kbd>PgDn</kbd></td><td>down one page</td><td>stays as it was</td></tr>
+            <tr><td>typing</td><td>writes in the box</td><td>yes, jumps to the end</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>quits</td><td>—</td></tr>
           </tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <h3>A caixa que cresce</h3>
+  <h3>The growing input box</h3>
   <div class="split">
     <div style="min-width:0">
-      <div class="file">internal/ui/ui.go · a cada mudança na caixa</div><pre class="go">_, _, width, _ := input.GetInnerRect()
+      <div class="file">internal/ui/ui.go · on every change in the box</div><pre class="go">_, _, width, _ := input.GetInnerRect()
 lines := uniseg.StringWidth(input.GetText())/width + 1
 layout.ResizeItem(input, min(lines, 5)+2, 0)
 if lines &lt;= 5 {
@@ -707,121 +707,123 @@ if lines &lt;= 5 {
 }</pre>
       <div class="scroll" style="margin-top:14px">
         <table>
-          <thead><tr><th>texto numa caixa de 20 colunas</th><th class="num">linhas</th></tr></thead>
+          <thead><tr><th>text in a 20-column box</th><th class="num">lines</th></tr></thead>
           <tbody>
-            <tr><td>5 caracteres</td><td class="num">1</td></tr>
-            <tr><td>20 caracteres (enche a linha, o cursor pula)</td><td class="num">2</td></tr>
-            <tr><td>84 caracteres</td><td class="num">5</td></tr>
-            <tr><td>200 caracteres</td><td class="num">5, rola dentro da caixa</td></tr>
+            <tr><td>5 characters</td><td class="num">1</td></tr>
+            <tr><td>20 characters (fills the line, the cursor wraps)</td><td class="num">2</td></tr>
+            <tr><td>84 characters</td><td class="num">5</td></tr>
+            <tr><td>200 characters</td><td class="num">5, scrolls inside the box</td></tr>
           </tbody>
         </table>
       </div>
     </div>
     <div class="read">
-      <p><b>Largura na tela, não bytes.</b> <code>StringWidth</code> conta colunas: <code>ã</code> ocupa 2 bytes e 1 coluna, um emoji ocupa 2 colunas. A divisão pela largura da caixa dá quantas linhas cheias o texto ocupa. O <code>+1</code> é a linha atual, onde o cursor está. O <code>+2</code> são as bordas.</p>
-      <p><b>Quebra em qualquer caractere.</b> A caixa usa <code>SetWordWrap(false)</code>: quebrando só entre palavras, uma palavra longa pularia inteira para a linha de baixo e a conta deixaria de ser exata. Na caixa, "deplo" pode ficar numa linha e "y" na outra. Na área de mensagens, a quebra continua entre palavras.</p>
-      <p><b>Texto colado.</b> Ele chega mais rápido que o redesenho, com a caixa ainda pequena, e ela rola por dentro para mostrar o cursor. Depois de crescer, <code>SetOffset(0, 0)</code> volta a rolagem para o topo. Sem isso, a primeira linha ficava escondida.</p>
+      <p><b>Screen width, not bytes.</b> <code>StringWidth</code> counts columns: <code>ã</code> takes 2 bytes and 1 column, an emoji takes 2 columns. Dividing by the box width gives how many full lines the text takes. The <code>+1</code> is the current line, where the cursor is. The <code>+2</code> is the borders.</p>
+      <p><b>Breaks at any character.</b> The box uses <code>SetWordWrap(false)</code>: breaking only between words, a long word would jump whole to the next line and the calculation would no longer be exact. In the box, "deplo" can end up on one line and "y" on the next. In the message area, lines still wrap between words.</p>
+      <p><b>Pasted text.</b> It arrives faster than the redraw, while the box is still small, and the box scrolls inside to show the cursor. Once it has grown, <code>SetOffset(0, 0)</code> resets the scroll to the top. Without it, the first line stayed hidden.</p>
     </div>
   </div>
 
-  <h3>Saindo sem quebrar o terminal</h3>
+  <h3>Exiting without breaking the terminal</h3>
   <div class="read">
-    <p>Em modo raw, o terminal não ecoa o que você digita e o Enter não pula linha. Se o programa sai sem devolver o modo normal, a pessoa fica com um shell quebrado até digitar <code>reset</code> às cegas. Quem devolve é o <code>Run()</code>, ao retornar. Por isso nenhum caminho de saída pode pular o <code>Run()</code>, e o <code>log.Fatal</code> pula: ele chama <code>os.Exit</code>, que encerra o processo na hora.</p>
+    <p>In raw mode, the terminal doesn't echo what you type and Enter doesn't start a new line. If the program exits without restoring normal mode, the person is left with a broken shell until they type <code>reset</code> blind. What restores it is <code>Run()</code>, when it returns. That's why no exit path can skip <code>Run()</code>, and <code>log.Fatal</code> does: it calls <code>os.Exit</code>, which ends the process on the spot.</p>
   </div>
   <div class="race">
     <div class="panel">
       <h4>Ctrl+C</h4>
       <div class="tl">
-        <div><span class="who">tview</span><span>pega o Ctrl+C e para o loop de eventos</span></div>
-        <div><span class="who">main</span><span>Run() devolve o terminal ao modo normal e retorna</span></div>
-        <div class="good"><span class="who">main</span><span>defer conn.Close() → o servidor vê a saída (<a href="#saida">quando alguém sai</a>)</span></div>
+        <div><span class="who">tview</span><span>catches Ctrl+C and stops the event loop</span></div>
+        <div><span class="who">main</span><span>Run() restores the terminal and returns</span></div>
+        <div class="good"><span class="who">main</span><span>defer conn.Close() → the server sees the exit (<a href="#leaving">when someone leaves</a>)</span></div>
       </div>
-      <div class="verdict good">✓ sai com código 0, terminal intacto</div>
+      <div class="verdict good">✓ exits with code 0, terminal intact</div>
     </div>
     <div class="panel">
-      <h4>a conexão cai</h4>
+      <h4>the connection drops</h4>
       <div class="tl">
-        <div><span class="who">receb.</span><span>ReadMessage dá erro → close(closed) → screen.Stop()</span></div>
-        <div><span class="who">main</span><span>Run() devolve o terminal ao modo normal e retorna</span></div>
-        <div class="good"><span class="who">main</span><span>closed está fechado → log.Fatal("connection closed: ", readErr)</span></div>
+        <div><span class="who">recv</span><span>ReadMessage errors → readErr = err → close(closed) → screen.Stop()</span></div>
+        <div><span class="who">main</span><span>Run() restores the terminal and returns</span></div>
+        <div class="good"><span class="who">main</span><span>closed is closed → log.Fatal("connection closed: ", readErr)</span></div>
       </div>
-      <div class="verdict good">✓ a mensagem aparece num terminal já restaurado, código 1</div>
+      <div class="verdict good">✓ the message appears on an already-restored terminal, code 1</div>
     </div>
   </div>
 
-  <h3>Cores por alias</h3>
+  <h3>Colors per alias</h3>
   <div class="split">
     <div class="read">
-      <p><b>Hash do alias, não sorteio.</b> O FNV-32a do alias escolhe uma de 12 cores. O mesmo alias tem a mesma cor em qualquer cliente, sem o servidor nem o protocolo saberem de cor nenhuma. Só o alias é colorido; o texto continua na cor normal.</p>
-      <p><b>Sua mensagem, em negrito.</b> Vale para as linhas que você enviou, não para o alias. Se outra pessoa entra com o seu alias, ela aparece colorida, não em negrito: dá para notar.</p>
-      <p><b>Tags de cor viram texto.</b> Para colorir, o tview passa a interpretar tags como <code>[red]</code>. Por isso tudo que vem de fora (alias, texto, nome da sala no título) passa por <code>tview.Escape</code>. Quem manda <code>[red]oi</code> aparece como <code>[red]oi</code>, literal.</p>
-      <p class="muted">O servidor manda <code>alias: texto</code> numa string só, e o cliente acha o alias cortando no primeiro <code>": "</code>. Um alias com <code>": "</code> dentro é cortado errado. Isso some quando as mensagens virarem estruturadas.</p>
+      <p><b>A hash of the alias, not a random pick.</b> The FNV-32a hash of the alias picks one of 12 colors. The same alias gets the same color on every client, without the server or the protocol knowing anything about colors. Only the alias is colored; the text stays in the normal color.</p>
+      <p><b>Your message, in bold.</b> This applies to the lines you sent, not to the alias. If someone else joins with your alias, they show up colored, not bold: you can tell.</p>
+      <p><b>Color tags become text.</b> To color text, tview starts interpreting tags like <code>[red]</code>. So everything that comes from outside (alias, text, room name in the title) goes through <code>tview.Escape</code>. Whoever sends <code>[red]hi</code> shows up as <code>[red]hi</code>, literally.</p>
+      <p class="muted">The server sends <code>alias: text</code> as a single string, and the client finds the alias by splitting at the first <code>": "</code>. An alias containing <code>": "</code> gets split wrongly. That goes away once messages are structured.</p>
     </div>
     <div class="panel">
-      <h4>a paleta</h4>
+      <h4>the palette</h4>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px;font-family:var(--mono);font-size:13px">
         <span style="color:#e06c75">#e06c75</span><span style="color:#e5a04b">#e5a04b</span><span style="color:#d7c25a">#d7c25a</span><span style="color:#98c379">#98c379</span><span style="color:#4fd6a0">#4fd6a0</span><span style="color:#56b6c2">#56b6c2</span><span style="color:#61afef">#61afef</span><span style="color:#a3a0ff">#a3a0ff</span><span style="color:#c678dd">#c678dd</span><span style="color:#f08fc0">#f08fc0</span><span style="color:#d19a66">#d19a66</span><span style="color:#7fb3d5">#7fb3d5</span>
       </div>
-      <p class="note" style="margin-bottom:0">Tons médios, legíveis em terminal escuro e claro. Com 12 cores, colisões acontecem: numa sala com 5 pessoas, a chance de duas terem a mesma cor é de uns 60%.</p>
+      <p class="note" style="margin-bottom:0">Mid tones, readable on dark and light terminals. With 12 colors, collisions happen: in a room of 5 people, the chance that two share a color is about 60%.</p>
     </div>
   </div>
 
-  <h3>Modo pipe por dentro</h3>
+  <h3>Pipe mode internals</h3>
   <div class="split">
     <div style="min-width:0">
       <div class="lanes">
-        <div class="lane"><span class="pulse amber"></span><span class="ln">main · pipe()<small>lê o stdin linha a linha, repete no terminal, envia</small></span><span class="st">ReadString()</span></div>
-        <div class="lane"><span class="pulse"></span><span class="ln">leitura da sala<small>lê e descarta o que os outros mandam</small></span><span class="st">ReadMessage()</span></div>
+        <div class="lane"><span class="pulse amber"></span><span class="ln">main · pipe()<small>reads stdin line by line, echoes to the terminal, sends</small></span><span class="st">ReadString()</span></div>
+        <div class="lane"><span class="pulse"></span><span class="ln">room reader<small>reads and discards what others send</small></span><span class="st">ReadMessage()</span></div>
       </div>
-      <p class="note">Sem tela, sem tview: só duas goroutines. Uma é a única que escreve na conexão, a outra a única que lê. É a regra da gorilla de novo.</p>
+      <p class="note">No screen, no tview: just two goroutines. One is the only writer to the connection, the other the only reader. gorilla's rule again.</p>
     </div>
     <div class="read">
-      <p><b>Por que ler o que não vai mostrar.</b> As mensagens da sala continuam chegando para o pipe. Se ninguém lê, os buffers de rede enchem e o broadcast do servidor, que escreve para um membro de cada vez com a trava da sala, fica parado esperando por ele. A sala inteira trava.</p>
-      <p><b>Fim da entrada.</b> Quando o <code>ReadString</code> devolve <code>io.EOF</code>, o pipe manda o frame de close do WebSocket e espera o servidor responder (até 2 s). Sair na hora poderia perder as últimas linhas.</p>
+      <p><b>Why read what won't be shown.</b> The room's messages keep arriving at the pipe. If nobody reads them, the network buffers fill up and the server's broadcast, which writes to one member at a time under the room's lock, gets stuck waiting on it. The whole room stalls.</p>
+      <p><b>Noticing failures.</b> A write to the connection "succeeds" even after the server has refused something, because it only goes into a buffer. The reader goroutine is what sees the close, so it records the reason in <code>readErr</code> before closing <code>done</code>. The pipe checks <code>done</code> before each line and at the end, and exits with code 1 and the reason (for example <code>close 1009 (message too big)</code>).</p>
+      <p><b>End of input.</b> When <code>ReadString</code> returns <code>io.EOF</code>, the pipe sends the WebSocket close frame and waits for the server to answer (up to 2 s). Exiting immediately could lose the last lines.</p>
     </div>
   </div>
   <div class="split">
     <div class="panel">
-      <h4>sala inundada: 5000 mensagens de 2 KB</h4>
+      <h4>flooded room: 5,000 messages of 2 KB</h4>
       <div class="scroll">
         <table>
-          <thead><tr><th>quem mais está na sala</th><th class="num">chegaram aos outros</th></tr></thead>
+          <thead><tr><th>who else is in the room</th><th class="num">reached the others</th></tr></thead>
           <tbody>
-            <tr><td>um pipe lento do teachat</td><td class="num">5000 de 5000</td></tr>
-            <tr><td>um cliente que nunca lê</td><td class="num">2082 de 5000, sala travada</td></tr>
+            <tr><td>a slow teachat pipe</td><td class="num">5,000 of 5,000</td></tr>
+            <tr><td>a client that never reads</td><td class="num">2,082 of 5,000, room stalled</td></tr>
           </tbody>
         </table>
       </div>
     </div>
     <div class="read">
-      <p class="muted">O segundo caso é o limite "<a href="#limites">cliente lento atrasa a sala</a>", agora medido. O cliente do teachat não cai nele porque sempre lê; um cliente mal escrito ainda derruba a sala. A correção de verdade é uma fila de envio por conexão no servidor.</p>
+      <p class="muted">The second case is the "<a href="#limits">slow client stalls the room</a>" limitation, now measured. The teachat client doesn't fall into it because it always reads; a badly written client can still stall a room. The real fix is a per-connection send queue on the server.</p>
     </div>
   </div>
 
-  <h3>O código</h3>
+  <h3>The code</h3>
   <div class="split">
-    <div style="min-width:0"><div class="file">cmd/client/main.go · depois de abrir a conexão</div><pre class="go">// stdin não é um terminal (comando | teachat): modo pipe, sem tela
+    <div style="min-width:0"><div class="file">cmd/client/main.go · after opening the connection</div><pre class="go">// stdin is not a terminal (command | teachat): pipe mode, no screen
 if !term.IsTerminal(int(os.Stdin.Fd())) {
 	pipe(conn)
 	return
 }
 
-// a tela chama esta função a cada Enter; só a goroutine da tela escreve na
-// conexão, então a regra da gorilla de um escritor por conexão continua valendo
+// the screen calls this on every Enter; only the screen's goroutine writes to the
+// connection, so gorilla's one-writer-per-connection rule still holds
 screen := ui.New(*room, *alias, func(text string) {
 	conn.WriteMessage(websocket.TextMessage, []byte(text))
 })
 
-// canal vazio para avisar que a conexão caiu; a goroutine de recebimento fecha o canal
+// empty channel to signal that the connection dropped; the receiving goroutine closes it
 closed := make(chan struct{})
-var readErr error // o motivo da queda; escrito antes do close(closed), lido depois
-// recebe mensagens em paralelo enquanto você digita
+var readErr error // why it dropped; written before close(closed), read after
+
+// receive messages in parallel while you type
 go func() {
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			// não dá para usar log.Fatal aqui: ele sai sem restaurar o terminal.
-			// Avisa o main e fecha a tela; quem encerra é o main.
+			// log.Fatal can't be used here: it exits without restoring the terminal.
+			// Tell main and close the screen; main is the one that exits.
 			readErr = err
 			close(closed)
 			screen.Stop()
@@ -831,27 +833,29 @@ go func() {
 	}
 }()
 
-// Run toma conta do terminal até o Ctrl+C ou até a conexão cair
+// Run owns the terminal until Ctrl+C or until the connection drops
 if err := screen.Run(); err != nil {
 	log.Fatal(err)
 }
 
-// o terminal já voltou ao normal; agora dá para avisar se foi a conexão que caiu
+// the terminal is back to normal; now it's safe to report that the connection dropped
 select {
 case &lt;-closed:
 	log.Fatal("connection closed: ", readErr)
 default:
 }</pre></div>
-    <div style="min-width:0"><div class="file">internal/ui/ui.go · trechos</div><pre class="go">// aliasColor escolhe a cor pelo hash do alias: o mesmo alias tem sempre a mesma cor,
-// em qualquer cliente, sem o servidor precisar saber de cor nenhuma.
+    <div style="min-width:0"><div class="file">internal/ui/ui.go · excerpts</div><pre class="go">// aliasColor picks the color from a hash of the alias: the same alias always gets the
+// same color, on any client, without the server knowing anything about colors.
 func aliasColor(alias string) string {
 	h := fnv.New32a()
 	h.Write([]byte(alias))
 	return palette[h.Sum32()%uint32(len(palette))]
 }
 
-// format monta a linha com o alias colorido. Tudo que vem de fora passa por
-// tview.Escape: sem isso, qualquer um mandaria "[red]" e mudaria a sua tela.
+// format builds the line with the alias colored. With colors on, tview interprets
+// tags like "[red]" in the text, so everything from outside goes through tview.Escape:
+// without it, anyone could send "[red]" and change your screen.
+// mine = a message you sent yourself: alias in bold, in the normal text color.
 func format(alias, text string, mine bool) string {
 	style := "[" + aliasColor(alias) + "]"
 	if mine {
@@ -860,18 +864,23 @@ func format(alias, text string, mine bool) string {
 	return style + tview.Escape(alias) + "[-::-]: " + tview.Escape(text)
 }
 
-// dentro de New: Enter envia em vez de pular linha
+// inside New: the Enter key
 case tcell.KeyEnter:
+	// Enter sends instead of inserting a newline
 	text := input.GetText()
 	if strings.TrimSpace(text) != "" {
 		send(text)
+		// your own message shows up like everyone else's: "alias: text"
 		fmt.Fprintln(u.messages, format(alias, text, true))
 	}
 	input.SetText("", false)
 	return nil
 
-// Print mostra uma linha recebida. Pode ser chamada de outra goroutine.
+// Print shows a received line. Safe to call from another goroutine:
+// QueueUpdateDraw hands the change to the screen's goroutine, which redraws.
 func (u *UI) Print(line string) {
+	// the server sends "alias: text" as a single string; the alias is whatever comes
+	// before the first ": ". Without ": ", the whole line is shown uncolored.
 	out := tview.Escape(line)
 	if alias, text, ok := strings.Cut(line, ": "); ok {
 		out = format(alias, text, false)
@@ -881,15 +890,15 @@ func (u *UI) Print(line string) {
 	})
 }</pre></div>
   </div>
-  <div style="min-width:0;margin-top:22px"><div class="file">cmd/client/pipe.go</div><pre class="go">// pipe é o modo sem tela (comando | teachat): envia cada linha do stdin para a sala,
-// mostra a linha no terminal (como o tee) e sai quando a entrada acaba.
-// Não abre a tela de propósito: num script ou no cron não tem ninguém para apertar Ctrl+C.
+  <div style="min-width:0;margin-top:22px"><div class="file">cmd/client/pipe.go</div><pre class="go">// pipe is the screenless mode (command | teachat): it sends each stdin line to the room,
+// echoes the line to the terminal (like tee) and exits when the input ends.
+// It never opens the screen on purpose: in a script or cron there's nobody to press Ctrl+C.
 func pipe(conn *websocket.Conn) {
-	// as mensagens da sala continuam chegando e precisam ser lidas, mesmo sem mostrar.
-	// Sem isso, os buffers de rede enchem e o broadcast do servidor trava a sala inteira
-	// esperando por nós. Esta goroutine é a única que lê; o pipe é o único que escreve.
-	// readErr guarda por que a leitura parou. É escrito antes do close(done), então quem
-	// vê done fechado já enxerga o valor certo (mesma garantia do "closed" no main.go).
+	// the room's messages keep arriving and must be read, even if not shown.
+	// Without this, the network buffers fill up and the server's broadcast stalls the
+	// whole room waiting on us. This goroutine is the only reader; pipe is the only writer.
+	// readErr records why reading stopped. It is written before close(done), so whoever
+	// sees done closed also sees the right value (same guarantee as "closed" in main.go).
 	done := make(chan struct{})
 	var readErr error
 	go func() {
@@ -901,20 +910,20 @@ func pipe(conn *websocket.Conn) {
 			}
 		}
 	}()
-	// a conexão caiu ou o servidor recusou algo (ex.: linha acima do limite, close 1009):
-	// a escrita ainda "funciona" porque vai para o buffer, então quem avisa é a leitura
+	// the connection dropped or the server refused something (e.g. a line over the limit,
+	// close 1009): writes still "work" because they go to a buffer, so the reader is what tells us
 	dropped := func() {
 		log.Fatal("connection closed: ", readErr)
 	}
 
-	// ReadString não tem limite de tamanho de linha (o bufio.Scanner para em 64 KB)
+	// ReadString has no line length limit (bufio.Scanner gives up at 64 KB)
 	r := bufio.NewReader(os.Stdin)
 	for {
 		line, err := r.ReadString('\n')
 		if line != "" {
 			line = strings.TrimRight(line, "\r\n")
-			fmt.Println(line) // eco: você continua vendo a saída do comando
-			// linha vazia aparece no eco, mas não vai para a sala
+			fmt.Println(line) // echo: you still see the command's output
+			// an empty line is echoed, but not sent to the room
 			if strings.TrimSpace(line) != "" {
 				select {
 				case &lt;-done:
@@ -922,8 +931,8 @@ func pipe(conn *websocket.Conn) {
 				default:
 				}
 				if err := conn.WriteMessage(websocket.TextMessage, []byte(line)); err != nil {
-					// o motivo de verdade costuma chegar pela leitura (ex.: close 1009, linha
-					// grande demais); espera ela um instante antes de mostrar o erro da escrita
+					// the real reason usually arrives through the reader (e.g. close 1009, line
+					// too big); wait for it briefly before showing the write error
 					select {
 					case &lt;-done:
 						dropped()
@@ -941,12 +950,12 @@ func pipe(conn *websocket.Conn) {
 		}
 	}
 
-	// fecha direito: manda o frame de close e espera o servidor responder (aí a goroutine
-	// de leitura termina e fecha done). Sair sem isso pode perder as últimas linhas.
+	// close properly: send the close frame and wait for the server to answer (then the
+	// reader goroutine ends and closes done). Exiting without this can lose the last lines.
 	conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	select {
 	case &lt;-done:
-		// fechamento normal (1000) é a resposta ao nosso close; qualquer outro é problema
+		// a normal closure (1000) is the answer to our close; anything else is a problem
 		if !websocket.IsCloseError(readErr, websocket.CloseNormalClosure) {
 			dropped()
 		}
@@ -955,15 +964,15 @@ func pipe(conn *websocket.Conn) {
 }</pre></div>
 </section>
 
-<section id="capacidade">
+<section id="capacity">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">12</span><h2>Capacidade em RAM</h2></div>
-    <p>Todo o estado do servidor vive em memória. Medimos quanto isso custa abrindo milhares de conexões numa sala e lendo o <code>VmRSS</code> do processo em <code>/proc</code>.</p>
+    <div class="sec-head"><span class="sec-num">12</span><h2>Capacity in RAM</h2></div>
+    <p>All of the server's state lives in memory. We measured what that costs by opening thousands of connections in one room and reading the process's <code>VmRSS</code> from <code>/proc</code>.</p>
   </div>
   <div class="split">
     <div class="panel">
-      <h4>RAM do servidor × conexões</h4>
-      <svg class="chart" viewBox="0 0 640 300" role="img" aria-label="Gráfico de linha: RAM do servidor sobe de 7,6 MB sem conexões para 28 MB com mil, 183 MB com dez mil e 875 MB com cinquenta mil conexões">
+      <h4>server RAM × connections</h4>
+      <svg class="chart" viewBox="0 0 640 300" role="img" aria-label="Line chart: server RAM grows from 7.6 MB with no connections to 28 MB with one thousand, 183 MB with ten thousand and 875 MB with fifty thousand connections">
         <line class="gridl" x1="60" y1="30" x2="610" y2="30"></line>
         <line class="gridl" x1="60" y1="103.3" x2="610" y2="103.3"></line>
         <line class="gridl" x1="60" y1="176.7" x2="610" y2="176.7"></line>
@@ -973,12 +982,12 @@ func pipe(conn *websocket.Conn) {
         <text x="52" y="181" text-anchor="end">300 MB</text>
         <text x="52" y="254" text-anchor="end">0</text>
         <text x="60" y="272" text-anchor="middle">0</text>
-        <text x="170" y="272" text-anchor="middle">10 mil</text>
-        <text x="280" y="272" text-anchor="middle">20 mil</text>
-        <text x="390" y="272" text-anchor="middle">30 mil</text>
-        <text x="500" y="272" text-anchor="middle">40 mil</text>
-        <text x="610" y="272" text-anchor="middle">50 mil</text>
-        <text x="335" y="294" text-anchor="middle">conexões abertas</text>
+        <text x="170" y="272" text-anchor="middle">10k</text>
+        <text x="280" y="272" text-anchor="middle">20k</text>
+        <text x="390" y="272" text-anchor="middle">30k</text>
+        <text x="500" y="272" text-anchor="middle">40k</text>
+        <text x="610" y="272" text-anchor="middle">50k</text>
+        <text x="335" y="294" text-anchor="middle">open connections</text>
         <path d="M60,248.1 L71,243.2 L170,205.3 L610,36.1 L610,250 L60,250 Z" style="fill:var(--mint)" opacity="0.08"></path>
         <polyline points="60,248.1 71,243.2 170,205.3 610,36.1" fill="none" style="stroke:var(--mint)" stroke-width="2.2"></polyline>
         <circle cx="60" cy="248.1" r="3.5" style="fill:var(--mint)"></circle>
@@ -992,44 +1001,44 @@ func pipe(conn *websocket.Conn) {
     <div style="min-width:0">
       <div class="scroll">
         <table>
-          <thead><tr><th>conexões</th><th class="num">RAM</th><th class="num">1 msg p/ sala toda</th></tr></thead>
+          <thead><tr><th>connections</th><th class="num">RAM</th><th class="num">1 msg to whole room</th></tr></thead>
           <tbody>
-            <tr><td>0</td><td class="num">7,6 MB</td><td class="num">—</td></tr>
-            <tr><td>1.000</td><td class="num">28 MB</td><td class="num">5,7 ms</td></tr>
-            <tr><td>10.000</td><td class="num">183 MB</td><td class="num">59 ms</td></tr>
-            <tr><td>50.000</td><td class="num">875 MB</td><td class="num">309 ms</td></tr>
+            <tr><td>0</td><td class="num">7.6 MB</td><td class="num">—</td></tr>
+            <tr><td>1,000</td><td class="num">28 MB</td><td class="num">5.7 ms</td></tr>
+            <tr><td>10,000</td><td class="num">183 MB</td><td class="num">59 ms</td></tr>
+            <tr><td>50,000</td><td class="num">875 MB</td><td class="num">309 ms</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="note">São cerca de 17 KB por conexão, quase tudo pilha de goroutine e os buffers de 4 KB de leitura e escrita da gorilla. Os dados do chat (mapa, alias) somam poucas dezenas de bytes por pessoa. O tempo de broadcast cresce em linha reta, uns 6 µs por destinatário.</p>
-      <p class="note"><b style="color:var(--fg)">Banco de dados?</b> Ainda não. O que está em RAM é o estado das conexões, que só existe enquanto o processo vive. O banco entra junto com o histórico de mensagens, provavelmente SQLite em Go puro, para continuar sendo um binário único.</p>
+      <p class="note">That's about 17 KB per connection, almost all of it goroutine stack and gorilla's 4 KB read and write buffers. The chat data itself (map, alias) is a few dozen bytes per person. Broadcast time grows linearly, about 6 µs per recipient.</p>
+      <p class="note"><b style="color:var(--fg)">A database?</b> Not yet. What lives in RAM is connection state, which only exists while the process is alive. A database comes with message history, probably pure-Go SQLite, so it stays a single binary.</p>
     </div>
   </div>
 </section>
 
-<section id="limites">
+<section id="limits">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">13</span><h2>Limitações e segurança</h2></div>
-    <p>O teachat está em desenvolvimento inicial e propositalmente cru. Estes são os limites conhecidos hoje:</p>
+    <div class="sec-head"><span class="sec-num">13</span><h2>Limitations and security</h2></div>
+    <p>teachat is in early development and deliberately bare. These are the known limits today:</p>
   </div>
   <div class="limits">
-    <div class="limit"><b>Sem criptografia</b><p>O tráfego é <code>ws://</code> em texto aberto. No Wireshark dá para ler as mensagens. Use só em rede confiável até o TLS chegar.</p></div>
-    <div class="limit"><b>Cliente lento atrasa a sala</b><p>O broadcast escreve para um membro de cada vez, com a trava da sala. Uma conexão que não lê segura a sala dela: medido, a sala travou em 2082 de 5000 mensagens. A solução é uma fila de envio por conexão.</p></div>
-    <div class="limit"><b>Logs grandes inundam a sala</b><p>O modo pipe manda uma mensagem por linha. Um build de 5000 linhas são 5000 mensagens na tela de todo mundo.</p></div>
-    <div class="limit"><b>Alias não é verificado</b><p>Qualquer um entra como <code>--alias daniel</code>. A senha vai proteger a sala, mas não prova quem é quem dentro dela.</p></div>
-    <div class="limit"><b>Sem histórico</b><p>Mensagem enviada para sala vazia se perde, e quem entra depois não vê o passado. O modo pipe depende disso para registrar logs.</p></div>
-    <div class="limit"><b>Qualquer origem</b><p>O servidor aceita WebSocket de qualquer origem, então uma página aberta num navegador da rede consegue conectar nele.</p></div>
+    <div class="limit"><b>No encryption</b><p>Traffic is plain-text <code>ws://</code>. Wireshark can read the messages. Only use it on a trusted network until TLS lands.</p></div>
+    <div class="limit"><b>A slow client stalls its room</b><p>Broadcast writes to one member at a time, under the room's lock. A connection that doesn't read holds up its room: measured, a room stalled at 2,082 of 5,000 messages. The fix is a per-connection send queue.</p></div>
+    <div class="limit"><b>Large logs flood the room</b><p>Pipe mode sends one message per line. A 5,000-line build is 5,000 messages on everyone's screen.</p></div>
+    <div class="limit"><b>Aliases aren't verified</b><p>Anyone can join as <code>--alias daniel</code>. A password will protect the room, but won't prove who's who inside it.</p></div>
+    <div class="limit"><b>No history</b><p>A message sent to an empty room is lost, and whoever joins later doesn't see the past. Pipe mode depends on this to keep logs.</p></div>
+    <div class="limit"><b>Any origin</b><p>The server accepts WebSocket from any origin, so a page open in a browser on the network can connect to it.</p></div>
   </div>
 </section>
 
 <section id="roadmap">
   <div class="read">
     <div class="sec-head"><span class="sec-num">14</span><h2>Roadmap</h2></div>
-    <p>Nesta ordem, uma feature por vez. A lista completa, com as decisões tomadas e as perguntas em aberto, está no <a href="https://github.com/daniel-cmdline/teachat/blob/main/roadmap.md">roadmap.md</a>. O que já foi entregue está no <a href="https://github.com/daniel-cmdline/teachat/blob/main/features.md">features.md</a>.</p>
+    <p>In this order, one feature at a time. The full list, with the decisions made and the open questions, is in <a href="https://github.com/daniel-cmdline/teachat/blob/main/roadmap.md">roadmap.md</a>. What has shipped is in <a href="https://github.com/daniel-cmdline/teachat/blob/main/features.md">features.md</a>.</p>
   </div>
   <ol class="road">
-        <li><div><b>Salas com senha + TLS, juntos</b><p>Senha nunca trafega em texto aberto. <code>ListenAndServeTLS</code> no servidor, <code>wss://</code> no cliente, com certificado fixado (pinning) para rede local.</p></div></li>
-    <li><div><b>Histórico de mensagens</b><p>SQLite com <code>modernc.org/sqlite</code>. Necessário para o modo pipe guardar logs e para salas persistentes.</p></div></li>
+    <li><div><b>Password rooms + TLS, together</b><p>A password never travels in plain text. <code>ListenAndServeTLS</code> on the server, <code>wss://</code> on the client, with a pinned certificate for local networks.</p></div></li>
+    <li><div><b>Message history</b><p>SQLite with <code>modernc.org/sqlite</code>. Needed for pipe mode to keep logs and for persistent rooms.</p></div></li>
   </ol>
 </section>
 
@@ -1041,7 +1050,7 @@ func pipe(conn *websocket.Conn) {
 </div>
 <script>
 (function () {
-  // ---------- realce simples de Go ----------
+  // ---------- simple Go highlighting ----------
   var KW = /\b(func|type|struct|map|for|range|if|return|defer|var|package|import|nil|go|break|switch|case|select|default|chan)\b/g;
   document.querySelectorAll("pre.go").forEach(function (pre) {
     var src = pre.textContent;
@@ -1068,8 +1077,8 @@ func pipe(conn *websocket.Conn) {
         var bin = "";
         new Uint8Array(buf).forEach(function (b) { bin += String.fromCharCode(b); });
         accOut.textContent = btoa(bin);
-      }).catch(function () { accOut.textContent = "SHA-1 indisponível neste navegador"; });
-    } catch (e) { accOut.textContent = "SHA-1 indisponível neste navegador"; }
+      }).catch(function () { accOut.textContent = "SHA-1 unavailable in this browser"; });
+    } catch (e) { accOut.textContent = "SHA-1 unavailable in this browser"; }
   }
   keyIn.addEventListener("input", calcAccept);
   calcAccept();
@@ -1096,13 +1105,13 @@ func pipe(conn *websocket.Conn) {
     out.push(cell(0x81, "b-hdr", "FIN·txt"));
     var maskBit = fromClient ? 0x80 : 0;
     var b1, lenCap;
-    if (n <= 125) { b1 = maskBit | n; out.push(cell(b1, "b-len", (fromClient ? "M·" : "") + n)); lenCap = "tamanho=" + n; }
+    if (n <= 125) { b1 = maskBit | n; out.push(cell(b1, "b-len", (fromClient ? "M·" : "") + n)); lenCap = "length=" + n; }
     else if (n <= 0xffff) {
       b1 = maskBit | 126; out.push(cell(b1, "b-len", (fromClient ? "M·" : "") + "126"));
       out.push(cell((n >> 8) & 0xff, "b-len", "len")); out.push(cell(n & 0xff, "b-len", "len"));
-      lenCap = "tamanho=126 → próximos 2 bytes = " + n;
+      lenCap = "length=126 → next 2 bytes = " + n;
     }
-    if (fromClient) MASK.forEach(function (m) { out.push(cell(m, "b-mask", "chave")); });
+    if (fromClient) MASK.forEach(function (m) { out.push(cell(m, "b-mask", "key")); });
     var shown = payload.slice(0, 40);
     shown.forEach(function (b, i) {
       var v = fromClient ? b ^ MASK[i % 4] : b;
@@ -1116,8 +1125,8 @@ func pipe(conn *websocket.Conn) {
     document.getElementById("cap1").textContent = "MASK=" + (fromClient ? 1 : 0) + " · " + lenCap;
     var total = (n <= 125 ? 2 : 4) + (fromClient ? 4 : 0) + n;
     document.getElementById("fbnote").textContent = fromClient
-      ? "Total: " + total + " bytes no socket. Frames do cliente vão mascarados: cada byte do conteúdo passa por XOR com a chave de 4 bytes. Na vida real a chave é sorteada a cada frame; aqui ela está fixa em 37 fa 21 3d para o exemplo ficar estável. A letra embaixo de cada byte é o caractere original."
-      : "Total: " + total + " bytes no socket. Frames do servidor vão sem máscara: o conteúdo segue legível, byte por byte. É assim que o broadcast escreve para cada membro da sala.";
+      ? "Total: " + total + " bytes on the socket. Client frames are masked: each payload byte is XORed with the 4-byte key. In real life the key is random for every frame; here it is fixed at 37 fa 21 3d so the example stays stable. The letter under each byte is the original character."
+      : "Total: " + total + " bytes on the socket. Server frames are not masked: the payload stays readable, byte by byte. This is how broadcast writes to each room member.";
   }
   function setDir(c) {
     fromClient = c;

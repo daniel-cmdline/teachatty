@@ -6,10 +6,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Room tem seu próprio mutex: uma sala enviando não trava as outras
+// Room has its own mutex: one room broadcasting doesn't block the others
 type Room struct {
 	mu      sync.Mutex
-	members map[*websocket.Conn]string // conexão -> alias
+	members map[*websocket.Conn]string // connection -> alias
 }
 
 func (r *Room) join(conn *websocket.Conn, alias string) {
@@ -18,7 +18,7 @@ func (r *Room) join(conn *websocket.Conn, alias string) {
 	r.members[conn] = alias
 }
 
-// leave remove a conexão e diz se a sala ficou vazia
+// leave removes the connection and reports whether the room is now empty
 func (r *Room) leave(conn *websocket.Conn) (empty bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
