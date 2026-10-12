@@ -2,6 +2,11 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-10-12 18:52 — The website gets its own private repository
+
+- The site and documentation now live in the private repository `daniel-cmdline/teachatty-site`, so they keep a history outside this one. CLAUDE.md has the deploy command, which never uploads `.git/`.
+- teachatty.com's nginx now refuses any dotfile path (`/.git`, `/.env`, ...), in case one is ever uploaded by mistake. **Tested:** `/.git/config` answers 404, the site still loads, and `certbot renew --dry-run` still succeeds.
+
 ## 2026-10-12 18:40 — The website leaves the repository
 
 - `docs/` (the site's `index.html`, the documentation's `docs.html` and `style.css`) is no longer in the repository. It's large hand-written HTML that nobody needs to read or build the code; it now lives outside the repo, with its own copy of the logo, and is deployed to teachatty.com from there.
