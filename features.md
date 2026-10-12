@@ -2,6 +2,13 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-10-12 18:40 — The website leaves the repository
+
+- `docs/` (the site's `index.html`, the documentation's `docs.html` and `style.css`) is no longer in the repository. It's large hand-written HTML that nobody needs to read or build the code; it now lives outside the repo, with its own copy of the logo, and is deployed to teachatty.com from there.
+- The README, CONTRIBUTING.md, CLAUDE.md and the roadmap point to https://teachatty.com/docs.html instead of `docs/`. Documentation fixes go through issues.
+- `assets/` stays: the README shows the logo from it.
+- **Tested:** the site redeployed from its new place and served over HTTPS, logo included; `go build ./...` and `go test -race ./...` pass.
+
 ## 2026-10-12 18:22 — Open source (AGPL-3.0), packages, teachatty.com live
 
 - **License: GNU AGPL-3.0** (`LICENSE`). teachatty is open source and stays that way: whoever distributes a modified version, or runs one as a service for others, must share its source.

@@ -8,7 +8,7 @@ By contributing, you agree that your contribution is licensed under the project'
 
 - **Use it and report what breaks.** Join the public server (`teachatty --server teachatty.com`) or run your own.
 - **Report a bug** or **suggest a feature** by opening an [issue](https://github.com/daniel-cmdline/teachatty/issues).
-- **Improve the docs**: the [README](README.md) and the site and documentation in [`docs/`](docs/).
+- **Improve the docs**: the [README](README.md) lives here. The website and the documentation at [teachatty.com](https://teachatty.com/docs.html) are kept outside this repository; for those, open an issue describing what is wrong or missing.
 - **Send code**: fix a bug, add tests, or pick something from the [roadmap](roadmap.md).
 
 ## Before you start
@@ -81,7 +81,7 @@ Create your branch from `dev` in your fork, with a short descriptive name such a
 - **Comment the why, not the what.** Look at any file: comments explain the reasons behind a choice (why a lock is held, why a limit has that value). New code should read the same way.
 - **Everything is in English**: code, comments, messages printed by the programs, and docs.
 - **New dependencies need a good reason.** teachatty is a pure Go, single-binary program with a short dependency list, and it should stay that way.
-- **Keep the user-facing text in sync.** If you change a flag or a behavior, update the `-h` help (`usage.go` in each `cmd/` folder), the [README](README.md) and the docs in [`docs/`](docs/).
+- **Keep the user-facing text in sync.** If you change a flag or a behavior, update the `-h` help (`usage.go` in each `cmd/` folder) and the [README](README.md), and say in the pull request what the documentation at teachatty.com should change.
 - **Log what you shipped.** Add an entry at the top of [features.md](features.md) describing the change and how you tested it.
 
 ## Commit messages

@@ -201,10 +201,9 @@ contrib/             systemd unit and certbot hook for running the server as a s
 packaging/           the server package's unit, config and install scripts (.goreleaser.yaml builds the packages)
 internal/ui/  the client's screen (built on tview)
 internal/tlstrust/  TLS certificate and trust on first use
-docs/         project site and documentation
 ```
 
-Documentation lives in [docs/](docs/): `index.html` is the project site and `docs.html` is the full documentation (usage, client and server reference, protocol, internals).
+The full documentation (usage, client and server reference, protocol, internals) is at **[teachatty.com/docs.html](https://teachatty.com/docs.html)**. The website is not part of this repository.
 
 Run the tests with `go test -race ./...`. Build the packages locally with `goreleaser release --snapshot --clean` (output in `dist/`).
 

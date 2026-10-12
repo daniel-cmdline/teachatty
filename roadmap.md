@@ -19,7 +19,7 @@ A terminal chat for developers and sysadmins. Minimalist: lightweight, no distra
 - **Client** (`cmd/teachatty`): flags `--server`, `--room`, `--alias`, `--no-tls` and `--version`. Full screen with tview (`internal/ui`): messages on top, input box at the bottom.
 - Pipe mode: `command | teachatty` sends the input to the room (lines arriving within 100 ms go as one message), echoes it to the terminal and exits when the input ends.
 - Encrypted by default: TLS 1.3 with a self-signed certificate and trust on first use, or the administrator's own certificate (`--tls-cert`/`--tls-key`). All in `internal/tlstrust`.
-- **Public server at teachatty.com** (a VPS, Ubuntu 24.04): `teachatty-server --no-pipes --max-per-ip 10` with the Let's Encrypt certificate, plus nginx serving the site (`docs/`) and the packages at https://teachatty.com/downloads/.
+- **Public server at teachatty.com** (a VPS, Ubuntu 24.04): `teachatty-server --no-pipes --max-per-ip 10` with the Let's Encrypt certificate, plus nginx serving the site and the packages at https://teachatty.com/downloads/.
 - **Packages**: `.deb` and `.rpm` for the client and the server (amd64, arm64), and Linux/macOS tarballs, built by goreleaser (`.goreleaser.yaml`, server package files in `packaging/`). Development builds until v0.1.0 is tagged.
 - **License**: GNU AGPL-3.0. Contribution guide in [CONTRIBUTING.md](CONTRIBUTING.md).
 - Shipped features are logged in [features.md](features.md).
@@ -55,13 +55,14 @@ In this order. Each one is small on purpose.
 - Pipe mode echoes each line to the terminal (like `tee`), so whoever runs the command still sees the output. Lines that arrive within 100 ms of each other are sent as one multi-line message (up to 64 KB): a build log is a few messages instead of thousands, and it stays under the server's rate limit.
 - Default port 7347 (previously 23456).
 - `-h` on both binaries, with defaults read from the flags themselves so the help never drifts out of date.
-- Everything is in English: what the program shows in the terminal (help, logs, errors, startup messages, test output), code comments, the site and documentation (`docs/`), and these project notes. Until 2026-10-12, comments, docs and notes were in Portuguese.
+- Everything is in English: what the program shows in the terminal (help, logs, errors, startup messages, test output), code comments, the site and documentation, and these project notes. Until 2026-10-12, comments, docs and notes were in Portuguese.
 - A command that does nothing (stray argument, unknown flag) shows the help on both binaries, with exit code 2. `help` shows the help with exit code 0.
 - 1 MB limit per message on the server (`SetReadLimit`). 64 KB would be enough for typing, but would break large log lines in pipe mode (stack traces, JSON). Over the limit, the server closes only that connection (close 1009).
 - `--addr` on the server in Go's `host:port` format: no host listens on all interfaces, a host listens only on that one.
 - TLS before passwords, and on its own: TLS is useful without passwords, passwords are useless without TLS.
 - License: GNU AGPL-3.0 (2026-10-12). teachatty stays open source forever: anyone who distributes a modified version, or runs one as a service for others, must share its source. Companies running it unmodified are unaffected.
 - Packages are built with goreleaser (nfpm inside), not hand-written `debian/` or `.spec` files: one config builds both formats for both architectures. The server package does not start the service on install; the admin reviews `/etc/default/teachatty-server` first and enables it. Its flags live in that environment file (`TEACHATTY_SERVER_ARGS`), the usual place for a daemon's flags on Debian and Fedora, until the config file planned below exists.
+- The website (site and documentation) is kept outside the repository (2026-10-12): it is large, hand-written HTML that nobody needs when reading or building the code. The repo points to https://teachatty.com/docs.html instead.
 - The `latest` download names on teachatty.com are symlinks to the newest build, so install commands in the docs never change between versions.
 - TLS on by default (`--no-tls` to turn it off, for testing): optional security tends to stay off.
 - Trust model: self-signed certificate + trust on first use, like SSH. The server generates an ECDSA P-256 certificate (10 years) in `~/.config/teachatty/` and prints its fingerprint (`SHA256:` + hash of the public key; pinning the key, not the certificate, survives a renewal with the same key). The client saves the fingerprint in `~/.config/teachatty/known_servers` on first connection and refuses a different one later. It accepts new servers without asking (like SSH's `accept-new`), so pipes and cron never block. TLS 1.3 minimum, standard library only, all in `internal/tlstrust`.
@@ -77,7 +78,7 @@ In this order. Each one is small on purpose.
 - The client's look comes from the logo: mint borders, amber title, the terminal's own background and text color (so light and dark terminals both work), a teacup banner on join, gray timestamps (local time of arrival), a placeholder in the empty box. Mentions (`@alias`, whole word, any case) are highlighted in amber and ring the terminal bell.
 - The project is called **teachatty** (domain: teachatty.com): binaries `teachatty` and `teachatty-server`, config in `~/.config/teachatty/`, systemd unit `teachatty-server.service` running as user `teachatty`. Renamed from teachat on 2026-10-12, repository and Go module path included (`github.com/daniel-cmdline/teachatty`).
 - `--server` without a port means 7347, so `teachatty --server teachatty.com` needs no `:7347`. The address is normalized before anything else, so `teachatty.com` and `teachatty.com:7347` are one server for trust on first use.
-- teachatty.com serves both the chat (port 7347) and, later, the site from `docs/` (port 443) from the same machine: one hostname can only point to one place, so the site can't live on GitHub Pages under the same name.
+- teachatty.com serves both the chat (port 7347) and the site (port 443) from the same machine: one hostname can only point to one place, so the site can't live on GitHub Pages under the same name.
 - The module is `github.com/daniel-cmdline/teachatty`, matching the repository path, so internal imports and `go install` work.
 
 ## Open questions
