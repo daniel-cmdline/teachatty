@@ -1,4 +1,4 @@
-// Package tlstrust gives teachat encrypted connections without anyone managing
+// Package tlstrust gives teachatty encrypted connections without anyone managing
 // certificates. The server generates its own self-signed certificate once and keeps
 // using it. The client trusts a server the first time it connects, remembers its
 // fingerprint, and from then on refuses any other certificate for that server:
@@ -30,14 +30,14 @@ import (
 	"time"
 )
 
-// Dir returns teachat's config directory (~/.config/teachat on Linux), creating it.
+// Dir returns teachatty's config directory (~/.config/teachatty on Linux), creating it.
 // The server's certificate and the client's known_servers file live there.
 func Dir() (string, error) {
 	base, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(base, "teachat")
+	dir := filepath.Join(base, "teachatty")
 	return dir, os.MkdirAll(dir, 0o700)
 }
 
@@ -74,7 +74,7 @@ func generate(certFile, keyFile string) error {
 	}
 	tmpl := &x509.Certificate{
 		SerialNumber: serial,
-		Subject:      pkix.Name{CommonName: "teachat-server"},
+		Subject:      pkix.Name{CommonName: "teachatty-server"},
 		NotBefore:    time.Now().Add(-time.Hour),
 		NotAfter:     time.Now().AddDate(10, 0, 0),
 		KeyUsage:     x509.KeyUsageDigitalSignature,
@@ -174,7 +174,7 @@ func verifyChain(certs []*x509.Certificate, host string, roots *x509.CertPool) e
 	return err
 }
 
-// selfSigned reports whether the certificate signed itself, like teachat's own. It checks
+// selfSigned reports whether the certificate signed itself, like teachatty's own. It checks
 // the signature directly with the certificate's own key: CheckSignatureFrom would refuse,
 // because it requires the signer to be marked as an authority, and ours isn't.
 func selfSigned(cert *x509.Certificate) bool {
@@ -258,7 +258,7 @@ func DialHint(err error, tlsOn bool) error {
 
 // Server is what the server's main calls. It returns the TLS config and a one-line
 // description for the startup message. With certFile and keyFile empty, it uses (and on
-// the first run creates) the self-signed certificate in teachat's config directory.
+// the first run creates) the self-signed certificate in teachatty's config directory.
 // With both set, it serves the administrator's certificate instead, and writes a
 // warning to warn if that certificate's chain looks broken.
 func Server(certFile, keyFile string, warn io.Writer) (*tls.Config, string, error) {
@@ -366,7 +366,7 @@ func newest(files ...string) (time.Time, error) {
 	return latest, nil
 }
 
-// Client is ClientConfig with teachat's default known_servers file: what the client's
+// Client is ClientConfig with teachatty's default known_servers file: what the client's
 // main calls.
 func Client(server string, notice io.Writer) (*tls.Config, error) {
 	dir, err := Dir()

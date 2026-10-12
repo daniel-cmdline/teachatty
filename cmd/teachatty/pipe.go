@@ -21,7 +21,7 @@ const (
 	batchMax  = 64 << 10
 )
 
-// pipe is the screenless mode (command | teachat): it sends each stdin line to the room,
+// pipe is the screenless mode (command | teachatty): it sends each stdin line to the room,
 // echoes the line to the terminal (like tee) and exits when the input ends.
 // It never opens the screen on purpose: in a script or cron there's nobody to press Ctrl+C.
 func pipe(conn *websocket.Conn) {

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -21,9 +22,12 @@ import (
 	"github.com/daniel-cmdline/teachat/internal/version"
 )
 
+// defaultPort is teachatty's port, used when --server doesn't name one
+const defaultPort = "7347"
+
 func main() {
 	// flag.String returns pointers (&value)
-	server := flag.String("server", "localhost:7347", "teachat server address, host:port")
+	server := flag.String("server", "localhost:"+defaultPort, "teachatty server address, host[:port] (port 7347 if omitted)")
 	room := flag.String("room", "local", "room to join; created if it doesn't exist")
 	// default alias: your system user ($USER). cmp.Or returns the first non-empty
 	// value, so without $USER (cron, some containers) it is "anonymous".
@@ -34,11 +38,19 @@ func main() {
 	flag.Parse()
 	checkArgs()
 	if *showVersion {
-		fmt.Println("teachat", version.String())
+		fmt.Println("teachatty", version.String())
 		return
 	}
 
-	// stdin is not a terminal (command | teachat): pipe mode, no screen
+	// --server without a port (teachatty --server teachatty.com) means teachatty's port,
+	// 7347. Normalizing here also means "teachatty.com" and "teachatty.com:7347" are the
+	// same server for known_servers.
+	host := *server
+	if _, _, err := net.SplitHostPort(host); err != nil {
+		host = net.JoinHostPort(strings.Trim(host, "[]"), defaultPort)
+	}
+
+	// stdin is not a terminal (command | teachatty): pipe mode, no screen
 	pipeMode := !term.IsTerminal(int(os.Stdin.Fd()))
 
 	// build wss://SERVER/ws?room=...&alias=... from the flags (ws:// with --no-tls)
@@ -54,7 +66,7 @@ func main() {
 	}
 	u := url.URL{
 		Scheme:   scheme,
-		Host:     *server,
+		Host:     host,
 		Path:     "/ws",
 		RawQuery: query.Encode(),
 	}
@@ -65,7 +77,7 @@ func main() {
 	var notice bytes.Buffer
 	dialer := *websocket.DefaultDialer
 	if !*noTLS {
-		cfg, err := tlstrust.Client(*server, &notice)
+		cfg, err := tlstrust.Client(host, &notice)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -106,7 +118,7 @@ func main() {
 		}
 	}
 	screen.Welcome(
-		"teachat · "+*server+" · room "+*room,
+		"teachatty · "+host+" · room "+*room,
 		security,
 		"Enter send · PgUp/PgDn scroll · Ctrl+C quit",
 		"mention someone with @name to ring their bell",

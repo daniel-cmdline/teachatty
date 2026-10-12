@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>teachat</title>
+<title>teachatty</title>
 <meta name="description" content="A terminal chat for devs and sysadmins: self-hosted and minimalist.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,7 +13,7 @@
 <body>
 <nav class="toc" aria-label="Sections">
   <div class="wrap">
-    <a class="brand" href="#top">tea<b>chat</b></a>
+    <a class="brand" href="#top">tea<b>chatty</b></a>
     <a class="chip" href="#screen">the screen</a>
     <a class="chip" href="#why">why</a>
     <a class="chip" href="#numbers">numbers</a>
@@ -34,10 +34,11 @@
       <div class="cta">
         <a class="btn primary" href="docs.html">docs</a>
         <a class="btn" href="https://github.com/daniel-cmdline/teachat">github</a>
+        <a class="btn" href="#start">try the public server</a>
       </div>
-      <p class="cmd" style="margin-top:18px">$ <b>teachat</b></p>
+      <p class="cmd" style="margin-top:18px">try it now: $ <b>teachatty --server teachatty.com</b></p>
     </div>
-    <img class="logo" src="../assets/teachat.png" alt="teachat logo: a neon green cup with a terminal prompt and an amber speech bubble">
+    <img class="logo" src="../assets/teachatty.png" alt="teachatty logo: a neon green cup with a terminal prompt and an amber speech bubble">
   </div>
 </header>
 
@@ -47,7 +48,7 @@
     <p>Full screen, like <code>vim</code> or <code>htop</code>. Messages on top, your input box at the bottom.</p>
   </div>
   <div class="split">
-    <div class="scroll"><pre class="screen big" role="img" aria-label="teachat screen: mint borders, an amber room title, four timestamped messages, one of them mentioning mateus in amber, and the input box below with the text nice! closing the ticket"><span style="color:var(--mint)">┌─────────────────────</span><span style="color:var(--amber)"> dev · mateus </span><span style="color:var(--mint)">─────────────────────┐</span>
+    <div class="scroll"><pre class="screen big" role="img" aria-label="teachatty screen: mint borders, an amber room title, four timestamped messages, one of them mentioning mateus in amber, and the input box below with the text nice! closing the ticket"><span style="color:var(--mint)">┌─────────────────────</span><span style="color:var(--amber)"> dev · mateus </span><span style="color:var(--mint)">─────────────────────┐</span>
 <span style="color:var(--mint)">│</span><span style="color:var(--muted)">14:02</span> <span style="color:#d19a66">joao</span>: <span style="color:var(--fg)">anyone seen the disk alert on db-02?</span>        <span style="color:var(--mint)">│</span>
 <span style="color:var(--mint)">│</span><span style="color:var(--muted)">14:03</span> <span style="color:#d7c25a">daniel</span>: <span style="color:var(--fg)">yep, it's at 91%. cleaning old logs</span>       <span style="color:var(--mint)">│</span>
 <span style="color:var(--mint)">│</span><span style="color:var(--muted)">14:05</span> <b style="color:var(--fg)">mateus</b>: <span style="color:var(--fg)">thanks. did the 10am deploy go out?</span>       <span style="color:var(--mint)">│</span>
@@ -63,7 +64,7 @@
       <li><b><kbd>PgUp</kbd> to read back</b> without being pulled down. Start typing and the screen jumps back to the newest.</li>
       <li><b>Each person gets a color.</b> Every alias has a fixed color, the same on every client. Yours shows in bold.</li>
       <li><b>Mentions ring your bell.</b> Someone writes <code>@you</code>: the message lights up in amber and your terminal beeps, even from another tab.</li>
-      <li><b>Everyone in the same room, no arranging.</b> Run <code>teachat</code> and you're in <code>local</code>. For another room, <code>--room</code>: if it doesn't exist, it's created.</li>
+      <li><b>Everyone in the same room, no arranging.</b> Run <code>teachatty</code> and you're in <code>local</code>. For another room, <code>--room</code>: if it doesn't exist, it's created.</li>
     </ul>
   </div>
 </section>
@@ -71,12 +72,12 @@
 <section id="why">
   <div class="read">
     <div class="sec-head"><h2>Why</h2></div>
-    <p>Work chat turned into heavy apps with notifications, threads, emoji and a thousand channels. teachat is the opposite: a small command-line tool you use like any other.</p>
+    <p>Work chat turned into heavy apps with notifications, threads, emoji and a thousand channels. teachatty is the opposite: a small command-line tool you use like any other.</p>
   </div>
   <div class="cards">
-    <div class="card"><b>Flags, not URLs</b><p>Nobody types <code>ws://...?room=x</code>. It's <code>teachat --room dev --alias daniel</code>, and the rest is an internal detail.</p></div>
+    <div class="card"><b>Flags, not URLs</b><p>Nobody types <code>ws://...?room=x</code>. It's <code>teachatty --room dev --alias daniel</code>, and the rest is an internal detail.</p></div>
     <div class="card"><b>Self-hosted, encrypted</b><p>One server binary on an internal machine, on the port and interface you choose (<code>--addr</code>). Traffic never leaves the company network, and it's encrypted with TLS by default, with no certificates to manage.</p></div>
-    <div class="card"><b>Works with pipes</b><p><code>make 2>&amp;1 | teachat --room ops</code> sends the build output to the team's room (lines arriving together go as one message), shows it in your terminal and exits at the end. Safe in scripts and cron.</p></div>
+    <div class="card"><b>Works with pipes</b><p><code>make 2>&amp;1 | teachatty --room ops</code> sends the build output to the team's room (lines arriving together go as one message), shows it in your terminal and exits at the end. Safe in scripts and cron.</p></div>
     <div class="card"><b>Minimalist</b><p>A feature only goes in if it pays for itself. The whole codebase is about 1,250 lines, comments included, standing on libraries that do the heavy lifting.</p></div>
   </div>
 </section>
@@ -112,7 +113,7 @@
         <rect class="col-frame" x="374" y="30" width="252" height="362" rx="12"></rect>
         <rect class="col-frame" x="734" y="30" width="252" height="362" rx="12"></rect>
         <text class="col-title" x="140" y="22" text-anchor="middle">DANIEL'S PC · --room dev</text>
-        <text class="col-title" x="500" y="22" text-anchor="middle">teachat SERVER · :7347</text>
+        <text class="col-title" x="500" y="22" text-anchor="middle">teachatty SERVER · :7347</text>
         <text class="col-title" x="860" y="22" text-anchor="middle">MATEUS'S PC · --room dev</text>
 
         <line class="wire" x1="262" y1="337" x2="378" y2="337"></line>
@@ -159,26 +160,31 @@
 <section id="start">
   <div class="read">
     <div class="sec-head"><h2>Start in a minute</h2></div>
-    <p>Requires Go 1.27 or newer.</p>
+    <p>Requires Go 1.27 or newer. The fastest way in is the public server at <b>teachatty.com</b>:</p>
+  </div>
+  <pre style="max-width:var(--read);margin-top:16px">go install github.com/daniel-cmdline/teachat/cmd/teachatty@latest
+teachatty --server teachatty.com</pre>
+  <div class="read" style="margin-top:22px">
+    <p>Or run your own, from a clone:</p>
   </div>
   <pre style="max-width:var(--read);margin-top:16px">git clone https://github.com/daniel-cmdline/teachat.git
 cd teachat
 
 <span class="c"># the server (port 7347, default room local)</span>
-go run ./cmd/teachat-server
+go run ./cmd/teachatty-server
 
 <span class="c"># in another terminal: no flags, you land in the local room</span>
-go run ./cmd/teachat
+go run ./cmd/teachatty
 
 <span class="c"># send a command's output to the room</span>
-uptime | go run ./cmd/teachat</pre>
+uptime | go run ./cmd/teachatty</pre>
   <p class="muted" style="margin-top:14px">Flags, keys, another machine on the network and how to build the binaries: in the <a href="docs.html#getting-started">documentation</a>.</p>
 </section>
 
 <section id="next">
   <div class="read">
     <div class="sec-head"><h2>What's next</h2></div>
-    <p>teachat is just getting started and grows one feature at a time.</p>
+    <p>teachatty is just getting started and grows one feature at a time.</p>
   </div>
   <ol class="road">
     <li><div><b>Release v0.1.0</b><p>A git tag and prebuilt binaries for Linux and macOS (amd64 and arm64), plus <code>.deb</code> and <code>.rpm</code> packages, so nobody needs Go installed.</p></div></li>
@@ -191,7 +197,7 @@ uptime | go run ./cmd/teachat</pre>
 </section>
 
 <footer>
-  <span>teachat · <a href="https://github.com/daniel-cmdline/teachat">github.com/daniel-cmdline/teachat</a></span>
+  <span>teachatty · <a href="https://github.com/daniel-cmdline/teachat">github.com/daniel-cmdline/teachat</a></span>
   <span>Go · gorilla/websocket v1.5.3 · tview v0.42.0 · RFC 6455</span>
 </footer>
 

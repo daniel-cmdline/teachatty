@@ -220,7 +220,7 @@ func TestStuckMemberIsDroppedAndTheRoomKeepsGoing(t *testing.T) {
 	eventually(t, "the stuck member is dropped", func() bool { return members("stuck") == 2 })
 }
 
-// browsers send an Origin header; the teachat client doesn't
+// browsers send an Origin header; the teachatty client doesn't
 func TestBrowserOriginIsRefused(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(handleWS))
 	defer srv.Close()

@@ -1,4 +1,4 @@
-// Package version tells which build of teachat is running, for --version.
+// Package version tells which build of teachatty is running, for --version.
 package version
 
 import "runtime/debug"

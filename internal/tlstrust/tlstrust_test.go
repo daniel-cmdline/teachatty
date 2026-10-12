@@ -83,7 +83,7 @@ func TestTrustOnFirstUseThenPinned(t *testing.T) {
 		t.Fatalf("expected a first-use notice, got %q", notice.String())
 	}
 	if strings.Contains(notice.String(), "warning") {
-		t.Fatalf("teachat's own self-signed certificate shouldn't warn, got %q", notice.String())
+		t.Fatalf("teachatty's own self-signed certificate shouldn't warn, got %q", notice.String())
 	}
 	saved, _ := os.ReadFile(known)
 	if string(saved) != "chat:7347 "+fp+"\n" {

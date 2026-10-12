@@ -9,7 +9,7 @@ import (
 
 // writeWait is how long one member gets to take a message. A member that doesn't read
 // (a laptop that went to sleep, a network that dropped without closing the connection, a
-// teachat pipe suspended with Ctrl+Z, a badly written client) fills its network buffers and then
+// teachatty pipe suspended with Ctrl+Z, a badly written client) fills its network buffers and then
 // blocks every write to it; without a limit, broadcast would wait forever while holding
 // the room's lock, and the whole room would freeze. A var, not a const, so the tests can
 // shorten it.

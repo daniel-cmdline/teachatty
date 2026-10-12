@@ -14,7 +14,7 @@ import (
 	"github.com/rivo/uniseg"
 )
 
-// teachat's colors, from the logo: the neon mint cup and the amber speech bubble
+// teachatty's colors, from the logo: the neon mint cup and the amber speech bubble
 const (
 	mint  = "#72e3a6"
 	amber = "#f2b04f"
@@ -65,7 +65,7 @@ func format(alias, text string, mine, mentioned bool) string {
 
 // New builds the screen. send is called on every Enter with the typed text.
 func New(room, alias string, send func(text string)) *UI {
-	// teachat's look, set before any widget is created (they copy these defaults):
+	// teachatty's look, set before any widget is created (they copy these defaults):
 	// the terminal's own background and text color, mint borders, amber titles
 	tview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
 	tview.Styles.PrimaryTextColor = tcell.ColorDefault
@@ -187,7 +187,7 @@ func (u *UI) Print(line string) {
 	})
 }
 
-// Notice shows a line from teachat itself (not from a person), in gray.
+// Notice shows a line from teachatty itself (not from a person), in gray.
 // Call it before Run: it writes directly instead of queueing, because QueueUpdate
 // waits for the event loop, and before Run there's no loop yet (it would block forever).
 func (u *UI) Notice(line string) {

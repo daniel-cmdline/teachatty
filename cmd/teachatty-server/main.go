@@ -19,7 +19,7 @@ import (
 
 // Upgrader instance that upgrades the HTTP connection to WebSocket
 var upgrader = websocket.Upgrader{
-	// browsers always send an Origin header on WebSocket connections, and the teachat
+	// browsers always send an Origin header on WebSocket connections, and the teachatty
 	// client never does. Refusing any request that has one keeps web pages (opened in a
 	// browser on the same network) from connecting to the server behind the user's back.
 	CheckOrigin: func(r *http.Request) bool { return r.Header.Get("Origin") == "" },
@@ -48,7 +48,7 @@ func main() {
 	// --addr: where to listen. ":9000" = port 9000 on all interfaces;
 	// "10.0.0.5:7347" = only that interface (for example, only the internal network)
 	addr := flag.String("addr", defaultAddr, "address to listen on, host:port (empty host = all interfaces)")
-	flag.BoolVar(&noPipes, "no-pipes", false, "refuse clients in pipe mode (command | teachat), e.g. to keep build logs out")
+	flag.BoolVar(&noPipes, "no-pipes", false, "refuse clients in pipe mode (command | teachatty), e.g. to keep build logs out")
 	flag.IntVar(&maxPerIP, "max-per-ip", maxPerIP, "max simultaneous connections from one IP address (0 = no limit, e.g. behind a company NAT)")
 	noTLS := flag.Bool("no-tls", false, "serve plain ws:// without encryption (for testing)")
 	// --tls-cert/--tls-key: the administrator's own certificate (Let's Encrypt, company CA)
@@ -60,7 +60,7 @@ func main() {
 	flag.Parse()
 	checkArgs()
 	if *showVersion {
-		fmt.Println("teachat-server", version.String())
+		fmt.Println("teachatty-server", version.String())
 		return
 	}
 	if *noTLS && (*certFile != "" || *keyFile != "") {
@@ -85,14 +85,14 @@ func main() {
 	}
 
 	http.HandleFunc("/ws", handleWS)
-	fmt.Printf("teachat-server listening on %s · default room: %s · %s\n", *addr, defaultRoom, security)
+	fmt.Printf("teachatty-server listening on %s · default room: %s · %s\n", *addr, defaultRoom, security)
 	log.Fatal(http.Serve(ln, nil))
 }
 
 // handleWS serves each connection on /ws, in the goroutine net/http creates for it.
 // It's a named function (not an anonymous one inside main) so the tests can use it.
 func handleWS(w http.ResponseWriter, r *http.Request) {
-	// --no-pipes: the teachat client declares pipe mode in the URL. A courtesy rule, not
+	// --no-pipes: the teachatty client declares pipe mode in the URL. A courtesy rule, not
 	// a security boundary: a client that doesn't declare it isn't stopped (the rate limit
 	// is what holds back abuse); it keeps teammates' build logs out of a chat room.
 	if noPipes && r.URL.Query().Get("mode") == "pipe" {

@@ -10,11 +10,11 @@ import (
 // so the help never drifts out of date.
 func usage() {
 	out := flag.CommandLine.Output()
-	fmt.Fprint(out, `teachat: a terminal chat
+	fmt.Fprint(out, `teachatty: a terminal chat
 
 Usage:
-  teachat [flags]               open the full-screen chat
-  command | teachat [flags]     pipe mode: send the input to the room and exit
+  teachatty [flags]               open the full-screen chat
+  command | teachatty [flags]     pipe mode: send the input to the room and exit
                                 (lines arriving together go as one message)
 
 Flags:
@@ -44,19 +44,20 @@ Security:
   Connections use TLS (wss://). A certificate from an authority this machine
   trusts (Let's Encrypt, an installed company CA) is verified like a browser
   does. A self-signed one is trusted the first time you connect: its
-  fingerprint is saved in ~/.config/teachat/known_servers, and if it changes
+  fingerprint is saved in ~/.config/teachatty/known_servers, and if it changes
   later, the client refuses to connect, like SSH. Compare the fingerprint
   with the one the server prints. --no-tls connects over plain ws://.
 
 Examples:
-  teachat                                    join the local room on this machine's server
-  teachat --server chat.company:7347 --room dev
-  make 2>&1 | teachat --room ops             send the build output to the room
+  teachatty --server teachatty.com             join the public server
+  teachatty                                    join the local room on this machine's server
+  teachatty --server chat.company:7347 --room dev
+  make 2>&1 | teachatty --room ops             send the build output to the room
 `)
 }
 
 // checkArgs handles whatever is left after the flags. Neither binary takes positional
-// arguments, so any of them (e.g. "teachat start") would do nothing: show the help
+// arguments, so any of them (e.g. "teachatty start") would do nothing: show the help
 // instead of carrying on silently. "help" is treated as a request for help.
 // An unknown flag already lands on the help by itself, through the flag package.
 func checkArgs() {

@@ -2,7 +2,17 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
-## 2026-10-12 15:39 — teachat's look: colors, welcome banner, timestamps, mentions
+## 2026-10-12 16:02 — teachat is now teachatty
+
+- **New name, new domain: teachatty.com.** Everything renamed: the binaries (`teachatty`, `teachatty-server`; folders `cmd/teachatty`, `cmd/teachatty-server`), every message and help screen, the config directory (`~/.config/teachatty/`), the self-signed certificate's name, the systemd unit (`teachatty-server.service`, user `teachatty`, `/var/lib/teachatty`), the certbot hook (`teachatty-deploy-hook.sh`, `TEACHATTY_USER`/`TEACHATTY_TLS_DIR`), `.gitignore`, the README, the roadmap, the site, the docs, and the older entries of this log.
+- **Not renamed yet:** the GitHub repository and the Go module path (`github.com/daniel-cmdline/teachat`). `go install` requires the module path to match the repository, so both change together once the repository is renamed on GitHub. Until then: `go install github.com/daniel-cmdline/teachat/cmd/teachatty@latest`.
+- **New logo** with the new name, redrawn as SVG in the original's style (the neon mint cup with its `>_` prompt, the amber speech bubble and cursor, the dark grid) and rendered to PNG at the same size: `assets/teachatty.svg` (source, editable) and `assets/teachatty.png`.
+- **`--server` without a port uses 7347**, so the pitch is just `teachatty --server teachatty.com`. The address is normalized first, so `teachatty.com` and `teachatty.com:7347` are the same server for trust on first use.
+- **The public server is advertised**: "Try it now" in the README, the site's hero and "Start in a minute", the docs' "Getting started", and the client's `-h`.
+- Upgrading from a teachat build: the config moved from `~/.config/teachat/` to `~/.config/teachatty/`, so a server generates a new self-signed certificate (clients trust it as a new server) unless the files are moved over.
+- **Tested:** `--server localhost` connects to `localhost:7347`, and a second connection as `localhost:7347` is recognized as the same, already trusted server; the config lands in `~/.config/teachatty/`. All 19 tests pass with `-race`.
+
+## 2026-10-12 15:39 — teachatty's look: colors, welcome banner, timestamps, mentions
 
 - **The logo's colors:** mint borders (`#72e3a6`), an amber title (`#f2b04f`), on the terminal's own background and text color instead of forced black and white, so light terminals look right too.
 - **Welcome banner:** on joining, the teacup in text next to the server and room, how the connection is secured (TLS version and the start of the server's fingerprint, read from the live connection; or "not encrypted" with `--no-tls`), the keys, and a hint about mentions. The first-use trust notice follows it.
@@ -12,20 +22,20 @@ Log of shipped features, newest first. Add an entry with every commit.
 - **Tested end to end** with two clients in tmux: the banner, the colors (mint and amber escape codes on screen), the placeholder, the timestamps, a mention highlighted in amber with the bell flag set on the mentioned user's window only, a non-mention left alone. No data races.
 - The client's `-h` explains mentions too.
 - **Tested live** with a person in the room: the mention beeped their terminal, and piping `/etc/passwd` arrived as a single batched message with the alias on the first line only.
-- **Docs:** README, roadmap (the UI ideas still open), the site (the screen mockup now shows the colors, timestamps and a mention; new "Mentions ring your bell" point), and the docs ("joining" and "mentions" in the client reference, a "teachat's look" section in client internals). Also brings README, roadmap and both pages up to date (release next, current state, ~1,250 lines).
+- **Docs:** README, roadmap (the UI ideas still open), the site (the screen mockup now shows the colors, timestamps and a mention; new "Mentions ring your bell" point), and the docs ("joining" and "mentions" in the client reference, a "teachatty's look" section in client internals). Also brings README, roadmap and both pages up to date (release next, current state, ~1,250 lines).
 
 ## 2026-10-12 15:31 — Running as a systemd service
 
-- **`contrib/systemd/teachat-server.service`:** starts on boot, restarts on failure, logs to the journal, runs as its own `teachat` system user. Keeps its files in `/var/lib/teachat` (`StateDirectory`, with `XDG_CONFIG_HOME=/var/lib`, so the self-signed certificate lands there). Hardened: no capabilities (port 7347 is above 1024), `ProtectSystem=strict`, `ProtectHome`, private `/tmp`, `NoNewPrivileges`, only network sockets, and more. Two `ExecStart` lines: with a Let's Encrypt certificate, or self-signed.
-- **`contrib/certbot/teachat-deploy-hook.sh`:** Let's Encrypt's `privkey.pem` is readable only by root. certbot runs the hook as root after every issuance and renewal; it copies the key and then the certificate into `/var/lib/teachat/tls/`, owned by `teachat`. The server's file-watching reload picks them up, so renewals disconnect nobody. It refuses to run outside certbot (no `RENEWED_LINEAGE`).
+- **`contrib/systemd/teachatty-server.service`:** starts on boot, restarts on failure, logs to the journal, runs as its own `teachatty` system user. Keeps its files in `/var/lib/teachatty` (`StateDirectory`, with `XDG_CONFIG_HOME=/var/lib`, so the self-signed certificate lands there). Hardened: no capabilities (port 7347 is above 1024), `ProtectSystem=strict`, `ProtectHome`, private `/tmp`, `NoNewPrivileges`, only network sockets, and more. Two `ExecStart` lines: with a Let's Encrypt certificate, or self-signed.
+- **`contrib/certbot/teachatty-deploy-hook.sh`:** Let's Encrypt's `privkey.pem` is readable only by root. certbot runs the hook as root after every issuance and renewal; it copies the key and then the certificate into `/var/lib/teachatty/tls/`, owned by `teachatty`. The server's file-watching reload picks them up, so renewals disconnect nobody. It refuses to run outside certbot (no `RENEWED_LINEAGE`).
 - **Tested:** `systemd-analyze verify` on the unit. The server run as a transient systemd service with the same restart policy and hardening (`systemd-run --user`): it starts, logs to the journal, accepts a client, and after a `kill -9` systemd restarts it with the same certificate (same fingerprint, the client still trusts it). The hook, run through a full certbot-style renewal against a live server: the same process started serving the new certificate without a restart, and the client connected. Two notes from testing: a user-mode systemd needs `PrivateUsers=yes` for the namespace-based hardening (the real system service doesn't), and `PrivateTmp` hides `/tmp` from the service, which is why the binary goes in `/usr/local/bin` and the state in `/var/lib`.
 - **Docs:** README and the HTML ("Run the server as a service", the step-by-step setup, linked from the sidebar), roadmap.
 
 ## 2026-10-12 15:20 — Ready for the open internet: rate limits, per-IP cap, batched pipes, --no-pipes
 
-- **Rate limit per connection:** 5 messages a second with bursts of 20, and 256 KB a second with bursts up to one 1 MB message. Over the limit, the server waits before reading that connection again: nothing is dropped and nobody is disconnected, TCP slows the sender down. A script flooding a room is simply slowed to the limit. Code in `cmd/teachat-server/limits.go`, with `golang.org/x/time/rate` (new dependency, Go team, pure Go).
+- **Rate limit per connection:** 5 messages a second with bursts of 20, and 256 KB a second with bursts up to one 1 MB message. Over the limit, the server waits before reading that connection again: nothing is dropped and nobody is disconnected, TCP slows the sender down. A script flooding a room is simply slowed to the limit. Code in `cmd/teachatty-server/limits.go`, with `golang.org/x/time/rate` (new dependency, Go team, pure Go).
 - **Per-IP connection cap:** at most 10 simultaneous connections per IP (each costs ~17 KB), configurable with `--max-per-ip` (`0` = no cap, for a company behind NAT). Over the cap the server answers 429 before the WebSocket handshake, and the client says `the server refused the connection: too many connections from your address`.
-- **Pipe mode batches lines:** lines that arrive within 100 ms of the first one go out as one multi-line message (up to 64 KB). `seq 1 5000 | teachat` is now 1 message instead of 5,000, so build logs neither flood the room nor hit the rate limit. Slow output (a line every 300 ms) still goes out line by line. In the full screen, a batch shows the alias on its first line only. The "large logs flood the room" limitation is gone.
+- **Pipe mode batches lines:** lines that arrive within 100 ms of the first one go out as one multi-line message (up to 64 KB). `seq 1 5000 | teachatty` is now 1 message instead of 5,000, so build logs neither flood the room nor hit the rate limit. Slow output (a line every 300 ms) still goes out line by line. In the full screen, a batch shows the alias on its first line only. The "large logs flood the room" limitation is gone.
 - **`--no-pipes` on the server:** refuses clients in pipe mode, for rooms that want chat and no build logs. The client now declares pipe mode in the connection URL (`mode=pipe`); a `--no-pipes` server answers 403 with the reason. A courtesy rule, not a security boundary: a client that doesn't declare the mode isn't stopped, and the rate limit is what holds back abuse.
 - **Refused connections show the server's own reason.** For the deliberate refusals (403, 429), the client prints the body the server sent, e.g. `the server refused the connection: this server doesn't accept pipe mode (it was started with --no-pipes)`, instead of a generic `bad handshake`.
 - **Tests:** 3 new server tests: 30 messages sent at once all arrive, but take ~2 s (burst of 20, then 5/s); the third connection from one IP gets 429 with the cap at 2, and connecting works again once one leaves; with `--no-pipes`, a pipe-mode connection gets 403 with the reason while an interactive one gets in. The stuck-member test lifts the rate limit, since it pushes 20 MB on purpose. 19 tests in total, with `-race`.
@@ -34,11 +44,11 @@ Log of shipped features, newest first. Add an entry with every commit.
 
 ## 2026-10-12 15:11 — Stuck members no longer freeze rooms, origin check, binary names, --version
 
-- **Bug fixed: one stuck member froze its whole room for good.** Broadcast writes to members one at a time while holding the room's lock; a member that stops reading (a laptop asleep, a network that dropped without closing, a teachat pipe suspended with Ctrl+Z) filled its buffers and blocked broadcast forever. Each write now has a 5-second deadline (`writeWait`): a member that misses it is removed and its connection closed, and the room carries on after one pause.
+- **Bug fixed: one stuck member froze its whole room for good.** Broadcast writes to members one at a time while holding the room's lock; a member that stops reading (a laptop asleep, a network that dropped without closing, a teachatty pipe suspended with Ctrl+Z) filled its buffers and blocked broadcast forever. Each write now has a 5-second deadline (`writeWait`): a member that misses it is removed and its connection closed, and the room carries on after one pause.
 - Correction to something said while planning: the full-screen client can't be suspended with Ctrl+Z, because raw mode delivers Ctrl+Z as an ordinary key. The real triggers are the ones above.
-- **Pipe mode exits as soon as its connection drops**, even while waiting for input. Before, a quiet `tail -f | teachat` whose connection dropped (for example, dropped by the server after being suspended) hung until the next line arrived.
-- **Origin check:** the server refuses requests with an `Origin` header (403). Browsers always send one on WebSocket connections and the teachat client never does, so web pages can't connect behind a user's back.
-- **Binary names:** `cmd/client` → `cmd/teachat`, `cmd/server` → `cmd/teachat-server`, so `go install github.com/daniel-cmdline/teachat/cmd/teachat@latest` installs `teachat`. The root `.gitignore` now ignores `/teachat` and `/teachat-server`.
+- **Pipe mode exits as soon as its connection drops**, even while waiting for input. Before, a quiet `tail -f | teachatty` whose connection dropped (for example, dropped by the server after being suspended) hung until the next line arrived.
+- **Origin check:** the server refuses requests with an `Origin` header (403). Browsers always send one on WebSocket connections and the teachatty client never does, so web pages can't connect behind a user's back.
+- **Binary names:** `cmd/client` → `cmd/teachatty`, `cmd/server` → `cmd/teachatty-server`, so `go install github.com/daniel-cmdline/teachat/cmd/teachatty@latest` installs `teachatty`. The root `.gitignore` now ignores `/teachatty` and `/teachatty-server`.
 - **`--version`** on both binaries (`internal/version`): a release build's `-ldflags` value, else the version Go stamps (a tag, or `v0.0.0-<date>-<commit>+dirty` from a clone), else `dev` (go run).
 - **Tests:** 2 new server tests: a member that never reads is dropped and the others receive all 40 messages of 512 KB (checked that it fails cleanly, with "the room froze", when the deadline is removed); a request with an `Origin` header gets 403. 16 tests in total, with `-race`.
 - **Tested end to end:** a suspended pipe client in a room flooded with 40 lines of 500 KB: the flood finished in ~6 s (one 5 s pause), a full-screen watcher received the last line, and the suspended client, once resumed, exited with `connection closed`. A quiet pipe exits right away when the server stops.
@@ -55,7 +65,7 @@ Log of shipped features, newest first. Add an entry with every commit.
 - **Warnings for the two silent mistakes.** Both used to work at first and break at the first renewal, ~60 days later:
   - **Server, at startup:** if the administrator's chain doesn't verify against the machine's trusted authorities, it prints a warning, with `use fullchain.pem, not cert.pem` when the file has no intermediate certificate. A warning, not an error: a private company CA installed on every client is legitimate and fails this check on the server.
   - **Client, on first use:** when a certificate that isn't self-signed falls back to first-use trust (connecting by IP instead of the domain name, or a missing intermediate), the notice comes with a warning that it will be refused after the next renewal.
-- **Bug found by the new tests:** teachat's own self-signed certificate triggered the client warning. `CheckSignatureFrom` refuses a signer that isn't marked as an authority, so the self-signed check now verifies the signature directly with the certificate's own key.
+- **Bug found by the new tests:** teachatty's own self-signed certificate triggered the client warning. `CheckSignatureFrom` refuses a signer that isn't marked as an authority, so the self-signed check now verifies the signature directly with the certificate's own key.
 - **Tested end to end with certbot's layout** (`live/` symlinks into `archive/`, renewal by creating `fullchain2.pem`/`privkey2.pem` with a new key and repointing the links): the server picked up the renewal without a restart and the client kept connecting with nothing pinned. Also: `cert.pem` by mistake (startup warning), connecting by IP (client warning), default self-signed (no warnings).
 - `cmd/server/main_test.go` (deleted from the working tree, never committed as deleted) was restored.
 - **Docs:** README, roadmap, both help screens (`-h` also skips empty defaults and shows on/off flags as `off`), and the HTML security section.
@@ -63,8 +73,8 @@ Log of shipped features, newest first. Add an entry with every commit.
 ## 2026-10-12 14:28 — TLS by default, with trust on first use
 
 - Traffic is encrypted with TLS 1.3 by default. No certificates to manage: the server generates a self-signed one on first start, and clients trust a server the first time they connect, like SSH.
-- **Server:** on first start, creates `~/.config/teachat/server.crt` and `server.key` (ECDSA P-256, valid 10 years; the key is mode 600) and reuses them. The startup line now ends with `· TLS · fingerprint SHA256:...`.
-- **Client:** connects over `wss://`. The first connection to a server (keyed by what you typed in `--server`) saves its fingerprint in `~/.config/teachat/known_servers` and shows `* trusting new server ...`: in gray inside the chat, or on stderr in pipe mode. Later connections are silent. A different fingerprint is refused with an SSH-style warning showing both fingerprints, and exit code 1.
+- **Server:** on first start, creates `~/.config/teachatty/server.crt` and `server.key` (ECDSA P-256, valid 10 years; the key is mode 600) and reuses them. The startup line now ends with `· TLS · fingerprint SHA256:...`.
+- **Client:** connects over `wss://`. The first connection to a server (keyed by what you typed in `--server`) saves its fingerprint in `~/.config/teachatty/known_servers` and shows `* trusting new server ...`: in gray inside the chat, or on stderr in pipe mode. Later connections are silent. A different fingerprint is refused with an SSH-style warning showing both fingerprints, and exit code 1.
 - New servers are accepted without asking (like SSH's `accept-new`): a yes/no question would block pipe mode and cron.
 - The fingerprint pins the public key (`SHA256:` + base64 of the hash of the key), so a certificate renewed with the same key keeps it.
 - `--no-tls` on both binaries for plain `ws://` (testing). If only one side uses TLS, the error comes with a hint (`try --no-tls` / `drop --no-tls`).
@@ -76,7 +86,7 @@ Log of shipped features, newest first. Add an entry with every commit.
 
 ## 2026-10-12 13:05 — Everything in English
 
-- Code comments, the site and documentation (`docs/index.html`, `docs/docs.html`), `roadmap.md` and this log are now in English, like the terminal output already was. Older entries below were translated; quoted strings that used to be in Portuguese (`conexão encerrada`, `teachat-server escutando em ...`) are kept as they were, since that's what the program printed back then.
+- Code comments, the site and documentation (`docs/index.html`, `docs/docs.html`), `roadmap.md` and this log are now in English, like the terminal output already was. Older entries below were translated; quoted strings that used to be in Portuguese (`conexão encerrada`, `teachatty-server escutando em ...`) are kept as they were, since that's what the program printed back then.
 - Test data changed from `"oi"` to `"hi"`.
 - `gofmt` is now clean across the repo: the two older comments missing a space after `//` were fixed while translating them.
 - Code shown in `docs.html` was regenerated from the translated source files.
@@ -94,15 +104,15 @@ Log of shipped features, newest first. Add an entry with every commit.
 
 ## 2026-10-12 11:45 — Help when a command does nothing
 
-- A stray argument (`teachat dev`, `teachat-server start`) was silently ignored: the server started and the client tried to connect. Now both print `unknown argument: ...` and the help, and exit with code 2 without doing anything.
-- `teachat help` and `teachat-server help` show the help with code 0.
+- A stray argument (`teachatty dev`, `teachatty-server start`) was silently ignored: the server started and the client tried to connect. Now both print `unknown argument: ...` and the help, and exit with code 2 without doing anything.
+- `teachatty help` and `teachatty-server help` show the help with code 0.
 - An unknown flag (`--romm`) already showed the help, through Go's `flag` package.
 - Code: `checkArgs()` in each binary's `usage.go`, called right after `flag.Parse()`.
 - Docs: exit code table and server reference in `docs.html`, README and roadmap.
 
 ## 2026-10-12 11:43 — Terminal output in English
 
-- Everything the program prints to the terminal moved to English: `connection closed` (previously `conexão encerrada`), `error reading input`, the server's startup line (`teachat-server listening on :7347 · default room: local`), and test names and messages.
+- Everything the program prints to the terminal moved to English: `connection closed` (previously `conexão encerrada`), `error reading input`, the server's startup line (`teachatty-server listening on :7347 · default room: local`), and test names and messages.
 - The alias for users without `$USER` changed from `anonimo` to `anonymous`, since it shows up in the chat.
 - Code comments, the site and documentation (`docs/`), and these notes stayed in Portuguese at this point.
 - The site and documentation were adjusted to quote the new messages, and the client code excerpts were regenerated.
@@ -111,17 +121,17 @@ Log of shipped features, newest first. Add an entry with every commit.
 
 - **Port 7347** on the server and as the client default (previously 23456). The port became the `addr` constant on the server.
 - **`-h` on both binaries**, in English: what it is, how to use it, flags with defaults, keys and examples. Flag descriptions went to English too, since they show up in the help. In the client, defaults come from the flags themselves (`flag.Lookup`/`VisitAll`), so the help follows any change. The server didn't read flags at all: `server -h` started the server. Now it shows the help and exits.
-- The server's startup message states the port and default room: `teachat-server escutando em :7347 · sala padrão: local` (translated to English in the next entry).
+- The server's startup message states the port and default room: `teachatty-server escutando em :7347 · sala padrão: local` (translated to English in the next entry).
 - The `/ws` handler moved out of `main` into the `handleWS` function, so the tests can use it. No behavior change.
 - **First automated tests** (`cmd/server/main_test.go`, `go test ./...`): the `local` room exists before any connection; connecting without a room lands in it and it survives empty; other rooms disappear when they empty; a message in `local` arrives as `ana: oi`. They run with `-race`. Checked that they catch bugs: removing the `local` protection in `leave` makes a test fail.
-- **Tested end to end** with the binaries: a client with no flags opens on `local · del`; another client in `local` receives the message; `echo ... | teachat` with no flags reaches `local`; everyone leaves, someone joins again, and `local` is still there.
+- **Tested end to end** with the binaries: a client with no flags opens on `local · del`; another client in `local` receives the message; `echo ... | teachatty` with no flags reaches `local`; everyone leaves, someone joins again, and `local` is still there.
 - **Docs:** README, roadmap and the HTML (port, default room `local`, `-h`, tests in the repository map, and the server code regenerated from `handleWS`).
 
 ## 2026-10-12 11:29 — Default room `local`
 
 - The server creates the `local` room when it starts, and it's never deleted, even when empty. Other rooms keep appearing and disappearing as before.
 - Without `--room`, the client joins `local` (previously `geral`). On the server, a connection with no room in the URL also lands in `local`, instead of a room with an empty name.
-- **Why:** just run `teachat` and everyone on the same server is in the same room, without agreeing on a name.
+- **Why:** just run `teachatty` and everyone on the same server is in the same room, without agreeing on a name.
 - **Why permanent:** creating the room at server start would be pointless if it got deleted on the first departure.
 - In the code: the `defaultRoom` constant, the `rooms` map starts with it, `cmp.Or` for the empty name, and `leave` doesn't delete the default room.
 - **Tested:** a client without `--room` opens with the title `local · ana`; a raw connection with no room receives its messages; leaving and coming back keeps the room working; room `dev` is unchanged. No races on the server.
@@ -130,7 +140,7 @@ Log of shipped features, newest first. Add an entry with every commit.
 ## 2026-10-12 11:14 — Site and documentation up to date
 
 - Clears the pending HTML updates for alias colors, the default alias and pipe mode.
-- **Site (`docs/index.html`):** the screen mockup shows aliases in their real colors (computed with the same hash as the client) and the screen's owner in bold. New highlight "Each person gets a color". The pipes card lost its "coming soon" tag and gained an example; "Start in a minute" shows `uptime | teachat`; pipe mode left "What's next".
+- **Site (`docs/index.html`):** the screen mockup shows aliases in their real colors (computed with the same hash as the client) and the screen's owner in bold. New highlight "Each person gets a color". The pipes card lost its "coming soon" tag and gained an example; "Start in a minute" shows `uptime | teachatty`; pipe mode left "What's next".
 - **Documentation (`docs/docs.html`):**
   - Client reference: `--alias` defaulting to `$USER`, colors in the message area, pipe mode exit codes and a new **Pipe mode** subsection (usage, echo, one message per line, no size limit, safe in scripts). Linked from the sidebar.
   - Client internals: new subsections **Colors per alias** (hash, bold, `tview.Escape`, the palette) and **Pipe mode internals** (the two goroutines, why it reads the room, the close at the end, the flooded-room test). Code shown was regenerated from the current files, with the whole `pipe.go`.
@@ -139,8 +149,8 @@ Log of shipped features, newest first. Add an entry with every commit.
 
 ## 2026-10-12 10:58 — Pipe mode
 
-- When stdin is not a terminal (`command | teachat`), the client doesn't open the screen: it sends each line to the room, echoes it to the terminal (like `tee`) and exits when the input ends. Code in `cmd/client/pipe.go`; `main.go` only gained `term.IsTerminal`.
-- `tail -f app.log | teachat --room ops` works as a continuous stream, until Ctrl+C.
+- When stdin is not a terminal (`command | teachatty`), the client doesn't open the screen: it sends each line to the room, echoes it to the terminal (like `tee`) and exits when the input ends. Code in `cmd/client/pipe.go`; `main.go` only gained `term.IsTerminal`.
+- `tail -f app.log | teachatty --room ops` works as a continuous stream, until Ctrl+C.
 - An empty line is echoed but not sent to the room. A last line without `\n` is still sent.
 - No line length limit: `bufio.Reader.ReadString` instead of `bufio.Scanner`, which gives up at 64 KB.
 - **Clean exit:** at the end it sends the WebSocket close frame and waits for the server's answer (up to 2 s), so the last lines aren't lost. Exit code 0; failing to connect or the connection dropping midway: 1, with the error on stderr.
@@ -168,7 +178,7 @@ Log of shipped features, newest first. Add an entry with every commit.
 ## 2026-10-12 09:40 — Site and documentation split
 
 - The single page `teachat-por-dentro.html` became two, in `docs/`, with shared CSS in `docs/style.css`:
-  - `index.html`, the site: what teachat is, the screen, the principles, the measured numbers, the animation of how a message travels, how to get started and what's next. A **docs** button in the top bar and the hero.
+  - `index.html`, the site: what teachatty is, the screen, the principles, the measured numbers, the animation of how a message travels, how to get started and what's next. A **docs** button in the top bar and the hero.
   - `docs.html`, the documentation, with a sidebar: overview, getting started, client reference (flags, keys, exit codes) and server reference (endpoint, message format, room lifecycle), architecture, protocol, server and client internals, capacity, limitations and roadmap.
 - **Why:** the single page mixed presentation with reference. People getting to know the project and people looking up how something works want different things.
 - The docs are now in git. The `.gitignore`, which only ignored the old page, was deleted.
@@ -185,7 +195,7 @@ Log of shipped features, newest first. Add an entry with every commit.
 - The client's `main.go` only knows `ui.New`, `Print`, `Run` and `Stop`. Everything tview lives in `internal/ui`.
 - **Bug found in the live test:** tview's `TextView` doesn't follow new text by default. Once the screen filled up, new messages stayed hidden until you pressed PgDn. Fixed with `ScrollToEnd()`.
 - **New dependencies:** `rivo/tview` v0.42.0, `gdamore/tcell/v2` v2.8.1, `rivo/uniseg` (text width on screen) and their indirect dependencies. All pure Go: the client is still a single binary.
-- **Broke:** `echo oi | teachat` fails, because tview requires a terminal. It comes back with the line-by-line fallback, the first step of pipe mode.
+- **Broke:** `echo oi | teachatty` fails, because tview requires a terminal. It comes back with the line-by-line fallback, the first step of pipe mode.
 - No mouse, on purpose: with the mouse on, selecting and copying chat text would require Shift.
 
 ## 2026-10-12 08:43 — Module renamed to `github.com/daniel-cmdline/teachat`
@@ -205,7 +215,7 @@ Log of shipped features, newest first. Add an entry with every commit.
 ## 2026-10-11 09:45 — Rooms and aliases
 
 - The client takes the `--server`, `--room` and `--alias` flags (defaults: `localhost:23456`, `geral`, `anonimo`) instead of a raw `ws://` URL. The URL is built internally.
-- `--server` lets a company point the client at its own teachat instance.
+- `--server` lets a company point the client at its own teachatty instance.
 - Messages only go to people in the sender's room, with the alias in front (`daniel: oi`).
 - Joining a room that doesn't exist creates it. A room is deleted when its last member leaves.
 

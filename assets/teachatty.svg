@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="559" viewBox="0 0 1024 559">
+  <defs>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#72e3a6" stroke-opacity="0.09" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="fade" cx="50%" cy="48%" r="55%">
+      <stop offset="0" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <mask id="gridmask"><rect width="1024" height="559" fill="url(#fade)"/></mask>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="7" result="b1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="b2"/>
+      <feMerge><feMergeNode in="b1"/><feMergeNode in="b2"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softglow" x="-20%" y="-40%" width="140%" height="180%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="559" fill="#0e1214"/>
+  <rect width="1024" height="559" fill="url(#grid)" mask="url(#gridmask)"/>
+  <rect x="352" y="118" width="320" height="262" rx="18" fill="#0a0d0f" fill-opacity="0.85" stroke="#72e3a6" stroke-opacity="0.05"/>
+
+  <!-- steam: an amber speech bubble, and a terminal cursor -->
+  <g fill="none" stroke="#f2b04f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <path d="M487 186 C466 186 463 160 484 157 C485 136 513 130 524 146 C540 136 559 151 551 166
+             C567 170 563 192 545 190 L509 190 L497 204 L498 190 Z"/>
+    <path d="M603 182 L630 182"/>
+  </g>
+  <rect x="580" y="144" width="11" height="40" rx="2" fill="#f2b04f" filter="url(#glow)"/>
+
+  <!-- the cup, in mint -->
+  <g fill="none" stroke="#72e3a6" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <path d="M426 216 L604 216 C602 270 578 316 540 326 L486 326 C448 316 428 270 426 216 Z"/>
+    <path d="M604 224 C628 218 648 232 641 256 C634 278 608 292 586 296"/>
+    <path d="M550 188 L582 207 L550 226"/>
+    <path d="M429 328 L447 339 L429 350"/>
+    <path d="M456 352 L476 352"/>
+    <path d="M492 356 L600 356"/>
+  </g>
+  <path d="M448 262 C454 292 470 308 490 314" fill="none" stroke="#72e3a6" stroke-width="4.5" stroke-linecap="round" stroke-opacity="0.85" filter="url(#softglow)"/>
+
+  <!-- the name -->
+  <text x="512" y="452" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="74" font-weight="500" letter-spacing="1">
+    <tspan fill="#eef3f0">tea</tspan><tspan fill="#72e3a6" filter="url(#softglow)">chatty</tspan>
+  </text>
+</svg>

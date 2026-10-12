@@ -1,0 +1,53 @@
+# teachatty-server as a systemd service: starts on boot, restarts if it crashes,
+# logs to the journal (journalctl -u teachatty-server), runs as its own user.
+#
+# Install (see README, "Running as a service"):
+#   sudo useradd --system --home /var/lib/teachatty --shell /usr/sbin/nologin teachatty
+#   sudo install -m 0755 teachatty-server /usr/local/bin/
+#   sudo cp teachatty-server.service /etc/systemd/system/
+#   sudo systemctl enable --now teachatty-server
+
+[Unit]
+Description=teachatty server (terminal chat)
+Documentation=https://github.com/daniel-cmdline/teachat
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=teachatty
+Group=teachatty
+
+# With your own certificate (Let's Encrypt, copied here by contrib/certbot/teachatty-deploy-hook.sh):
+ExecStart=/usr/local/bin/teachatty-server --tls-cert /var/lib/teachatty/tls/fullchain.pem --tls-key /var/lib/teachatty/tls/privkey.pem
+# Without a domain, use the self-signed certificate instead (created on first start
+# in /var/lib/teachatty/, fingerprint in the journal):
+#ExecStart=/usr/local/bin/teachatty-server
+
+Restart=on-failure
+RestartSec=2
+
+# teachatty keeps its files in $XDG_CONFIG_HOME/teachatty: with this, /var/lib/teachatty,
+# which StateDirectory creates and gives to the teachatty user
+Environment=XDG_CONFIG_HOME=/var/lib
+StateDirectory=teachatty
+StateDirectoryMode=0750
+
+# Hardening: the server only needs the network and its own directory. Port 7347 is
+# above 1024, so it needs no capabilities at all.
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

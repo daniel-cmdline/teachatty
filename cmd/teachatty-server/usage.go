@@ -10,10 +10,10 @@ import (
 // (flag.VisitAll).
 func usage() {
 	out := flag.CommandLine.Output()
-	fmt.Fprint(out, `teachat-server: the server for teachat, a terminal chat
+	fmt.Fprint(out, `teachatty-server: the server for teachatty, a terminal chat
 
 Usage:
-  teachat-server [flags]
+  teachatty-server [flags]
 
 Flags:
 `)
@@ -40,7 +40,7 @@ above that the server reads it more slowly, so senders are slowed down, not cut
 off. Each IP may hold --max-per-ip connections; use 0 behind a company NAT.
 
 Traffic is encrypted with TLS by default. On first start the server creates
-a self-signed certificate in ~/.config/teachat/ and prints its fingerprint
+a self-signed certificate in ~/.config/teachatty/ and prints its fingerprint
 on every start. Clients trust it the first time they connect and refuse a
 different one afterwards, like SSH. Share the fingerprint so people can
 check it. --no-tls serves plain ws:// (testing only).
@@ -51,16 +51,16 @@ a browser, with no pinning, so renewals just work. The files are reloaded
 when they change, so certbot renewals need no restart.
 
 Examples:
-  teachat-server                       listen on port 7347, all interfaces
-  teachat-server --addr :9000          listen on port 9000
-  teachat-server --addr 10.0.0.5:7347  listen only on the internal network
-  teachat-server --tls-cert /etc/letsencrypt/live/chat.example.com/fullchain.pem \
+  teachatty-server                       listen on port 7347, all interfaces
+  teachatty-server --addr :9000          listen on port 9000
+  teachatty-server --addr 10.0.0.5:7347  listen only on the internal network
+  teachatty-server --tls-cert /etc/letsencrypt/live/chat.example.com/fullchain.pem \
                  --tls-key  /etc/letsencrypt/live/chat.example.com/privkey.pem
 `, defaultRoom, maxMessage>>20)
 }
 
 // checkArgs handles whatever is left after the flags. Neither binary takes positional
-// arguments, so any of them (e.g. "teachat-server start") would do nothing: show the help
+// arguments, so any of them (e.g. "teachatty-server start") would do nothing: show the help
 // instead of carrying on silently. "help" is treated as a request for help.
 // An unknown flag already lands on the help by itself, through the flag package.
 func checkArgs() {
