@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>teachat</title>
+<meta name="description" content="Chat de terminal para devs e sysadmins, auto-hospedável e minimalista.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="toc" aria-label="Seções">
+  <div class="wrap">
+    <a class="brand" href="#topo">tea<b>chat</b></a>
+    <a class="chip" href="#tela">a tela</a>
+    <a class="chip" href="#porque">por quê</a>
+    <a class="chip" href="#numeros">números</a>
+    <a class="chip" href="#mensagem">como funciona</a>
+    <a class="chip" href="#comece">comece</a>
+    <a class="btn primary" href="docs.html">docs</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<header class="hero" id="topo">
+  <div class="hero-grid">
+    <div>
+      <div class="eyebrow">chat de terminal · auto-hospedável · em desenvolvimento</div>
+      <h1>Um chat que mora no terminal<span class="cursor" aria-hidden="true"></span></h1>
+      <p class="lede">Para devs e sysadmins. Sem app pesado, sem navegador, sem ruído: você entra numa sala com uma linha de comando, conversa e sai com <kbd>Ctrl</kbd>+<kbd>C</kbd>. Roda no servidor da sua empresa, e as mensagens não saem da rede.</p>
+      <div class="cta">
+        <a class="btn primary" href="docs.html">docs</a>
+        <a class="btn" href="https://github.com/daniel-cmdline/teachat">github</a>
+      </div>
+      <p class="cmd" style="margin-top:18px">$ <b>teachat --room dev --alias daniel</b></p>
+    </div>
+    <img class="logo" src="../assets/teachat.png" alt="Logo do teachat: uma xícara verde neon com um prompt de terminal e um balão de conversa âmbar">
+  </div>
+</header>
+
+<section id="tela">
+  <div class="read">
+    <div class="sec-head"><h2>A tela</h2></div>
+    <p>Tela cheia, como o <code>vim</code> ou o <code>htop</code>. Mensagens em cima, sua caixa de digitação embaixo.</p>
+  </div>
+  <div class="split">
+    <div class="scroll"><pre class="screen big" role="img" aria-label="Tela do teachat: área de mensagens da sala dev com quatro mensagens, e a caixa de digitação embaixo com o texto boa! vou fechar o ticket">┌─────────────────── dev · mateus ───────────────────┐
+│joao: alguém viu o alerta de disco no db-02?        │
+│daniel: vi, tá em 91%. limpando os logs antigos     │
+│mateus: valeu. o deploy das 10h subiu?              │
+│daniel: subiu, sem erro no healthcheck              │
+│                                                    │
+└────────────────────────────────────────────────────┘
+╔════════════════════════════════════════════════════╗
+║boa! vou fechar o ticket█                           ║
+╚════════════════════════════════════════════════════╝</pre></div>
+    <ul class="feats">
+      <li><b>Ninguém atropela o que você digita.</b> Mensagens novas chegam em cima; seu texto fica parado na caixa.</li>
+      <li><b>A caixa cresce com a mensagem</b>, até 5 linhas, para você ver tudo que escreveu.</li>
+      <li><b><kbd>PgUp</kbd> para ler o passado</b> sem ser puxado de volta. Comece a digitar e a tela volta para as mais novas.</li>
+      <li><b>Uma sala por comando.</b> Entrar numa sala que não existe cria a sala; quando o último sai, ela some.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="porque">
+  <div class="read">
+    <div class="sec-head"><h2>Por quê</h2></div>
+    <p>Chat de trabalho virou app pesado com notificação, thread, emoji e mil canais. O teachat é o oposto: uma ferramenta de linha de comando, pequena, que você usa como qualquer outra.</p>
+  </div>
+  <div class="cards">
+    <div class="card"><b>Flags, não URLs</b><p>Ninguém digita <code>ws://...?room=x</code>. É <code>teachat --room dev --alias daniel</code>, e o resto é detalhe interno.</p></div>
+    <div class="card"><b>Auto-hospedável</b><p>Um binário de servidor numa máquina interna. O tráfego não sai da rede da empresa. O cliente aponta para ela com <code>--server</code>.</p></div>
+    <div class="card"><b>Funciona com pipes<span class="tag-soon">em breve</span></b><p><code>comando | teachat --room ops</code> manda a saída de um comando direto para a sala do time.</p></div>
+    <div class="card"><b>Minimalista</b><p>Só entra feature que se paga. O código todo tem cerca de 270 linhas, apoiadas em bibliotecas que fazem o trabalho pesado.</p></div>
+  </div>
+</section>
+
+<section id="numeros">
+  <div class="read">
+    <div class="sec-head"><h2>Leve de verdade</h2></div>
+    <p>Medido, não estimado. O servidor guarda tudo em memória e cada conexão custa pouco.</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="n">~17<small>KB</small></div><div class="l">de RAM por pessoa conectada</div></div>
+    <div class="stat"><div class="n">50.000</div><div class="l">conexões em 875 MB de RAM no teste de carga</div></div>
+    <div class="stat"><div class="n">0,11<small>ms</small></div><div class="l">de latência numa sala pequena com outra sala de 50 mil pessoas recebendo mensagens</div></div>
+    <div class="stat"><div class="n">1</div><div class="l">binário para o servidor, 1 para o cliente. Go puro, sem dependência de sistema</div></div>
+  </div>
+  <div class="src">fonte: testes de carga locais, servidor e clientes na mesma máquina, 11/10/2026 · <a href="docs.html#capacidade">detalhes</a></div>
+</section>
+
+<section id="mensagem">
+  <div class="read">
+    <div class="sec-head"><h2>Como uma mensagem viaja</h2></div>
+    <p>Daniel e Mateus estão na sala <code>dev</code>. João está na <code>geral</code>. Daniel digita <code>oi</code> e aperta <kbd>Enter</kbd>. Avance passo a passo, ou aperte reproduzir. As setas do teclado também funcionam.</p>
+    <p class="muted">Cada passo está explicado em detalhe na <a href="docs.html#arquitetura">documentação</a>.</p>
+  </div>
+
+  <div class="stage">
+    <div class="scroll">
+      <svg id="flow" viewBox="0 0 1000 470" role="img" aria-label="Diagrama animado do caminho de uma mensagem do PC do Daniel, pelo servidor, até o PC do Mateus">
+        <rect class="kern-band" x="0" y="292" width="1000" height="90"></rect>
+        <text class="kern-label" x="500" y="398" text-anchor="middle">KERNEL · SOCKETS · TCP</text>
+
+        <rect class="col-frame" x="14" y="30" width="252" height="362" rx="12"></rect>
+        <rect class="col-frame" x="374" y="30" width="252" height="362" rx="12"></rect>
+        <rect class="col-frame" x="734" y="30" width="252" height="362" rx="12"></rect>
+        <text class="col-title" x="140" y="22" text-anchor="middle">PC DO DANIEL · --room dev</text>
+        <text class="col-title" x="500" y="22" text-anchor="middle">SERVIDOR teachat · :23456</text>
+        <text class="col-title" x="860" y="22" text-anchor="middle">PC DO MATEUS · --room dev</text>
+
+        <line class="wire" x1="262" y1="337" x2="378" y2="337"></line>
+        <line class="wire" x1="622" y1="337" x2="738" y2="337"></line>
+        <text class="kern-label" x="320" y="326" text-anchor="middle">TCP</text>
+        <text class="kern-label" x="680" y="326" text-anchor="middle">TCP</text>
+
+        <g class="box" id="d-term"><rect x="30" y="64" width="220" height="80" rx="9"></rect><text class="t" x="46" y="92">terminal (modo raw)</text><text class="d" x="46" y="112">cada tecla vai direto</text><text class="d" x="46" y="128">para o programa</text></g>
+        <g class="box" id="d-main"><rect x="30" y="170" width="220" height="84" rx="9"></rect><text class="t" x="46" y="198">loop de eventos (tview)</text><text class="d" x="46" y="218">Enter → send(text)</text><text class="d" x="46" y="234">  conn.WriteMessage(...)</text></g>
+        <g class="box" id="d-kern"><rect x="30" y="302" width="220" height="70" rx="9"></rect><text class="t" x="46" y="330">socket fd 6</text><text class="d" x="46" y="350">buffer de envio do kernel</text></g>
+
+        <g class="box" id="s-room"><rect x="390" y="64" width="220" height="96" rx="9"></rect><text class="t" x="406" y="92">Room "dev"</text><text class="d" x="406" y="112">mu: sync.Mutex</text><text class="d" x="406" y="128">members: connDaniel → daniel</text><text class="d" x="406" y="144">         connMateus → mateus</text></g>
+        <g class="box" id="s-gd"><rect x="390" y="186" width="220" height="84" rx="9"></rect><text class="t" x="406" y="214">goroutine do Daniel</text><text class="d" x="406" y="234">for { conn.ReadMessage()</text><text class="d" x="406" y="250">      room.broadcast(...) }</text></g>
+        <g class="box" id="s-kern"><rect x="390" y="302" width="220" height="70" rx="9"></rect><text class="t" x="406" y="330">sockets fd 5 · fd 8</text><text class="d" x="406" y="350">fd 5 = Daniel · fd 8 = Mateus</text></g>
+
+        <g class="box" id="m-term"><rect x="750" y="64" width="220" height="80" rx="9"></rect><text class="t" x="766" y="92">tela do Mateus</text><text class="d" x="766" y="112">daniel: oi entra na</text><text class="d" x="766" y="128">área de mensagens</text></g>
+        <g class="box" id="m-recv"><rect x="750" y="170" width="220" height="84" rx="9"></rect><text class="t" x="766" y="198">goroutine de recebimento</text><text class="d" x="766" y="218">go func() { for {</text><text class="d" x="766" y="234">  conn.ReadMessage() ...</text></g>
+        <g class="box" id="m-kern"><rect x="750" y="302" width="220" height="70" rx="9"></rect><text class="t" x="766" y="330">socket fd 6</text><text class="d" x="766" y="350">buffer de recebimento</text></g>
+
+        <g class="ghost"><rect x="734" y="414" width="252" height="44" rx="9"></rect><text x="750" y="434">joão · --room geral</text><text x="750" y="449">não está em dev.members: nada chega</text></g>
+        <g class="ghost"><rect x="374" y="414" width="252" height="44" rx="9"></rect><text x="390" y="434">goroutine do Mateus no servidor</text><text x="390" y="449">parada no ReadMessage dela, não participa</text></g>
+
+        <g id="pkt" transform="translate(140,104)"><rect x="-44" y="-13" width="88" height="26" rx="13"></rect><text id="pkt-t" x="0" y="4" text-anchor="middle">oi ⏎</text></g>
+      </svg>
+    </div>
+    <div class="stage-ui">
+      <div aria-live="polite">
+        <div class="step-meta" id="s-meta">passo 1 de 11 · cliente do Daniel</div>
+        <div class="step-title" id="s-title">Enter: a tecla chega na hora</div>
+        <p class="step-body" id="s-body">O terminal está em modo raw: o kernel não guarda nem ecoa nada, cada tecla vai direto para o programa. O tcell lê os bytes do stdin e transforma em eventos. O "o" e o "i" já estão na caixa de digitação. Quando chega o Enter, o SetInputCapture pega a tecla antes da caixa.</p>
+        <div class="step-code" id="s-code">input.SetInputCapture(func(ev *tcell.EventKey) ...
+    case tcell.KeyEnter:   // ← chega aqui</div>
+        <div class="dots" id="dots"></div>
+      </div>
+      <div class="controls">
+        <button id="b-prev" type="button">◀ anterior</button>
+        <button id="b-play" type="button" class="primary">▶ reproduzir</button>
+        <button id="b-next" type="button">próximo ▶</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="comece">
+  <div class="read">
+    <div class="sec-head"><h2>Comece em um minuto</h2></div>
+    <p>Precisa de Go 1.27 ou mais novo.</p>
+  </div>
+  <pre style="max-width:var(--read);margin-top:16px">git clone https://github.com/daniel-cmdline/teachat.git
+cd teachat
+
+<span class="c"># o servidor (porta 23456)</span>
+go run ./cmd/server
+
+<span class="c"># em outro terminal, ou em outra máquina</span>
+go run ./cmd/client --room dev --alias daniel</pre>
+  <p class="muted" style="margin-top:14px">Flags, teclas, outra máquina na rede e como gerar os binários: na <a href="docs.html#comecando">documentação</a>.</p>
+</section>
+
+<section id="proximos">
+  <div class="read">
+    <div class="sec-head"><h2>O que vem aí</h2></div>
+    <p>O teachat está no começo e cresce uma feature por vez.</p>
+  </div>
+  <ol class="road">
+    <li><div><b>--addr no servidor</b><p>Porta configurável, para cada empresa rodar a própria instância do jeito que quiser.</p></div></li>
+    <li><div><b>Modo pipe</b><p><code>comando | teachat --room ops</code>: manda cada linha para a sala e sai.</p></div></li>
+    <li><div><b>Salas com senha + TLS</b><p>Senha nunca trafega aberta: <code>wss://</code> com certificado fixado para rede local.</p></div></li>
+    <li><div><b>Histórico de mensagens</b><p>SQLite em Go puro. Quem entra vê o que já foi dito, e o modo pipe guarda logs.</p></div></li>
+  </ol>
+  <div class="cta" style="margin-top:40px">
+    <a class="btn primary" href="docs.html">ler a documentação</a>
+  </div>
+</section>
+
+<footer>
+  <span>teachat · <a href="https://github.com/daniel-cmdline/teachat">github.com/daniel-cmdline/teachat</a></span>
+  <span>Go · gorilla/websocket v1.5.3 · tview v0.42.0 · RFC 6455</span>
+</footer>
+
+</div>
+<script>
+(function () {
+  // ---------- stepper ----------
+  var P = {
+    "d-term": [140, 104], "d-main": [140, 212], "d-kern": [140, 337],
+    "s-kern": [500, 337], "s-gd": [500, 228], "s-room": [500, 112],
+    "m-kern": [860, 337], "m-recv": [860, 212], "m-term": [860, 104]
+  };
+  var steps = [
+    { at: "d-term", pkt: "oi ⏎", meta: "cliente do Daniel",
+      title: "Enter: a tecla chega na hora",
+      body: "O terminal está em modo raw: o kernel não guarda nem ecoa nada, cada tecla vai direto para o programa. O tcell lê os bytes do stdin e transforma em eventos. O \"o\" e o \"i\" já estão na caixa de digitação. Quando chega o Enter, o SetInputCapture pega a tecla antes da caixa.",
+      code: "input.SetInputCapture(func(ev *tcell.EventKey) ...\n    case tcell.KeyEnter:   // ← chega aqui" },
+    { at: "d-main", pkt: "oi", meta: "cliente do Daniel",
+      title: "send(text) e WriteMessage",
+      body: "O loop de eventos lê o texto da caixa e chama a função send que o main.go passou para ui.New. Ela faz o WriteMessage: a gorilla monta um frame de texto com cabeçalho 81 82, uma chave de máscara de 4 bytes sorteada e os 2 bytes de \"oi\" mascarados com XOR. Na tela do Daniel, \"daniel: oi\" já aparece, escrito pelo próprio cliente.",
+      code: "send(text)   // → conn.WriteMessage(websocket.TextMessage, []byte(text))" },
+    { at: "d-kern", pkt: "81 82 …", meta: "kernel do Daniel",
+      title: "write() no socket",
+      body: "O Go chama write() no descritor do socket, a mesma chamada de sistema de escrever num arquivo. O kernel copia os 8 bytes para o buffer de envio daquele socket e retorna. É aqui que o WriteMessage termina: ele não espera o outro lado receber.",
+      code: "write(fd 6, [81 82 37 fa 21 3d 58 93])" },
+    { at: "s-kern", pkt: "81 82 …", meta: "rede → kernel do servidor",
+      title: "TCP atravessa a rede",
+      body: "O TCP do kernel embrulha os bytes em segmentos e pacotes IP, manda pela rede, reenvia o que se perder e garante a ordem. No servidor, o kernel coloca os bytes no buffer de recebimento do socket fd 5 e avisa o epoll do runtime do Go.",
+      code: "[::1]:40974  →  [::1]:23456   (fd 5 no servidor)" },
+    { at: "s-gd", pkt: "oi", meta: "servidor · goroutine do Daniel",
+      title: "ReadMessage acorda",
+      body: "O runtime acorda a goroutine do Daniel, que estava parada no ReadMessage sem ocupar thread. A gorilla lê o cabeçalho, sabe que vêm 2 bytes mascarados, aplica o XOR com a chave e devolve msg = \"oi\".",
+      code: "_, msg, err := conn.ReadMessage()   // msg = []byte(\"oi\")" },
+    { at: "s-gd", pkt: "daniel: oi", meta: "servidor · goroutine do Daniel",
+      title: "O alias vai na frente",
+      body: "O Go não soma string com []byte. Então msg vira string, junta com o alias e volta para []byte, que é o que o WriteMessage espera. Cada conversão copia os bytes.",
+      code: "[]byte(alias + \": \" + string(msg))   // \"daniel: oi\"" },
+    { at: "s-room", pkt: "daniel: oi", meta: "servidor · Room \"dev\"",
+      title: "broadcast: trava a sala e percorre members",
+      body: "A goroutine do Daniel trava só o mutex da sala dev. Outras salas seguem livres. Ela percorre members: pula connDaniel (myOwnConn) e escreve em connMateus. A connJoao não está nessa lista, por isso o João nunca recebe.",
+      code: "r.mu.Lock()\nfor c := range r.members {\n    if c != myOwnConn { c.WriteMessage(...) }\n}" },
+    { at: "s-kern", pkt: "81 0a …", meta: "servidor · kernel",
+      title: "write() no socket do Mateus",
+      body: "O frame de volta não leva máscara, porque servidor nunca mascara. São 2 bytes de cabeçalho (81 0a: texto, 10 bytes) e o texto \"daniel: oi\" puro. Quem escreve é a goroutine do Daniel, não a do Mateus.",
+      code: "write(fd 8, [81 0a 64 61 6e 69 65 6c 3a 20 6f 69])" },
+    { at: "m-kern", pkt: "81 0a …", meta: "rede → kernel do Mateus",
+      title: "Mais uma viagem TCP",
+      body: "A mesma história, na outra conexão: segmentos TCP até o PC do Mateus, buffer de recebimento do socket dele, aviso para o runtime do Go do cliente.",
+      code: "[::1]:23456  →  [::1]:40990   (fd 6 no cliente do Mateus)" },
+    { at: "m-recv", pkt: "daniel: oi", meta: "cliente do Mateus",
+      title: "A goroutine de recebimento acorda",
+      body: "No cliente do Mateus, a goroutine de recebimento estava parada no ReadMessage enquanto o loop de eventos do tview esperava o teclado. Ela acorda com \"daniel: oi\". Sem máscara para tirar.",
+      code: "go func() {\n    for { _, msg, err := conn.ReadMessage() ..." },
+    { at: "m-term", pkt: "daniel: oi", meta: "cliente do Mateus",
+      title: "Aparece na tela",
+      body: "A goroutine de recebimento não desenha: ela chama screen.Print, que põe a mudança na fila do tview. O loop de eventos escreve a linha na área de mensagens e redesenha a tela, com o que o Mateus estava digitando intacto na caixa. Do Enter do Daniel até aqui, numa rede local, passam poucos milissegundos.",
+      code: "screen.Print(string(msg))   // → QueueUpdateDraw → daniel: oi" }
+  ];
+
+  var pkt = document.getElementById("pkt");
+  var pktT = document.getElementById("pkt-t");
+  var pktR = pkt.querySelector("rect");
+  var dots = document.getElementById("dots");
+  var cur = 0, pos = P["d-term"].slice(), anim = null, timer = null;
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  steps.forEach(function (s, i) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("aria-label", "Ir para o passo " + (i + 1));
+    b.addEventListener("click", function () { stop(); go(i); });
+    dots.appendChild(b);
+  });
+
+  function setPkt(label) {
+    pktT.textContent = label;
+    var w = Math.max(64, label.length * 7.6 + 26);
+    pktR.setAttribute("x", -w / 2);
+    pktR.setAttribute("width", w);
+  }
+  function moveTo(target) {
+    if (anim) cancelAnimationFrame(anim);
+    var from = pos.slice(), to = P[target].slice();
+    if (reduce) { pos = to; pkt.setAttribute("transform", "translate(" + to[0] + "," + to[1] + ")"); return; }
+    var t0 = null, dur = 650;
+    function f(t) {
+      if (!t0) t0 = t;
+      var k = Math.min(1, (t - t0) / dur);
+      var e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      pos = [from[0] + (to[0] - from[0]) * e, from[1] + (to[1] - from[1]) * e];
+      pkt.setAttribute("transform", "translate(" + pos[0] + "," + pos[1] + ")");
+      if (k < 1) anim = requestAnimationFrame(f);
+    }
+    anim = requestAnimationFrame(f);
+  }
+  function go(i) {
+    cur = Math.max(0, Math.min(steps.length - 1, i));
+    var s = steps[cur];
+    document.querySelectorAll("#flow .box").forEach(function (g) { g.classList.remove("on"); });
+    document.querySelectorAll("#flow .box").forEach(function (g) { g.classList.remove("seen"); });
+    steps.slice(0, cur).forEach(function (p) { document.getElementById(p.at).classList.add("seen"); });
+    document.getElementById(s.at).classList.add("on");
+    setPkt(s.pkt);
+    moveTo(s.at);
+    document.getElementById("s-meta").textContent = "passo " + (cur + 1) + " de " + steps.length + " · " + s.meta;
+    document.getElementById("s-title").textContent = s.title;
+    document.getElementById("s-body").textContent = s.body;
+    document.getElementById("s-code").textContent = s.code;
+    Array.prototype.forEach.call(dots.children, function (d, j) {
+      d.classList.toggle("on", j === cur);
+      d.classList.toggle("done", j < cur);
+    });
+  }
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+    document.getElementById("b-play").textContent = "▶ reproduzir";
+  }
+  function play() {
+    if (timer) { stop(); return; }
+    if (cur === steps.length - 1) go(0);
+    document.getElementById("b-play").textContent = "❚❚ pausar";
+    timer = setInterval(function () {
+      if (cur >= steps.length - 1) { stop(); return; }
+      go(cur + 1);
+    }, 2600);
+  }
+  document.getElementById("b-next").addEventListener("click", function () { stop(); go(cur + 1); });
+  document.getElementById("b-prev").addEventListener("click", function () { stop(); go(cur - 1); });
+  document.getElementById("b-play").addEventListener("click", play);
+  document.addEventListener("keydown", function (e) {
+    if (e.target && (e.target.tagName === "INPUT")) return;
+    var sec = document.getElementById("mensagem").getBoundingClientRect();
+    if (sec.bottom < 0 || sec.top > window.innerHeight) return;
+    if (e.key === "ArrowRight") { stop(); go(cur + 1); }
+    if (e.key === "ArrowLeft") { stop(); go(cur - 1); }
+  });
+  go(0);
+})();
+</script>
+
+</body>
+</html>

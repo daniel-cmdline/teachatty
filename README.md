@@ -80,6 +80,9 @@ go run ./cmd/client --server 192.168.0.10:23456 --room dev --alias mateus
 cmd/server/   the server: rooms and message relay
 cmd/client/   the terminal client
 internal/ui/  the client's screen (built on tview)
+docs/         project site and documentation
 ```
+
+Documentation lives in [docs/](docs/): `index.html` is the project site and `docs.html` is the full documentation (usage, client and server reference, protocol, internals). Both are in Portuguese.
 
 The roadmap and the feature log are in [roadmap.md](roadmap.md) and [features.md](features.md). Both are written in Portuguese for now.

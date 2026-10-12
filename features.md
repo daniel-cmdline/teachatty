@@ -2,6 +2,15 @@
 
 Registro das features entregues, da mais nova para a mais antiga. Adicione uma entrada a cada commit.
 
+## 2026-10-12 09:40 — Site e documentação separados
+
+- A página única `teachat-por-dentro.html` virou duas, em `docs/`, com o CSS compartilhado em `docs/style.css`:
+  - `index.html`, o site: o que é o teachat, a tela, os princípios, os números medidos, a animação de como uma mensagem viaja, como começar e o que vem aí. Botão **docs** no topo e no hero.
+  - `docs.html`, a documentação, com barra lateral: visão geral, começando, referência do cliente (flags, teclas, códigos de saída) e do servidor (endpoint, formato das mensagens, ciclo de vida das salas), arquitetura, protocolo, servidor e cliente por dentro, capacidade, limitações e roadmap.
+- **Por quê:** a página única misturava apresentação com referência. Quem quer conhecer o projeto e quem quer consultar como algo funciona procuram coisas diferentes.
+- Os docs agora estão no git. O `.gitignore`, que só ignorava a página antiga, foi apagado.
+- Limitações novas documentadas: o servidor aceita WebSocket de qualquer origem e não limita o tamanho das mensagens.
+
 ## 2026-10-12 09:26 — Tela cheia no cliente (tview)
 
 - O cliente virou uma tela cheia feita com `tview`, no pacote novo `internal/ui`: mensagens em cima, numa área com o título `sala · alias`, e uma caixa de digitação embaixo.
