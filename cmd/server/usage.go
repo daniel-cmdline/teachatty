@@ -18,7 +18,15 @@ Usage:
 Flags:
 `)
 	flag.VisitAll(func(f *flag.Flag) {
-		fmt.Fprintf(out, "  --%-8s %s\n  %-10s default: %s\n", f.Name, f.Usage, "", f.DefValue)
+		fmt.Fprintf(out, "  --%-8s %s\n", f.Name, f.Usage)
+		// no default line when there's nothing to show; on/off flags read better as "off"
+		switch f.DefValue {
+		case "":
+		case "false":
+			fmt.Fprintf(out, "  %-10s default: off\n", "")
+		default:
+			fmt.Fprintf(out, "  %-10s default: %s\n", "", f.DefValue)
+		}
 	})
 	fmt.Fprintf(out, `
 Rooms live in memory: joining a room that doesn't exist creates it, and it
@@ -27,12 +35,24 @@ starts with the server and exists as long as the server runs. Anyone who
 connects without choosing a room lands there.
 
 Messages larger than %d MB are refused and that connection is closed.
-Traffic is not encrypted (ws://): only use it on networks you trust.
+
+Traffic is encrypted with TLS by default. On first start the server creates
+a self-signed certificate in ~/.config/teachat/ and prints its fingerprint
+on every start. Clients trust it the first time they connect and refuse a
+different one afterwards, like SSH. Share the fingerprint so people can
+check it. --no-tls serves plain ws:// (testing only).
+
+With a real certificate (Let's Encrypt, your company's CA), pass it with
+--tls-cert and --tls-key. Clients that trust that authority verify it like
+a browser, with no pinning, so renewals just work. The files are reloaded
+when they change, so certbot renewals need no restart.
 
 Examples:
   teachat-server                       listen on port 7347, all interfaces
   teachat-server --addr :9000          listen on port 9000
   teachat-server --addr 10.0.0.5:7347  listen only on the internal network
+  teachat-server --tls-cert /etc/letsencrypt/live/chat.example.com/fullchain.pem \
+                 --tls-key  /etc/letsencrypt/live/chat.example.com/privkey.pem
 `, defaultRoom, maxMessage>>20)
 }
 

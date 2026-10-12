@@ -74,7 +74,7 @@
   </div>
   <div class="cards">
     <div class="card"><b>Flags, not URLs</b><p>Nobody types <code>ws://...?room=x</code>. It's <code>teachat --room dev --alias daniel</code>, and the rest is an internal detail.</p></div>
-    <div class="card"><b>Self-hosted</b><p>One server binary on an internal machine, on the port and interface you choose (<code>--addr</code>). Traffic never leaves the company network. The client points at it with <code>--server</code>.</p></div>
+    <div class="card"><b>Self-hosted, encrypted</b><p>One server binary on an internal machine, on the port and interface you choose (<code>--addr</code>). Traffic never leaves the company network, and it's encrypted with TLS by default, with no certificates to manage.</p></div>
     <div class="card"><b>Works with pipes</b><p><code>make 2>&amp;1 | teachat --room ops</code> sends each line to the team's room, shows it in your terminal and exits at the end. Safe in scripts and cron.</p></div>
     <div class="card"><b>Minimalist</b><p>A feature only goes in if it pays for itself. The whole codebase is about 380 lines, standing on libraries that do the heavy lifting.</p></div>
   </div>
@@ -180,7 +180,7 @@ uptime | go run ./cmd/client</pre>
     <p>teachat is just getting started and grows one feature at a time.</p>
   </div>
   <ol class="road">
-    <li><div><b>Password rooms + TLS</b><p>A password never travels in the clear: <code>wss://</code> with a pinned certificate for local networks.</p></div></li>
+    <li><div><b>Password rooms</b><p>Private rooms, now that traffic is encrypted and a password can travel safely.</p></div></li>
     <li><div><b>Message history</b><p>Pure-Go SQLite. Whoever joins sees what was already said, and pipe mode keeps logs.</p></div></li>
   </ol>
   <div class="cta" style="margin-top:40px">

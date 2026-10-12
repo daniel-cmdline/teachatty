@@ -24,14 +24,15 @@ What works today:
 - A full-screen terminal UI: messages on top, an input box at the bottom that grows as you type. Incoming messages never overwrite what you're typing.
 - Each alias gets its own color, the same on every client. Your own messages show your alias in bold.
 - Pipe mode: `some-command | teachat --room ops` sends each line to the room, still prints it to your terminal, and exits when the input ends.
+- TLS by default, with trust on first use: no certificates to manage.
 - Server and client as separate binaries.
 
 What's coming next:
 
-- Password-protected rooms and TLS (`wss://`)
+- Password-protected rooms
 - Message history
 
-> ⚠️ **No encryption yet.** Traffic is plain `ws://`, so only use teachat on networks you trust until TLS lands.
+> 🔒 **Encrypted by default.** On first start the server creates a self-signed certificate and prints its fingerprint. Clients trust a server the first time they connect and refuse a different certificate afterwards, like SSH. The first connection is the one to verify: compare the fingerprint the client shows with the one the server prints. Running on a real domain? Pass your own certificate with `--tls-cert` and `--tls-key`.
 
 ## Quick start
 
@@ -81,8 +82,23 @@ go run ./cmd/client --server 192.168.0.10:7347
 | Flag | Default | Description |
 |---|---|---|
 | `--addr` | `:7347` | Where to listen, `host:port`. No host means all interfaces (`--addr :9000`); a host limits it to that interface (`--addr 10.0.0.5:7347`) |
+| `--no-tls` | off | Serve plain `ws://` without encryption (testing only) |
+| `--tls-cert`, `--tls-key` | self-signed | Your own certificate and key (PEM), e.g. Let's Encrypt's `fullchain.pem` and `privkey.pem`. Clients that trust the authority verify it like a browser, and the files are reloaded when they change, so renewals need no restart |
 
 Messages larger than 1 MB are refused, and only the connection that sent them is closed.
+
+### Running with a Let's Encrypt certificate
+
+```bash
+teachat-server --tls-cert /etc/letsencrypt/live/chat.example.com/fullchain.pem \
+               --tls-key  /etc/letsencrypt/live/chat.example.com/privkey.pem
+teachat --server chat.example.com:7347
+```
+
+- Use **`fullchain.pem`**, not `cert.pem`: without the intermediate certificate, clients can't verify the chain. The server warns about this at startup.
+- Clients should connect **by the domain name**, not the IP: the certificate is only valid for the name. The client warns if it isn't.
+- `privkey.pem` is readable only by root. If teachat-server runs as a regular user, give it read access to the key (for example with a certbot deploy hook that copies the files somewhere it can read).
+- Renewals need no restart: the server reloads the files when they change.
 
 ## Client flags
 
@@ -91,6 +107,7 @@ Messages larger than 1 MB are refused, and only the connection that sent them is
 | `--server` | `localhost:7347` | Address of the teachat server |
 | `--room` | `local` | Room to join. `local` is created when the server starts and always exists, so everyone who skips `--room` meets there |
 | `--alias` | your login (`$USER`) | Name shown in front of your messages. Falls back to `anonymous` when `$USER` is unset |
+| `--no-tls` | off | Connect over plain `ws://`, to a server started with `--no-tls` |
 
 ## Project layout
 
@@ -98,6 +115,7 @@ Messages larger than 1 MB are refused, and only the connection that sent them is
 cmd/server/   the server: rooms and message relay
 cmd/client/   the terminal client
 internal/ui/  the client's screen (built on tview)
+internal/tlstrust/  TLS certificate and trust on first use
 docs/         project site and documentation
 ```
 

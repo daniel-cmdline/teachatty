@@ -19,13 +19,29 @@ Usage:
 Flags:
 `)
 	flag.VisitAll(func(f *flag.Flag) {
-		fmt.Fprintf(out, "  --%-8s %s\n  %-10s default: %s\n", f.Name, f.Usage, "", f.DefValue)
+		fmt.Fprintf(out, "  --%-8s %s\n", f.Name, f.Usage)
+		// no default line when there's nothing to show; on/off flags read better as "off"
+		switch f.DefValue {
+		case "":
+		case "false":
+			fmt.Fprintf(out, "  %-10s default: off\n", "")
+		default:
+			fmt.Fprintf(out, "  %-10s default: %s\n", "", f.DefValue)
+		}
 	})
 	fmt.Fprint(out, `
 Keys (full screen):
   Enter        send
   PgUp/PgDn    scroll messages; typing jumps back to the newest
   Ctrl+C       quit
+
+Security:
+  Connections use TLS (wss://). A certificate from an authority this machine
+  trusts (Let's Encrypt, an installed company CA) is verified like a browser
+  does. A self-signed one is trusted the first time you connect: its
+  fingerprint is saved in ~/.config/teachat/known_servers, and if it changes
+  later, the client refuses to connect, like SSH. Compare the fingerprint
+  with the one the server prints. --no-tls connects over plain ws://.
 
 Examples:
   teachat                                    join the local room on this machine's server

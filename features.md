@@ -2,6 +2,36 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-10-12 14:38 — Bring your own certificate
+
+- **Server:** `--tls-cert` and `--tls-key` serve the administrator's certificate instead of the self-signed one, for example Let's Encrypt's `fullchain.pem` and `privkey.pem`. The startup line describes it: `TLS · certificate for chat.example.com, issued by R11, valid until 2026-12-30`. Both flags go together, and neither combines with `--no-tls`.
+- **Renewals without restarts:** the files are checked on each new connection and reloaded when they change. If a reload fails halfway (certificate written, key not yet), the previous certificate keeps being served.
+- **Client, no new flag:** every certificate is first checked against the machine's trusted authorities, like a browser does (chain + hostname). If it passes, it's accepted with no pinning, so renewals with a new key just work. Only certificates that don't verify (self-signed) go through trust on first use.
+- **Why not just pin everything:** Let's Encrypt usually renews with a new key every ~60 days. Pinning would make every client refuse the legitimate server after each renewal.
+- **Tests:** 5 new in `internal/tlstrust` (an authority-signed certificate isn't pinned and survives a renewal with a new key; one for another hostname falls back to first-use trust, with the warning; the files are reloaded when they change; cert and key must go together; the server warns when the chain doesn't verify). 14 tests in total, with `-race`. A test-only pitfall was found and documented: `httptest.StartTLS` adds its own example certificate when the config uses `GetCertificate`, so the tests wrap the listener with `tls.NewListener`, like the real server.
+- **Tested end to end** with a fake authority made with `openssl`: the client trusting it connects with nothing pinned; renewing the certificate with a new key while the server runs is picked up without a restart and the client keeps connecting; a client that doesn't know the authority falls back to first-use trust; bad flag combinations and missing files fail clearly.
+- **Warnings for the two silent mistakes.** Both used to work at first and break at the first renewal, ~60 days later:
+  - **Server, at startup:** if the administrator's chain doesn't verify against the machine's trusted authorities, it prints a warning, with `use fullchain.pem, not cert.pem` when the file has no intermediate certificate. A warning, not an error: a private company CA installed on every client is legitimate and fails this check on the server.
+  - **Client, on first use:** when a certificate that isn't self-signed falls back to first-use trust (connecting by IP instead of the domain name, or a missing intermediate), the notice comes with a warning that it will be refused after the next renewal.
+- **Bug found by the new tests:** teachat's own self-signed certificate triggered the client warning. `CheckSignatureFrom` refuses a signer that isn't marked as an authority, so the self-signed check now verifies the signature directly with the certificate's own key.
+- **Tested end to end with certbot's layout** (`live/` symlinks into `archive/`, renewal by creating `fullchain2.pem`/`privkey2.pem` with a new key and repointing the links): the server picked up the renewal without a restart and the client kept connecting with nothing pinned. Also: `cert.pem` by mistake (startup warning), connecting by IP (client warning), default self-signed (no warnings).
+- `cmd/server/main_test.go` (deleted from the working tree, never committed as deleted) was restored.
+- **Docs:** README, roadmap, both help screens (`-h` also skips empty defaults and shows on/off flags as `off`), and the HTML security section.
+
+## 2026-10-12 14:28 — TLS by default, with trust on first use
+
+- Traffic is encrypted with TLS 1.3 by default. No certificates to manage: the server generates a self-signed one on first start, and clients trust a server the first time they connect, like SSH.
+- **Server:** on first start, creates `~/.config/teachat/server.crt` and `server.key` (ECDSA P-256, valid 10 years; the key is mode 600) and reuses them. The startup line now ends with `· TLS · fingerprint SHA256:...`.
+- **Client:** connects over `wss://`. The first connection to a server (keyed by what you typed in `--server`) saves its fingerprint in `~/.config/teachat/known_servers` and shows `* trusting new server ...`: in gray inside the chat, or on stderr in pipe mode. Later connections are silent. A different fingerprint is refused with an SSH-style warning showing both fingerprints, and exit code 1.
+- New servers are accepted without asking (like SSH's `accept-new`): a yes/no question would block pipe mode and cron.
+- The fingerprint pins the public key (`SHA256:` + base64 of the hash of the key), so a certificate renewed with the same key keeps it.
+- `--no-tls` on both binaries for plain `ws://` (testing). If only one side uses TLS, the error comes with a hint (`try --no-tls` / `drop --no-tls`).
+- **All TLS code lives in `internal/tlstrust`**, standard library only (`crypto/tls`, `crypto/x509`). The binaries only call `tlstrust.Server(...)` and `tlstrust.Client(server, notice)`.
+- **Bug found while testing:** on a first connection, the full screen never opened. The notice was shown with `Print`, which queues the update and waits for tview's event loop, and before `Run` there's no loop yet, so `main` blocked forever. Fixed with a new `ui.Notice`, which writes directly and is only called before `Run`.
+- **Tests:** `internal/tlstrust` has 3 (the certificate is generated once and reused, with the key at mode 600; trust on first use then silent; a different certificate under the same server name is refused), with `-race`.
+- **Tested end to end** with the binaries in a throwaway `HOME`: first start, first and second connection, server restart (same fingerprint), regenerated certificate (refused), TLS on one side only (hint), `--no-tls` on both. `openssl s_client` confirms TLS 1.3 with AES-128-GCM.
+- **Docs:** README, roadmap (passwords are now next step 1; TLS decisions recorded), and the HTML: a new "Security: TLS and trust on first use" section, flags and exit codes, the connection section, layers and repository map, and the "no encryption" limitation replaced by the trust-on-first-use caveat.
+
 ## 2026-10-12 13:05 — Everything in English
 
 - Code comments, the site and documentation (`docs/index.html`, `docs/docs.html`), `roadmap.md` and this log are now in English, like the terminal output already was. Older entries below were translated; quoted strings that used to be in Portuguese (`conexão encerrada`, `teachat-server escutando em ...`) are kept as they were, since that's what the program printed back then.

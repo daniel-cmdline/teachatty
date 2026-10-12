@@ -2,14 +2,18 @@ package main
 
 import (
 	"cmp"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/gorilla/websocket"
+
+	"github.com/daniel-cmdline/teachat/internal/tlstrust"
 )
 
 // Upgrader instance that upgrades the HTTP connection to WebSocket
@@ -40,9 +44,17 @@ func main() {
 	// --addr: where to listen. ":9000" = port 9000 on all interfaces;
 	// "10.0.0.5:7347" = only that interface (for example, only the internal network)
 	addr := flag.String("addr", defaultAddr, "address to listen on, host:port (empty host = all interfaces)")
+	noTLS := flag.Bool("no-tls", false, "serve plain ws:// without encryption (for testing)")
+	// --tls-cert/--tls-key: the administrator's own certificate (Let's Encrypt, company CA)
+	// instead of the self-signed one; clients then verify it like a browser does
+	certFile := flag.String("tls-cert", "", "certificate file (PEM), e.g. Let's Encrypt's fullchain.pem; default: self-signed")
+	keyFile := flag.String("tls-key", "", "private key file (PEM) for --tls-cert, e.g. privkey.pem")
 	flag.Usage = usage
 	flag.Parse()
 	checkArgs()
+	if *noTLS && (*certFile != "" || *keyFile != "") {
+		log.Fatal("--no-tls can't be combined with --tls-cert/--tls-key")
+	}
 
 	// open the port before announcing: with a busy port or a bad address,
 	// the error shows up on its own, with no misleading "listening" first
@@ -50,8 +62,19 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// TLS is on by default; everything about certificates lives in internal/tlstrust
+	security := "no TLS (plain ws://)"
+	if !*noTLS {
+		cfg, desc, err := tlstrust.Server(*certFile, *keyFile, os.Stderr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ln = tls.NewListener(ln, cfg)
+		security = "TLS · " + desc
+	}
+
 	http.HandleFunc("/ws", handleWS)
-	fmt.Printf("teachat-server listening on %s · default room: %s\n", *addr, defaultRoom)
+	fmt.Printf("teachat-server listening on %s · default room: %s · %s\n", *addr, defaultRoom, security)
 	log.Fatal(http.Serve(ln, nil))
 }
 

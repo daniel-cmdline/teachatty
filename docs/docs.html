@@ -27,6 +27,7 @@
   <a href="#client-ref">client</a>
   <a href="#pipe-mode">pipe mode</a>
   <a href="#server-ref">server</a>
+  <a href="#security">security (TLS)</a>
   <div class="grp">how it works</div>
   <a href="#architecture">architecture</a>
   <a href="#connection">connection</a>
@@ -45,7 +46,7 @@
   <div class="read">
     <div class="sec-head"><span class="sec-num">01</span><h2>Overview</h2></div>
     <p>teachat is a terminal chat for developers and sysadmins. A server keeps rooms in memory and relays messages; each person runs the client in their own terminal, joins a room and talks. It's built to run on your own company's server.</p>
-    <div class="callout"><p><b>Status:</b> early development. It works for chatting between machines, but there's <b>no encryption yet</b> (traffic is plain <code>ws://</code>) and breaking changes are on the way. Only use it on networks you trust. See the <a href="#limits">limitations</a>.</p></div>
+    <div class="callout"><p><b>Status:</b> early development. It works for chatting between machines, encrypted with TLS by default, but breaking changes are on the way. See the <a href="#limits">limitations</a>.</p></div>
   </div>
   <dl class="ref">
     <dt>server</dt><dd><code>cmd/server</code>. Listens on port 7347, keeps rooms in memory, relays each message to the other members of the room.</dd>
@@ -67,10 +68,11 @@ cd teachat
 
 <span class="c"># server</span>
 go run ./cmd/server
-<span class="c"># teachat-server listening on :7347 · default room: local</span>
+<span class="c"># teachat-server listening on :7347 · default room: local · TLS · fingerprint SHA256:...</span>
 
 <span class="c"># client, in another terminal: no flags, joins the local room</span>
 go run ./cmd/client
+<span class="c"># * trusting new server localhost:7347 (fingerprint SHA256:...), saved in ~/.config/teachat/known_servers</span>
 
 <span class="c"># help, on both</span>
 go run ./cmd/client -h
@@ -102,6 +104,7 @@ go build -o teachat-server ./cmd/server
         <tr><td><code>--server</code></td><td><code>localhost:7347</code></td><td>server address, <code>host:port</code></td></tr>
         <tr><td><code>--room</code></td><td><code>local</code></td><td>room to join. Created if it doesn't exist. <code>local</code> always exists</td></tr>
         <tr><td><code>--alias</code></td><td>your user (<code>$USER</code>)</td><td>your name in the chat, in front of each message. Without <code>$USER</code> (cron, some containers): <code>anonymous</code></td></tr>
+        <tr><td><code>--no-tls</code></td><td>off</td><td>connect over plain <code>ws://</code>, for a server started with <code>--no-tls</code></td></tr>
       </tbody>
     </table>
   </div>
@@ -133,6 +136,8 @@ go build -o teachat-server ./cmd/server
         <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>—</td><td class="num">0</td></tr>
         <tr><td>the connection drops (server stopped, network down)</td><td><code>connection closed: </code> + the reason, e.g. <code>close 1006 (abnormal closure)</code></td><td class="num">1</td></tr>
         <tr><td>couldn't connect</td><td>the connection error, e.g. <code>connection refused</code></td><td class="num">1</td></tr>
+        <tr><td>the server's fingerprint changed</td><td><code>the identity of server ... has changed</code>, with both fingerprints (<a href="#security">security</a>)</td><td class="num">1</td></tr>
+        <tr><td>TLS on one side only</td><td>the error + a hint: <code>try --no-tls</code> or <code>drop --no-tls</code></td><td class="num">1</td></tr>
         <tr><td><code>teachat help</code></td><td>the help</td><td class="num">0</td></tr>
         <tr><td>stray argument or unknown flag (<code>teachat dev</code>, <code>--romm</code>)</td><td><code>unknown argument: dev</code> + the help</td><td class="num">2</td></tr>
         <tr><td>pipe mode: input ended and everything was sent</td><td>—</td><td class="num">0</td></tr>
@@ -161,7 +166,7 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># streams until 
 <section id="server-ref">
   <div class="read">
     <div class="sec-head"><span class="sec-num">04</span><h2>Server reference</h2></div>
-    <p>One flag, <code>--addr</code>, besides <code>-h</code> (<code>help</code> also shows the help, and any other argument shows the help and exits with code 2, without starting the server). It listens on <code>:7347</code>, on all interfaces, and exposes a single endpoint.</p>
+    <p>Flags for the address and for TLS, besides <code>-h</code> (<code>help</code> also shows the help, and any other argument shows the help and exits with code 2, without starting the server). It listens on <code>:7347</code>, on all interfaces, and exposes a single endpoint.</p>
   </div>
   <h3>Flags</h3>
   <div class="scroll">
@@ -169,12 +174,14 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># streams until 
       <thead><tr><th>flag</th><th>default</th><th>description</th></tr></thead>
       <tbody>
         <tr><td><code>--addr</code></td><td><code>:7347</code></td><td>where to listen, <code>host:port</code>. No host means all interfaces: <code>--addr :9000</code>. With a host, only that one: <code>--addr 10.0.0.5:7347</code> listens only on the internal network</td></tr>
+        <tr><td><code>--no-tls</code></td><td>off</td><td>serve plain <code>ws://</code>, without encryption. For testing</td></tr>
+        <tr><td><code>--tls-cert</code>, <code>--tls-key</code></td><td>self-signed</td><td>your own certificate and key (PEM), e.g. Let's Encrypt's <code>fullchain.pem</code> and <code>privkey.pem</code>. Reloaded when the files change (<a href="#security">security</a>)</td></tr>
       </tbody>
     </table>
   </div>
   <p class="note">Busy port or bad address: the server exits with the error (<code>address already in use</code>, <code>missing port in address</code>) and code 1, without announcing anything first.</p>
   <h3>Endpoint</h3>
-  <pre style="max-width:88ch">GET /ws?room=&lt;room&gt;&amp;alias=&lt;alias&gt;   <span class="c">upgrade to WebSocket</span></pre>
+  <pre style="max-width:88ch">GET /ws?room=&lt;room&gt;&amp;alias=&lt;alias&gt;   <span class="c">upgrade to WebSocket, over TLS (wss://) by default</span></pre>
   <dl class="ref">
     <dt>room</dt><dd>Room name. Any text. Doesn't exist → it's created. Missing or empty → room <code>local</code>.</dd>
     <dt>alias</dt><dd>Name of whoever connects. Any text, even empty. Not validated, and doesn't need to be unique.</dd>
@@ -195,19 +202,42 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># streams until 
     <dt>state</dt><dd>Everything in memory. Restarting the server disconnects everyone and wipes all rooms.</dd>
   </dl>
   <h3>Terminal output</h3>
-  <p class="read">Prints <code>teachat-server listening on :7347 · default room: local</code> on startup (only after the port is open) and logs upgrade errors with <code>log</code>. If the port is busy or the address is invalid, it exits with that error.</p>
+  <p class="read">Prints <code>teachat-server listening on :7347 · default room: local · TLS · fingerprint SHA256:...</code> on startup (only after the port is open) and logs upgrade errors with <code>log</code>. If the port is busy or the address is invalid, it exits with that error.</p>
+</section>
+
+<section id="security">
+  <div class="read">
+    <div class="sec-head"><span class="sec-num">05</span><h2>Security: TLS and trust on first use</h2></div>
+    <p>Traffic is encrypted with TLS 1.3 by default, with no certificates for anyone to manage. The model is the one SSH uses with <code>known_hosts</code>. Administrators with a real certificate can use it instead, and clients verify it like a browser.</p>
+  </div>
+  <ol class="road">
+    <li><div><b>The server makes its own certificate</b><p>On first start, the server generates a self-signed certificate (ECDSA P-256, valid for 10 years) in <code>~/.config/teachat/</code>: <code>server.crt</code> and <code>server.key</code>, the key readable only by its owner. It reuses them on every start and prints the fingerprint: <code>SHA256:</code> + the hash of the public key.</p></div></li>
+    <li><div><b>The client trusts it the first time</b><p>The first connection to a server (as written in <code>--server</code>) saves its fingerprint in <code>~/.config/teachat/known_servers</code> and shows <code>* trusting new server ...</code>, in gray in the chat, or on stderr in pipe mode. It doesn't ask: a question would block pipes and cron.</p></div></li>
+    <li><div><b>And refuses it if it changes</b><p>From then on, only that fingerprint is accepted. A different one means someone is intercepting, or the server's certificate was regenerated: the client refuses to connect and shows both fingerprints. If the change is legitimate, delete that server's line in <code>known_servers</code>.</p></div></li>
+  </ol>
+  <dl class="ref">
+    <dt>what it protects</dt><dd>Everyone on the network reading the chat (Wireshark, a compromised switch), and impersonation of a server you've already connected to.</dd>
+    <dt>what it doesn't</dt><dd>The very first connection: if it's intercepted, the client trusts the interceptor. Comparing the fingerprint the client shows with the one the server prints closes that gap.</dd>
+    <dt>regenerating</dt><dd>Deleting <code>server.crt</code> and <code>server.key</code> makes the server generate a new certificate, and every client will refuse it until they remove the old line from <code>known_servers</code>.</dd>
+    <dt>without TLS</dt><dd><code>--no-tls</code> on both sides goes back to plain <code>ws://</code>. For testing only.</dd>
+    <dt>your own certificate</dt><dd>On a real domain, pass <code>--tls-cert</code> and <code>--tls-key</code> (Let's Encrypt's <code>fullchain.pem</code> and <code>privkey.pem</code>, or your company CA's). The client checks every certificate against the machine's trusted authorities first, like a browser: if it verifies for that hostname, it's accepted with no pinning, so renewals with a new key keep working. The server reloads the files when they change, so certbot renewals need no restart.</dd>
+    <dt>common mistakes</dt><dd>Two mistakes work at first and break at the first renewal, ~60 days later, so teachat warns about both right away. <b>Using <code>cert.pem</code> instead of <code>fullchain.pem</code></b>: without the intermediate certificate the chain doesn't verify; the server warns at startup. <b>Connecting by IP instead of the domain name</b>: the certificate is only valid for the name; the client warns on first use. Also, Let's Encrypt's <code>privkey.pem</code> is readable only by root: a server running as a regular user needs read access to it (for example through a certbot deploy hook that copies the files).</dd>
+    <dt>company CA</dt><dd>A certificate from a private company CA only verifies on machines where that CA is installed. Elsewhere it falls back to trust on first use, and each renewal with a new key would trip the "identity changed" check.</dd>
+    <dt>code</dt><dd>All of it lives in <code>internal/tlstrust</code>, standard library only (<code>crypto/tls</code>, <code>crypto/x509</code>). The binaries call <code>tlstrust.Server(certFile, keyFile, warn)</code> and <code>tlstrust.Client(server, notice)</code>.</dd>
+  </dl>
 </section>
 
 <section id="architecture">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">05</span><h2>Architecture</h2></div>
+    <div class="sec-head"><span class="sec-num">06</span><h2>Architecture</h2></div>
     <p>teachat is two binaries, a server and a client, that talk over WebSocket. Its own code is about 380 lines because it leans on layers that already do the heavy lifting. Each message goes down through all of them on one side and up through all of them on the other.</p>
     <h3>The layers</h3>
   </div>
   <div class="layers">
-    <div class="layer"><span class="name">cmd/client · cmd/server · internal/ui</span><span class="what">Flags, rooms, aliases, broadcast and the client's screen. This is teachat's code: <code>main.go</code>, <code>room.go</code> and <code>ui.go</code>.</span><span class="tag you">our code</span></div>
+    <div class="layer"><span class="name">cmd/client · cmd/server · internal/*</span><span class="what">Flags, rooms, aliases, broadcast, the client's screen and TLS trust. This is teachat's code: <code>main.go</code>, <code>room.go</code>, <code>ui.go</code> and <code>tlstrust.go</code>.</span><span class="tag you">our code</span></div>
     <div class="layer"><span class="name">gorilla/websocket</span><span class="what">Upgrade handshake, building and reading frames, masking, ping/pong, close. Provides <code>ReadMessage</code> and <code>WriteMessage</code>.</span><span class="tag lib">library</span></div>
     <div class="layer"><span class="name">tview + tcell</span><span class="what">Client only. Puts the terminal in raw mode, reads each key, draws the screen (message area, input box, borders) and restores the terminal on exit.</span><span class="tag lib">library</span></div>
+    <div class="layer"><span class="name">crypto/tls</span><span class="what">TLS 1.3: the handshake, the encryption of every byte after it, and the self-signed certificate (<code>crypto/x509</code>).</span><span class="tag go">Go stdlib</span></div>
     <div class="layer"><span class="name">net/http</span><span class="what">Accepts TCP connections, creates a goroutine for each one, reads the HTTP request and calls the <code>/ws</code> handler.</span><span class="tag go">Go stdlib</span></div>
     <div class="layer"><span class="name">Go runtime</span><span class="what">Schedules thousands of goroutines on a few threads. A goroutine blocked in <code>ReadMessage</code> doesn't hold a thread: the runtime waits on the sockets with <code>epoll</code> and wakes only those that received data.</span><span class="tag go">runtime</span></div>
     <div class="layer"><span class="name">Linux kernel</span><span class="what">Sockets as files (<code>fd</code>), send and receive buffers, TCP (ordering, retransmission, flow control), IP.</span><span class="tag os">operating system</span></div>
@@ -222,6 +252,7 @@ cmd/server/main_test.go  <span class="c">tests (go test ./...)</span>
 cmd/client/main.go   <span class="c">client: flags, connection, receiving</span>
 cmd/client/pipe.go   <span class="c">client: pipe mode</span>
 internal/ui/ui.go    <span class="c">the client's screen (tview)</span>
+internal/tlstrust/   <span class="c">TLS: certificate, trust on first use</span>
 docs/                <span class="c">this site and this documentation</span>
 roadmap.md           <span class="c">next steps and decisions</span>
 features.md          <span class="c">log of what shipped</span></pre>
@@ -253,8 +284,9 @@ features.md          <span class="c">log of what shipped</span></pre>
 
 <section id="connection">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">06</span><h2>The connection: TCP, then HTTP, then WebSocket</h2></div>
+    <div class="sec-head"><span class="sec-num">07</span><h2>The connection: TCP, then HTTP, then WebSocket</h2></div>
     <p>Before any message, the client opens a connection that goes through three protocols, one on top of the other. WebSocket starts as an ordinary HTTP request and, once the server answers <code>101</code>, that same TCP socket stops speaking HTTP for good.</p>
+    <p class="muted">With TLS, the default, a TLS 1.3 handshake happens right after TCP, and everything below (the HTTP request, the WebSocket frames) travels inside it, encrypted. The diagrams show the bytes as they are inside that tunnel, or on the wire with <code>--no-tls</code>.</p>
   </div>
 
   <h3>From flags to URL</h3>
@@ -264,7 +296,7 @@ features.md          <span class="c">log of what shipped</span></pre>
   --room dev \
   --alias daniel</pre></div>
     <div class="arrow" aria-hidden="true">→</div>
-    <div class="panel"><h4>client builds</h4><pre>ws://localhost:7347
+    <div class="panel"><h4>client builds</h4><pre>wss://localhost:7347
   /ws?alias=daniel
      &amp;room=dev</pre></div>
     <div class="arrow" aria-hidden="true">→</div>
@@ -344,7 +376,7 @@ Sec-WebSocket-Accept: <span class="s">s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</span></pre><
 
 <section id="frame">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">07</span><h2>Anatomy of a frame</h2></div>
+    <div class="sec-head"><span class="sec-num">08</span><h2>Anatomy of a frame</h2></div>
     <p>TCP is a stream of bytes with no boundaries: it doesn't know where one message ends and the next begins. WebSocket solves that by putting a 2-to-14-byte header in front of each message. That's what <code>WriteMessage</code> builds and <code>ReadMessage</code> takes apart. Type a message and see the exact bytes that go through the socket.</p>
   </div>
 
@@ -382,7 +414,7 @@ Sec-WebSocket-Accept: <span class="s">s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</span></pre><
 
 <section id="server">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">08</span><h2>Server internals</h2></div>
+    <div class="sec-head"><span class="sec-num">09</span><h2>Server internals</h2></div>
     <p>One process, many goroutines. <code>net/http</code>'s <code>Accept</code> loop receives each new TCP connection and runs <code>go c.serve(...)</code>: the connection gets its own goroutine, which runs the <code>/ws</code> handler for as long as the person stays in the chat.</p>
   </div>
 
@@ -517,7 +549,7 @@ func (r *Room) broadcast(myOwnConn *websocket.Conn, msg []byte) {
 
 <section id="locks">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">09</span><h2>Two locks, one order</h2></div>
+    <div class="sec-head"><span class="sec-num">10</span><h2>Two locks, one order</h2></div>
     <p>The server has two levels of <code>sync.Mutex</code>. The global lock <code>mu</code> guards only the <code>rooms</code> map and is used for joining and leaving. Each room's lock, <code>r.mu</code>, guards its member list and is the only one broadcast uses. That way, a busy room doesn't slow down the others.</p>
     <p>The rule that prevents deadlock: <b>always global first, then room</b>. If one goroutine locked global→room and another room→global, each could hold the lock the other is waiting for, forever.</p>
   </div>
@@ -587,7 +619,7 @@ func (r *Room) broadcast(myOwnConn *websocket.Conn, msg []byte) {
 
 <section id="leaving">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">10</span><h2>When someone leaves</h2></div>
+    <div class="sec-head"><span class="sec-num">11</span><h2>When someone leaves</h2></div>
     <p>Leaving is the way in, backwards, and most of it happens on its own.</p>
   </div>
   <ol class="road" style="margin-top:14px">
@@ -601,7 +633,7 @@ func (r *Room) broadcast(myOwnConn *websocket.Conn, msg []byte) {
 
 <section id="client">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">11</span><h2>Client internals</h2></div>
+    <div class="sec-head"><span class="sec-num">12</span><h2>Client internals</h2></div>
     <p>The client is a full screen, like <code>vim</code> or <code>htop</code>: messages on top, input box at the bottom. Drawing is done by <code>tview</code>, a terminal widget library built on <code>tcell</code>. Everything tview lives in the <code>internal/ui</code> package. The client's <code>main.go</code> only knows four functions.</p>
   </div>
 
@@ -803,6 +835,7 @@ if lines &lt;= 5 {
   <div class="split">
     <div style="min-width:0"><div class="file">cmd/client/main.go · after opening the connection</div><pre class="go">// stdin is not a terminal (command | teachat): pipe mode, no screen
 if !term.IsTerminal(int(os.Stdin.Fd())) {
+	os.Stderr.Write(notice.Bytes())
 	pipe(conn)
 	return
 }
@@ -812,6 +845,9 @@ if !term.IsTerminal(int(os.Stdin.Fd())) {
 screen := ui.New(*room, *alias, func(text string) {
 	conn.WriteMessage(websocket.TextMessage, []byte(text))
 })
+if notice.Len() &gt; 0 {
+	screen.Notice(strings.TrimSpace(notice.String()))
+}
 
 // empty channel to signal that the connection dropped; the receiving goroutine closes it
 closed := make(chan struct{})
@@ -966,7 +1002,7 @@ func pipe(conn *websocket.Conn) {
 
 <section id="capacity">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">12</span><h2>Capacity in RAM</h2></div>
+    <div class="sec-head"><span class="sec-num">13</span><h2>Capacity in RAM</h2></div>
     <p>All of the server's state lives in memory. We measured what that costs by opening thousands of connections in one room and reading the process's <code>VmRSS</code> from <code>/proc</code>.</p>
   </div>
   <div class="split">
@@ -1018,11 +1054,11 @@ func pipe(conn *websocket.Conn) {
 
 <section id="limits">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">13</span><h2>Limitations and security</h2></div>
+    <div class="sec-head"><span class="sec-num">14</span><h2>Limitations and security</h2></div>
     <p>teachat is in early development and deliberately bare. These are the known limits today:</p>
   </div>
   <div class="limits">
-    <div class="limit"><b>No encryption</b><p>Traffic is plain-text <code>ws://</code>. Wireshark can read the messages. Only use it on a trusted network until TLS lands.</p></div>
+    <div class="limit"><b>The first connection is trusted blindly</b><p>Trust on first use protects every connection after the first. If someone intercepts that very first one, the client trusts them. Compare the fingerprint with the one the server prints.</p></div>
     <div class="limit"><b>A slow client stalls its room</b><p>Broadcast writes to one member at a time, under the room's lock. A connection that doesn't read holds up its room: measured, a room stalled at 2,082 of 5,000 messages. The fix is a per-connection send queue.</p></div>
     <div class="limit"><b>Large logs flood the room</b><p>Pipe mode sends one message per line. A 5,000-line build is 5,000 messages on everyone's screen.</p></div>
     <div class="limit"><b>Aliases aren't verified</b><p>Anyone can join as <code>--alias daniel</code>. A password will protect the room, but won't prove who's who inside it.</p></div>
@@ -1033,11 +1069,11 @@ func pipe(conn *websocket.Conn) {
 
 <section id="roadmap">
   <div class="read">
-    <div class="sec-head"><span class="sec-num">14</span><h2>Roadmap</h2></div>
+    <div class="sec-head"><span class="sec-num">15</span><h2>Roadmap</h2></div>
     <p>In this order, one feature at a time. The full list, with the decisions made and the open questions, is in <a href="https://github.com/daniel-cmdline/teachat/blob/main/roadmap.md">roadmap.md</a>. What has shipped is in <a href="https://github.com/daniel-cmdline/teachat/blob/main/features.md">features.md</a>.</p>
   </div>
   <ol class="road">
-    <li><div><b>Password rooms + TLS, together</b><p>A password never travels in plain text. <code>ListenAndServeTLS</code> on the server, <code>wss://</code> on the client, with a pinned certificate for local networks.</p></div></li>
+    <li><div><b>Password rooms</b><p>Now that traffic is encrypted, a password can travel safely. Open questions: should password rooms persist, and where does the password go (URL, header or first message)?</p></div></li>
     <li><div><b>Message history</b><p>SQLite with <code>modernc.org/sqlite</code>. Needed for pipe mode to keep logs and for persistent rooms.</p></div></li>
   </ol>
 </section>

@@ -127,6 +127,13 @@ func (u *UI) Print(line string) {
 	})
 }
 
+// Notice shows a line from teachat itself (not from a person), in gray.
+// Call it before Run: it writes directly instead of queueing, because QueueUpdate
+// waits for the event loop, and before Run there's no loop yet (it would block forever).
+func (u *UI) Notice(line string) {
+	fmt.Fprintln(u.messages, "[gray]"+tview.Escape(line)+"[-]")
+}
+
 // Run takes over the terminal and only returns when the screen closes (Ctrl+C or Stop).
 // By the time it returns, the terminal is back to normal.
 func (u *UI) Run() error {

@@ -1,15 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"cmp"
 	"flag"
 	"log"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/gorilla/websocket"
 	"golang.org/x/term"
 
+	"github.com/daniel-cmdline/teachat/internal/tlstrust"
 	"github.com/daniel-cmdline/teachat/internal/ui"
 )
 
@@ -20,27 +23,45 @@ func main() {
 	// default alias: your system user ($USER). cmp.Or returns the first non-empty
 	// value, so without $USER (cron, some containers) it is "anonymous".
 	alias := flag.String("alias", cmp.Or(os.Getenv("USER"), "anonymous"), "your name in the chat")
+	noTLS := flag.Bool("no-tls", false, "connect over plain ws:// without encryption")
 	flag.Usage = usage
 	flag.Parse()
 	checkArgs()
 
-	// monta ws://SERVER/ws?room=...&alias=... a partir das flags
+	// build wss://SERVER/ws?room=...&alias=... from the flags (ws:// with --no-tls)
 	// dereference the pointer to get the string
+	scheme := "wss"
+	if *noTLS {
+		scheme = "ws"
+	}
 	u := url.URL{
-		Scheme:   "ws",
+		Scheme:   scheme,
 		Host:     *server,
 		Path:     "/ws",
 		RawQuery: url.Values{"room": {*room}, "alias": {*alias}}.Encode(),
 	}
 
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	// TLS trust (trusted on first use, then pinned) lives in internal/tlstrust.
+	// A notice like "trusting new server ..." goes into a buffer and is shown below,
+	// once we know whether it goes to the screen or to stderr.
+	var notice bytes.Buffer
+	dialer := *websocket.DefaultDialer
+	if !*noTLS {
+		cfg, err := tlstrust.Client(*server, &notice)
+		if err != nil {
+			log.Fatal(err)
+		}
+		dialer.TLSClientConfig = cfg
+	}
+	conn, _, err := dialer.Dial(u.String(), nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(tlstrust.DialHint(err, !*noTLS))
 	}
 	defer conn.Close()
 
 	// stdin is not a terminal (command | teachat): pipe mode, no screen
 	if !term.IsTerminal(int(os.Stdin.Fd())) {
+		os.Stderr.Write(notice.Bytes())
 		pipe(conn)
 		return
 	}
@@ -50,6 +71,9 @@ func main() {
 	screen := ui.New(*room, *alias, func(text string) {
 		conn.WriteMessage(websocket.TextMessage, []byte(text))
 	})
+	if notice.Len() > 0 {
+		screen.Notice(strings.TrimSpace(notice.String()))
+	}
 
 	// empty channel to signal that the connection dropped; the receiving goroutine closes it
 	closed := make(chan struct{})
