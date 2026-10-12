@@ -36,6 +36,10 @@ Keys (full screen):
   PgUp/PgDn    scroll messages; typing jumps back to the newest
   Ctrl+C       quit
 
+Mentions:
+  Write @name to mention someone: the message shows in amber on their screen
+  and their terminal bell rings. Mentions of you do the same on yours.
+
 Security:
   Connections use TLS (wss://). A certificate from an authority this machine
   trusts (Let's Encrypt, an installed company CA) is verified like a browser

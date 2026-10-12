@@ -10,6 +10,7 @@ Log of shipped features, newest first. Add an entry with every commit.
 - **Timestamps:** each message starts with the local time it arrived (`15:38`, gray). The server sends no time; the client adds it.
 - **Mentions:** `@yourname` (whole word, any case; `email@yourname.com` doesn't count) in someone else's message shows in amber and bold and rings the terminal bell, so a terminal in another tab or window gets your attention. To ring the bell, `Run` now creates the tcell screen itself and hands it to tview (`SetScreen`), keeping a reference, since tview doesn't expose its screen. The beep runs inside the event loop.
 - **Tested end to end** with two clients in tmux: the banner, the colors (mint and amber escape codes on screen), the placeholder, the timestamps, a mention highlighted in amber with the bell flag set on the mentioned user's window only, a non-mention left alone. No data races.
+- The client's `-h` explains mentions too.
 - **Tested live** with a person in the room: the mention beeped their terminal, and piping `/etc/passwd` arrived as a single batched message with the alias on the first line only.
 - **Docs:** README, roadmap (the UI ideas still open), the site (the screen mockup now shows the colors, timestamps and a mention; new "Mentions ring your bell" point), and the docs ("joining" and "mentions" in the client reference, a "teachat's look" section in client internals). Also brings README, roadmap and both pages up to date (release next, current state, ~1,250 lines).
 
