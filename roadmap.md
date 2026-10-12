@@ -39,6 +39,7 @@ Nesta ordem. Cada um é pequeno de propósito.
 - **Ponte com o Discord.** Assinar canais do Discord (que tenham o bot do teachat) e ler as mensagens no terminal, em vez de no app do Discord, que é pesado e tem muito ruído. Só leitura no começo.
 - **Listagem de salas** (`teachat --list`) para salas públicas.
 - **Mensagens estruturadas** (`{"alias": ..., "text": ...}` em vez de `alias: texto`). Tira o parsing frágil do cliente e abre espaço para avisos de entrada/saída, histórico e cores escolhidas.
+- **Arquivo de configuração**, para não depender de flags (e para o empacotamento em apt/dnf). Já decidido: `/etc/teachat/teachat.conf` (padrões da máquina, instalado pelo pacote) e `~/.config/teachat/config` (preferências de cada um). Precedência: padrões do código → `/etc` → arquivo do usuário → flags. Formato `chave = valor` com comentários `#`, sem dependência. Cores aceitam nomes e hex (o tcell já entende os dois); valor inválido dá erro com arquivo e linha. Senha nunca em `/etc`, só no arquivo do usuário com permissão 0600. Vale quando vier o empacotamento, a senha ou mais opções no servidor; até lá, um `alias` do shell resolve.
 - **UI:** agrupar mensagens seguidas da mesma pessoa (alias só na primeira), destacar menções (`@daniel`), horário nas mensagens.
 
 ## Decisões tomadas

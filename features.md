@@ -2,6 +2,12 @@
 
 Registro das features entregues, da mais nova para a mais antiga. Adicione uma entrada a cada commit.
 
+## 2026-10-12 10:06 — Alias padrão é o seu usuário
+
+- Sem `--alias`, o cliente usa o seu usuário do sistema (`$USER`) em vez de `anonimo`. Quem não tem `$USER` definido (cron, alguns containers) continua como `anonimo`.
+- **Por quê:** quase ninguém precisa mais digitar `--alias`. Uma linha (`cmp.Or`), sem dependência.
+- **Docs (HTML): pendente.** A tabela de flags do `docs.html` ainda diz `anonimo`.
+
 ## 2026-10-12 09:50 — Cores por alias
 
 - Na área de mensagens, o alias de cada pessoa aparece numa cor própria, escolhida pelo hash do alias (FNV-32a) numa paleta de 12 cores. O mesmo alias tem sempre a mesma cor, em qualquer cliente, sem mudar o servidor nem o protocolo.

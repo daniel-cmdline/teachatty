@@ -73,7 +73,7 @@ go run ./cmd/client --server 192.168.0.10:23456 --room dev --alias mateus
 |---|---|---|
 | `--server` | `localhost:23456` | Address of the teachat server |
 | `--room` | `geral` | Room to join |
-| `--alias` | `anonimo` | Name shown in front of your messages |
+| `--alias` | your login (`$USER`) | Name shown in front of your messages. Falls back to `anonimo` when `$USER` is unset |
 
 ## Project layout
 

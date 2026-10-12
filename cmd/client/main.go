@@ -1,9 +1,11 @@
 package main
 
 import (
+	"cmp"
 	"flag"
 	"log"
 	"net/url"
+	"os"
 
 	"github.com/gorilla/websocket"
 
@@ -14,7 +16,9 @@ func main() {
 	//flag.String retorna ponteiros (&value) 
 	server := flag.String("server", "localhost:23456", "endereço do servidor teachat")
 	room := flag.String("room", "geral", "sala para entrar")
-	alias := flag.String("alias", "anonimo", "seu nome no chat")
+	// alias padrão: o seu usuário do sistema ($USER). cmp.Or devolve o primeiro
+	// valor não vazio, então sem $USER (cron, alguns containers) fica "anonimo".
+	alias := flag.String("alias", cmp.Or(os.Getenv("USER"), "anonimo"), "seu nome no chat")
 	flag.Parse()
 
 	// monta ws://SERVER/ws?room=...&alias=... a partir das flags
