@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"cmp"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"io"
@@ -94,6 +95,22 @@ func main() {
 	screen := ui.New(*room, *alias, func(text string) {
 		conn.WriteMessage(websocket.TextMessage, []byte(text))
 	})
+	// the welcome banner: where you are, how the connection is secured, the keys
+	security := "not encrypted (--no-tls)"
+	if tc, ok := conn.NetConn().(*tls.Conn); ok {
+		state := tc.ConnectionState()
+		security = "encrypted · " + tls.VersionName(state.Version)
+		if len(state.PeerCertificates) > 0 {
+			fp := tlstrust.Fingerprint(state.PeerCertificates[0])
+			security += " · " + fp[:min(len(fp), 19)] + "…"
+		}
+	}
+	screen.Welcome(
+		"teachat · "+*server+" · room "+*room,
+		security,
+		"Enter send · PgUp/PgDn scroll · Ctrl+C quit",
+		"mention someone with @name to ring their bell",
+	)
 	if notice.Len() > 0 {
 		screen.Notice(strings.TrimSpace(notice.String()))
 	}

@@ -15,9 +15,9 @@ A terminal chat for developers and sysadmins. Minimalist: lightweight, no distra
 
 ## Current state (2026-10-12)
 
-- **Server** (`cmd/teachat-server`): rooms in memory, one mutex per room, port 7347 by default (`--addr` to change it), messages up to 1 MB. The `local` room starts with the server and is never deleted.
-- **Client** (`cmd/teachat`): flags `--server`, `--room` and `--alias`. Full screen with tview (`internal/ui`): messages on top, input box at the bottom.
-- Pipe mode: `command | teachat` sends each line to the room, echoes it to the terminal and exits when the input ends.
+- **Server** (`cmd/teachat-server`): rooms in memory, one mutex per room, port 7347 by default (`--addr` to change it), messages up to 1 MB. The `local` room starts with the server and is never deleted. Abuse limits: 5 messages/s and 256 KB/s per connection, 10 connections per IP (`--max-per-ip`), stuck members dropped after 5 s, `--no-pipes`. Runs as a hardened systemd service (`contrib/`).
+- **Client** (`cmd/teachat`): flags `--server`, `--room`, `--alias`, `--no-tls` and `--version`. Full screen with tview (`internal/ui`): messages on top, input box at the bottom.
+- Pipe mode: `command | teachat` sends the input to the room (lines arriving within 100 ms go as one message), echoes it to the terminal and exits when the input ends.
 - Encrypted by default: TLS 1.3 with a self-signed certificate and trust on first use, or the administrator's own certificate (`--tls-cert`/`--tls-key`). All in `internal/tlstrust`.
 - Shipped features are logged in [features.md](features.md).
 
@@ -35,7 +35,7 @@ In this order. Each one is small on purpose.
 - **Room listing** (`teachat --list`) for public rooms.
 - **Structured messages** (`{"alias": ..., "text": ...}` instead of `alias: text`). Removes the fragile parsing in the client and makes room for join/leave notices, history and chosen colors.
 - **Config file**, so you don't depend on flags (and for apt/dnf packaging). Already decided: `/etc/teachat/teachat.conf` (machine defaults, installed by the package) and `~/.config/teachat/config` (each user's preferences). Precedence: code defaults → `/etc` → user file → flags. Format `key = value` with `#` comments, no dependency. Colors accept names and hex (tcell already understands both); an invalid value is an error with file and line. Passwords never in `/etc`, only in the user's file with 0600 permissions. Worth it once packaging, passwords or more server options arrive; until then, a shell `alias` does the job.
-- **UI:** group consecutive messages from the same person (alias only on the first), highlight mentions (`@daniel`), timestamps on messages.
+- **UI:** group consecutive typed messages from the same person (pipe batches already show the alias once), a "↓ new messages" marker while scrolled up, `/me` actions. Join/leave notices and `/who` after structured messages.
 
 ## Decisions made
 
@@ -68,6 +68,7 @@ In this order. Each one is small on purpose.
 - Abuse limits, needed before running on the open internet: 5 messages/s per connection (bursts of 20) and 256 KB/s; over the limit the server reads more slowly instead of dropping or disconnecting. At most 10 connections per IP (`--max-per-ip`, 0 = no limit for companies behind NAT); over the cap the server answers 429. `golang.org/x/time/rate` for the limiters.
 - `--no-pipes` lets a server keep pipe mode out (chat only, no build logs). The client declares pipe mode in the URL (`mode=pipe`); it's a courtesy rule, not a security boundary, so the rate limit stays the real defense against abuse.
 - The server is meant to run as a systemd service: `contrib/systemd/teachat-server.service` (own system user, restart on failure, journal, hardened: no capabilities, read-only system, writes only to `/var/lib/teachat`) and `contrib/certbot/teachat-deploy-hook.sh`, which copies Let's Encrypt's root-only key for the `teachat` user after each renewal, so the server's reload picks it up without a restart.
+- The client's look comes from the logo: mint borders, amber title, the terminal's own background and text color (so light and dark terminals both work), a teacup banner on join, gray timestamps (local time of arrival), a placeholder in the empty box. Mentions (`@alias`, whole word, any case) are highlighted in amber and ring the terminal bell.
 - The module is `github.com/daniel-cmdline/teachat`, matching the repository path, so internal imports and `go install` work.
 
 ## Open questions

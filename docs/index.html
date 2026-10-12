@@ -47,21 +47,22 @@
     <p>Full screen, like <code>vim</code> or <code>htop</code>. Messages on top, your input box at the bottom.</p>
   </div>
   <div class="split">
-    <div class="scroll"><pre class="screen big" role="img" aria-label="teachat screen: the message area of room dev with four messages, and the input box below with the text nice! closing the ticket">┌─────────────────── dev · mateus ───────────────────┐
-│<span style="color:#d19a66">joao</span>: anyone seen the disk alert on db-02?          │
-│<span style="color:#d7c25a">daniel</span>: yep, it's at 91%. cleaning old logs         │
-│<b style="color:var(--fg)">mateus</b>: thanks. did the 10am deploy go out?         │
-│<span style="color:#d7c25a">daniel</span>: it did, healthcheck is clean                │
-│                                                    │
-└────────────────────────────────────────────────────┘
-╔════════════════════════════════════════════════════╗
-║nice! closing the ticket█                           ║
-╚════════════════════════════════════════════════════╝</pre></div>
+    <div class="scroll"><pre class="screen big" role="img" aria-label="teachat screen: mint borders, an amber room title, four timestamped messages, one of them mentioning mateus in amber, and the input box below with the text nice! closing the ticket"><span style="color:var(--mint)">┌─────────────────────</span><span style="color:var(--amber)"> dev · mateus </span><span style="color:var(--mint)">─────────────────────┐</span>
+<span style="color:var(--mint)">│</span><span style="color:var(--muted)">14:02</span> <span style="color:#d19a66">joao</span>: <span style="color:var(--fg)">anyone seen the disk alert on db-02?</span>        <span style="color:var(--mint)">│</span>
+<span style="color:var(--mint)">│</span><span style="color:var(--muted)">14:03</span> <span style="color:#d7c25a">daniel</span>: <span style="color:var(--fg)">yep, it's at 91%. cleaning old logs</span>       <span style="color:var(--mint)">│</span>
+<span style="color:var(--mint)">│</span><span style="color:var(--muted)">14:05</span> <b style="color:var(--fg)">mateus</b>: <span style="color:var(--fg)">thanks. did the 10am deploy go out?</span>       <span style="color:var(--mint)">│</span>
+<span style="color:var(--mint)">│</span><span style="color:var(--muted)">14:05</span> <span style="color:#d7c25a">daniel</span>: <b style="color:var(--amber)">@mateus it did, healthcheck is clean</b>      <span style="color:var(--mint)">│</span>
+<span style="color:var(--mint)">│</span>                                                        <span style="color:var(--mint)">│</span>
+<span style="color:var(--mint)">└────────────────────────────────────────────────────────┘</span>
+<span style="color:var(--mint)">╔════════════════════════════════════════════════════════╗</span>
+<span style="color:var(--mint)">║</span><span style="color:var(--fg)">nice! closing the ticket</span><span style="color:var(--mint)">█</span>                               <span style="color:var(--mint)">║</span>
+<span style="color:var(--mint)">╚════════════════════════════════════════════════════════╝</span></pre></div>
     <ul class="feats">
       <li><b>Nothing overwrites what you type.</b> New messages arrive on top; your text stays put in the box.</li>
       <li><b>The box grows with your message</b>, up to 5 lines, so you see everything you wrote.</li>
       <li><b><kbd>PgUp</kbd> to read back</b> without being pulled down. Start typing and the screen jumps back to the newest.</li>
       <li><b>Each person gets a color.</b> Every alias has a fixed color, the same on every client. Yours shows in bold.</li>
+      <li><b>Mentions ring your bell.</b> Someone writes <code>@you</code>: the message lights up in amber and your terminal beeps, even from another tab.</li>
       <li><b>Everyone in the same room, no arranging.</b> Run <code>teachat</code> and you're in <code>local</code>. For another room, <code>--room</code>: if it doesn't exist, it's created.</li>
     </ul>
   </div>
@@ -76,7 +77,7 @@
     <div class="card"><b>Flags, not URLs</b><p>Nobody types <code>ws://...?room=x</code>. It's <code>teachat --room dev --alias daniel</code>, and the rest is an internal detail.</p></div>
     <div class="card"><b>Self-hosted, encrypted</b><p>One server binary on an internal machine, on the port and interface you choose (<code>--addr</code>). Traffic never leaves the company network, and it's encrypted with TLS by default, with no certificates to manage.</p></div>
     <div class="card"><b>Works with pipes</b><p><code>make 2>&amp;1 | teachat --room ops</code> sends the build output to the team's room (lines arriving together go as one message), shows it in your terminal and exits at the end. Safe in scripts and cron.</p></div>
-    <div class="card"><b>Minimalist</b><p>A feature only goes in if it pays for itself. The whole codebase is about 380 lines, standing on libraries that do the heavy lifting.</p></div>
+    <div class="card"><b>Minimalist</b><p>A feature only goes in if it pays for itself. The whole codebase is about 1,250 lines, comments included, standing on libraries that do the heavy lifting.</p></div>
   </div>
 </section>
 
@@ -180,7 +181,8 @@ uptime | go run ./cmd/teachat</pre>
     <p>teachat is just getting started and grows one feature at a time.</p>
   </div>
   <ol class="road">
-    <li><div><b>Password rooms</b><p>Private rooms, now that traffic is encrypted and a password can travel safely.</p></div></li>
+    <li><div><b>Release v0.1.0</b><p>A git tag and prebuilt binaries for Linux and macOS (amd64 and arm64), plus <code>.deb</code> and <code>.rpm</code> packages, so nobody needs Go installed.</p></div></li>
+    <li><div><b>Access control</b><p>A server-wide token or password-protected rooms, decided after the release. TLS is in place, so a secret travels encrypted; the server stores only a salted hash.</p></div></li>
     <li><div><b>Message history</b><p>Pure-Go SQLite. Whoever joins sees what was already said, and pipe mode keeps logs.</p></div></li>
   </ol>
   <div class="cta" style="margin-top:40px">

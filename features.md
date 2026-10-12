@@ -2,6 +2,17 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-10-12 15:39 — teachat's look: colors, welcome banner, timestamps, mentions
+
+- **The logo's colors:** mint borders (`#72e3a6`), an amber title (`#f2b04f`), on the terminal's own background and text color instead of forced black and white, so light terminals look right too.
+- **Welcome banner:** on joining, the teacup in text next to the server and room, how the connection is secured (TLS version and the start of the server's fingerprint, read from the live connection; or "not encrypted" with `--no-tls`), the keys, and a hint about mentions. The first-use trust notice follows it.
+- **Placeholder:** `type a message…` in gray while the input box is empty.
+- **Timestamps:** each message starts with the local time it arrived (`15:38`, gray). The server sends no time; the client adds it.
+- **Mentions:** `@yourname` (whole word, any case; `email@yourname.com` doesn't count) in someone else's message shows in amber and bold and rings the terminal bell, so a terminal in another tab or window gets your attention. To ring the bell, `Run` now creates the tcell screen itself and hands it to tview (`SetScreen`), keeping a reference, since tview doesn't expose its screen. The beep runs inside the event loop.
+- **Tested end to end** with two clients in tmux: the banner, the colors (mint and amber escape codes on screen), the placeholder, the timestamps, a mention highlighted in amber with the bell flag set on the mentioned user's window only, a non-mention left alone. No data races.
+- **Tested live** with a person in the room: the mention beeped their terminal, and piping `/etc/passwd` arrived as a single batched message with the alias on the first line only.
+- **Docs:** README, roadmap (the UI ideas still open), the site (the screen mockup now shows the colors, timestamps and a mention; new "Mentions ring your bell" point), and the docs ("joining" and "mentions" in the client reference, a "teachat's look" section in client internals). Also brings README, roadmap and both pages up to date (release next, current state, ~1,250 lines).
+
 ## 2026-10-12 15:31 — Running as a systemd service
 
 - **`contrib/systemd/teachat-server.service`:** starts on boot, restarts on failure, logs to the journal, runs as its own `teachat` system user. Keeps its files in `/var/lib/teachat` (`StateDirectory`, with `XDG_CONFIG_HOME=/var/lib`, so the self-signed certificate lands there). Hardened: no capabilities (port 7347 is above 1024), `ProtectSystem=strict`, `ProtectHome`, private `/tmp`, `NoNewPrivileges`, only network sockets, and more. Two `ExecStart` lines: with a Let's Encrypt certificate, or self-signed.

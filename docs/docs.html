@@ -157,8 +157,10 @@ journalctl -u teachat-server -f      <span class="c"># logs, including the finge
   <h3>Behavior</h3>
   <dl class="ref">
     <dt>your message</dt><dd>Shows on your screen as <code>alias: text</code>, written by the client itself. The server doesn't echo a message back to its sender.</dd>
-    <dt>input box</dt><dd>Grows from 1 to 5 lines with the text and breaks lines at any character. Above 5 lines, it scrolls inside.</dd>
-    <dt>message area</dt><dd>The title is <code>room · alias</code>. Each alias has a fixed color, the same on every client; yours is bold on the messages you sent. Long lines wrap between words. No mouse: selecting and copying text works like in any terminal.</dd>
+    <dt>input box</dt><dd>Shows <code>type a message…</code> while empty. Grows from 1 to 5 lines with the text and breaks lines at any character. Above 5 lines, it scrolls inside.</dd>
+    <dt>mentions</dt><dd>When someone writes <code>@yourname</code> (whole word, any case), the message shows in amber and bold, and the terminal bell rings: a terminal in another tab or window gets your attention. <code>email@yourname.com</code> doesn't count.</dd>
+    <dt>joining</dt><dd>A welcome banner with the teacup: the server and room, how the connection is secured (TLS version and the start of the fingerprint), and the keys. The first-use trust notice, if any, comes right after it.</dd>
+    <dt>message area</dt><dd>The title is <code>room · alias</code>, in amber; borders are mint, on your terminal's own background. Each message starts with the time it arrived (<code>15:38</code>, gray). Each alias has a fixed color, the same on every client; yours is bold on the messages you sent. Long lines wrap between words. No mouse: selecting and copying text works like in any terminal.</dd>
     <dt>no terminal</dt><dd>If stdin isn't a terminal, the client goes into <a href="#pipe-mode">pipe mode</a> instead of opening the screen.</dd>
   </dl>
   <h3>Output and exit codes</h3>
@@ -271,7 +273,7 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># streams until 
 <section id="architecture">
   <div class="read">
     <div class="sec-head"><span class="sec-num">06</span><h2>Architecture</h2></div>
-    <p>teachat is two binaries, a server and a client, that talk over WebSocket. Its own code is about 380 lines because it leans on layers that already do the heavy lifting. Each message goes down through all of them on one side and up through all of them on the other.</p>
+    <p>teachat is two binaries, a server and a client, that talk over WebSocket. Its own code is about 1,250 lines, comments included (plus about 640 lines of tests), because it leans on layers that already do the heavy lifting. Each message goes down through all of them on one side and up through all of them on the other.</p>
     <h3>The layers</h3>
   </div>
   <div class="layers">
@@ -914,6 +916,18 @@ if lines &lt;= 5 {
     </div>
   </div>
 
+  <h3>teachat's look</h3>
+  <div class="split">
+    <div class="read">
+      <p><b>The logo's colors.</b> Borders in mint (<code>#72e3a6</code>), the title in amber (<code>#f2b04f</code>), over the terminal's own background and text color instead of forced black and white, so light terminals look right too. Set once in <code>tview.Styles</code> before any widget is created, since widgets copy those defaults.</p>
+      <p><b>The welcome banner</b> is written with <code>Welcome</code>, before <code>Run</code>, like <code>Notice</code>: the teacup in text plus up to four lines of information that <code>main.go</code> fills in (server, room, TLS version and fingerprint from the live connection, keys).</p>
+    </div>
+    <div class="read">
+      <p><b>Timestamps</b> are the local time each message arrived, added by the client in <code>format</code>: the server sends no time at all.</p>
+      <p><b>Mentions</b> are a regular expression built from your alias (<code>@alias</code> followed by the end or a character that can't be part of a name, any case), checked only on other people's messages. The bell is <code>Beep</code> on the tcell screen. tview doesn't expose its screen, so <code>Run</code> creates it and hands it over with <code>SetScreen</code>, keeping a reference; the beep runs inside the event loop, like every other change to the screen.</p>
+    </div>
+  </div>
+
   <h3>The code</h3>
   <div class="split">
     <div style="min-width:0"><div class="file">cmd/teachat/main.go · after opening the connection</div><pre class="go">// stdin is not a terminal (command | teachat): pipe mode, no screen
@@ -1262,7 +1276,8 @@ func pipe(conn *websocket.Conn) {
     <p>In this order, one feature at a time. The full list, with the decisions made and the open questions, is in <a href="https://github.com/daniel-cmdline/teachat/blob/main/roadmap.md">roadmap.md</a>. What has shipped is in <a href="https://github.com/daniel-cmdline/teachat/blob/main/features.md">features.md</a>.</p>
   </div>
   <ol class="road">
-    <li><div><b>Password rooms</b><p>Now that traffic is encrypted, a password can travel safely. Open questions: should password rooms persist, and where does the password go (URL, header or first message)?</p></div></li>
+    <li><div><b>Release v0.1.0</b><p>A git tag and prebuilt binaries for Linux and macOS (amd64 and arm64), plus <code>.deb</code> and <code>.rpm</code> packages, so nobody needs Go installed.</p></div></li>
+    <li><div><b>Access control</b><p>A server-wide token or password-protected rooms, decided after the release. TLS is in place, so a secret travels encrypted; the server stores only a salted hash.</p></div></li>
     <li><div><b>Message history</b><p>SQLite with <code>modernc.org/sqlite</code>. Needed for pipe mode to keep logs and for persistent rooms.</p></div></li>
   </ol>
 </section>

@@ -23,15 +23,20 @@ What works today:
 - Command-line flags for server, room and alias.
 - A full-screen terminal UI: messages on top, an input box at the bottom that grows as you type. Incoming messages never overwrite what you're typing.
 - Each alias gets its own color, the same on every client. Your own messages show your alias in bold.
-- Pipe mode: `some-command | teachat --room ops` sends each line to the room, still prints it to your terminal, and exits when the input ends.
-- TLS by default, with trust on first use: no certificates to manage.
+- teachat's look: mint borders and an amber title (the logo's colors) on your terminal's own background, a welcome banner with the teacup and the connection details, timestamps, and a hint in the empty input box.
+- Mentions: when someone writes `@yourname`, the message stands out in amber and your terminal's bell rings, so a terminal in the background gets your attention.
+- Pipe mode: `some-command | teachat --room ops` sends the output to the room (lines arriving together go as one message), still prints it to your terminal, and exits when the input ends. A server can refuse pipes with `--no-pipes`.
+- TLS by default, with trust on first use: no certificates to manage. Or bring your own (Let's Encrypt) with `--tls-cert`/`--tls-key`.
 - A member that stops reading (laptop asleep, dropped network) is dropped after 5 seconds instead of freezing the room.
+- Abuse limits for the open internet: 5 messages/s per connection (senders are slowed down, nothing is dropped), 10 connections per IP, 1 MB per message.
+- A hardened systemd unit and a certbot hook for running the server as a service.
 - `--version` on both binaries.
-- Server and client as separate binaries.
+- Server and client as separate binaries, installable with `go install`.
 
 What's coming next:
 
-- Password-protected rooms
+- A v0.1.0 release with prebuilt binaries, `.deb` and `.rpm` packages
+- Access control: a server-wide token or password-protected rooms
 - Message history
 
 > 🔒 **Encrypted by default.** On first start the server creates a self-signed certificate and prints its fingerprint. Clients trust a server the first time they connect and refuse a different certificate afterwards, like SSH. The first connection is the one to verify: compare the fingerprint the client shows with the one the server prints. Running on a real domain? Pass your own certificate with `--tls-cert` and `--tls-key`.
