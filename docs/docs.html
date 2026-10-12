@@ -24,6 +24,7 @@
   <div class="grp">usage</div>
   <a href="#overview">overview</a>
   <a href="#getting-started">getting started</a>
+  <a href="#service">as a service</a>
   <a href="#client-ref">client</a>
   <a href="#pipe-mode">pipe mode</a>
   <a href="#server-ref">server</a>
@@ -94,6 +95,33 @@ go build ./cmd/teachat-server
 
 ./teachat-server
 ./teachat --room dev --alias daniel</pre>
+  <h3 id="service">Run the server as a service</h3>
+  <p class="read">The repo ships a hardened systemd unit and a certbot hook in <code>contrib/</code>. The server then starts on boot, restarts if it crashes, logs to the journal and runs as its own unprivileged user.</p>
+  <pre style="max-width:88ch"><span class="c"># 1. a system user for the server, and the binary</span>
+sudo useradd --system --home /var/lib/teachat --shell /usr/sbin/nologin teachat
+go install github.com/daniel-cmdline/teachat/cmd/teachat-server@latest
+sudo install -m 0755 ~/go/bin/teachat-server /usr/local/bin/
+
+<span class="c"># 2. the service (from contrib/systemd/)</span>
+sudo cp contrib/systemd/teachat-server.service /etc/systemd/system/
+
+<span class="c"># 3a. with a domain: Let's Encrypt + the deploy hook (from contrib/certbot/)</span>
+sudo install -D -m 0755 contrib/certbot/teachat-deploy-hook.sh /usr/local/lib/teachat/teachat-deploy-hook.sh
+sudo certbot certonly --standalone -d chat.example.com \
+  --deploy-hook /usr/local/lib/teachat/teachat-deploy-hook.sh
+
+<span class="c"># 3b. without a domain: edit the service and switch to the plain ExecStart line</span>
+<span class="c">#     (self-signed certificate, created on first start)</span>
+
+<span class="c"># 4. start it, now and on every boot</span>
+sudo systemctl daemon-reload
+sudo systemctl enable --now teachat-server
+journalctl -u teachat-server -f      <span class="c"># logs, including the fingerprint</span></pre>
+  <dl class="ref">
+    <dt>the hook</dt><dd>Let's Encrypt's <code>privkey.pem</code> is readable only by root. After every renewal, certbot runs the hook as root, and it copies the certificate and key into <code>/var/lib/teachat/tls/</code>, owned by the <code>teachat</code> user: the key first, then the certificate, so the server never loads a mismatched pair. The server notices the new files and reloads them by itself, so renewals don't disconnect anyone.</dd>
+    <dt>the unit</dt><dd>Restarts on failure, keeps its files in <code>/var/lib/teachat</code> (<code>StateDirectory</code>, with <code>XDG_CONFIG_HOME=/var/lib</code>), and is locked down: no capabilities at all (port 7347 is above 1024), a read-only system (<code>ProtectSystem=strict</code>), no access to home directories, a private <code>/tmp</code>, no new privileges, only network sockets.</dd>
+    <dt>ports</dt><dd>7347/TCP for teachat. For <code>certbot --standalone</code>, port 80 must be reachable while the certificate is issued and renewed.</dd>
+  </dl>
 </section>
 
 <section id="client-ref">
@@ -234,7 +262,7 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># streams until 
     <dt>regenerating</dt><dd>Deleting <code>server.crt</code> and <code>server.key</code> makes the server generate a new certificate, and every client will refuse it until they remove the old line from <code>known_servers</code>.</dd>
     <dt>without TLS</dt><dd><code>--no-tls</code> on both sides goes back to plain <code>ws://</code>. For testing only.</dd>
     <dt>your own certificate</dt><dd>On a real domain, pass <code>--tls-cert</code> and <code>--tls-key</code> (Let's Encrypt's <code>fullchain.pem</code> and <code>privkey.pem</code>, or your company CA's). The client checks every certificate against the machine's trusted authorities first, like a browser: if it verifies for that hostname, it's accepted with no pinning, so renewals with a new key keep working. The server reloads the files when they change, so certbot renewals need no restart.</dd>
-    <dt>common mistakes</dt><dd>Two mistakes work at first and break at the first renewal, ~60 days later, so teachat warns about both right away. <b>Using <code>cert.pem</code> instead of <code>fullchain.pem</code></b>: without the intermediate certificate the chain doesn't verify; the server warns at startup. <b>Connecting by IP instead of the domain name</b>: the certificate is only valid for the name; the client warns on first use. Also, Let's Encrypt's <code>privkey.pem</code> is readable only by root: a server running as a regular user needs read access to it (for example through a certbot deploy hook that copies the files).</dd>
+    <dt>common mistakes</dt><dd>Two mistakes work at first and break at the first renewal, ~60 days later, so teachat warns about both right away. <b>Using <code>cert.pem</code> instead of <code>fullchain.pem</code></b>: without the intermediate certificate the chain doesn't verify; the server warns at startup. <b>Connecting by IP instead of the domain name</b>: the certificate is only valid for the name; the client warns on first use. Also, Let's Encrypt's <code>privkey.pem</code> is readable only by root: use the certbot hook from <code>contrib/</code> (<a href="#service">run as a service</a>), which copies it for the server.</dd>
     <dt>company CA</dt><dd>A certificate from a private company CA only verifies on machines where that CA is installed. Elsewhere it falls back to trust on first use, and each renewal with a new key would trip the "identity changed" check.</dd>
     <dt>code</dt><dd>All of it lives in <code>internal/tlstrust</code>, standard library only (<code>crypto/tls</code>, <code>crypto/x509</code>). The binaries call <code>tlstrust.Server(certFile, keyFile, warn)</code> and <code>tlstrust.Client(server, notice)</code>.</dd>
   </dl>
@@ -267,6 +295,7 @@ cmd/teachat/pipe.go              <span class="c">client: pipe mode</span>
 internal/ui/ui.go                <span class="c">the client's screen (tview)</span>
 internal/tlstrust/               <span class="c">TLS: certificate, trust on first use</span>
 internal/version/                <span class="c">--version</span>
+contrib/                         <span class="c">systemd unit and certbot hook</span>
 docs/                            <span class="c">this site and this documentation</span>
 roadmap.md                       <span class="c">next steps and decisions</span>
 features.md                      <span class="c">log of what shipped</span></pre>

@@ -2,6 +2,13 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-10-12 15:31 — Running as a systemd service
+
+- **`contrib/systemd/teachat-server.service`:** starts on boot, restarts on failure, logs to the journal, runs as its own `teachat` system user. Keeps its files in `/var/lib/teachat` (`StateDirectory`, with `XDG_CONFIG_HOME=/var/lib`, so the self-signed certificate lands there). Hardened: no capabilities (port 7347 is above 1024), `ProtectSystem=strict`, `ProtectHome`, private `/tmp`, `NoNewPrivileges`, only network sockets, and more. Two `ExecStart` lines: with a Let's Encrypt certificate, or self-signed.
+- **`contrib/certbot/teachat-deploy-hook.sh`:** Let's Encrypt's `privkey.pem` is readable only by root. certbot runs the hook as root after every issuance and renewal; it copies the key and then the certificate into `/var/lib/teachat/tls/`, owned by `teachat`. The server's file-watching reload picks them up, so renewals disconnect nobody. It refuses to run outside certbot (no `RENEWED_LINEAGE`).
+- **Tested:** `systemd-analyze verify` on the unit. The server run as a transient systemd service with the same restart policy and hardening (`systemd-run --user`): it starts, logs to the journal, accepts a client, and after a `kill -9` systemd restarts it with the same certificate (same fingerprint, the client still trusts it). The hook, run through a full certbot-style renewal against a live server: the same process started serving the new certificate without a restart, and the client connected. Two notes from testing: a user-mode systemd needs `PrivateUsers=yes` for the namespace-based hardening (the real system service doesn't), and `PrivateTmp` hides `/tmp` from the service, which is why the binary goes in `/usr/local/bin` and the state in `/var/lib`.
+- **Docs:** README and the HTML ("Run the server as a service", the step-by-step setup, linked from the sidebar), roadmap.
+
 ## 2026-10-12 15:20 — Ready for the open internet: rate limits, per-IP cap, batched pipes, --no-pipes
 
 - **Rate limit per connection:** 5 messages a second with bursts of 20, and 256 KB a second with bursts up to one 1 MB message. Over the limit, the server waits before reading that connection again: nothing is dropped and nobody is disconnected, TCP slows the sender down. A script flooding a room is simply slowed to the limit. Code in `cmd/teachat-server/limits.go`, with `golang.org/x/time/rate` (new dependency, Go team, pure Go).

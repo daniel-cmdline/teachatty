@@ -67,6 +67,7 @@ In this order. Each one is small on purpose.
 - `--version` reads the version Go stamps into the binary (a tag with `go install ...@v0.1.0`, a pseudo-version with the commit when built from a clone), or one set with `-ldflags` for release builds. Shared by both binaries in `internal/version`.
 - Abuse limits, needed before running on the open internet: 5 messages/s per connection (bursts of 20) and 256 KB/s; over the limit the server reads more slowly instead of dropping or disconnecting. At most 10 connections per IP (`--max-per-ip`, 0 = no limit for companies behind NAT); over the cap the server answers 429. `golang.org/x/time/rate` for the limiters.
 - `--no-pipes` lets a server keep pipe mode out (chat only, no build logs). The client declares pipe mode in the URL (`mode=pipe`); it's a courtesy rule, not a security boundary, so the rate limit stays the real defense against abuse.
+- The server is meant to run as a systemd service: `contrib/systemd/teachat-server.service` (own system user, restart on failure, journal, hardened: no capabilities, read-only system, writes only to `/var/lib/teachat`) and `contrib/certbot/teachat-deploy-hook.sh`, which copies Let's Encrypt's root-only key for the `teachat` user after each renewal, so the server's reload picks it up without a restart.
 - The module is `github.com/daniel-cmdline/teachat`, matching the repository path, so internal imports and `go install` work.
 
 ## Open questions

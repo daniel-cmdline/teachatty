@@ -1,0 +1,53 @@
+# teachat-server as a systemd service: starts on boot, restarts if it crashes,
+# logs to the journal (journalctl -u teachat-server), runs as its own user.
+#
+# Install (see README, "Running as a service"):
+#   sudo useradd --system --home /var/lib/teachat --shell /usr/sbin/nologin teachat
+#   sudo install -m 0755 teachat-server /usr/local/bin/
+#   sudo cp teachat-server.service /etc/systemd/system/
+#   sudo systemctl enable --now teachat-server
+
+[Unit]
+Description=teachat server (terminal chat)
+Documentation=https://github.com/daniel-cmdline/teachat
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=teachat
+Group=teachat
+
+# With your own certificate (Let's Encrypt, copied here by contrib/certbot/teachat-deploy-hook.sh):
+ExecStart=/usr/local/bin/teachat-server --tls-cert /var/lib/teachat/tls/fullchain.pem --tls-key /var/lib/teachat/tls/privkey.pem
+# Without a domain, use the self-signed certificate instead (created on first start
+# in /var/lib/teachat/, fingerprint in the journal):
+#ExecStart=/usr/local/bin/teachat-server
+
+Restart=on-failure
+RestartSec=2
+
+# teachat keeps its files in $XDG_CONFIG_HOME/teachat: with this, /var/lib/teachat,
+# which StateDirectory creates and gives to the teachat user
+Environment=XDG_CONFIG_HOME=/var/lib
+StateDirectory=teachat
+StateDirectoryMode=0750
+
+# Hardening: the server only needs the network and its own directory. Port 7347 is
+# above 1024, so it needs no capabilities at all.
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

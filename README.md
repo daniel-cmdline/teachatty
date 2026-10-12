@@ -108,8 +108,39 @@ teachat --server chat.example.com:7347
 
 - Use **`fullchain.pem`**, not `cert.pem`: without the intermediate certificate, clients can't verify the chain. The server warns about this at startup.
 - Clients should connect **by the domain name**, not the IP: the certificate is only valid for the name. The client warns if it isn't.
-- `privkey.pem` is readable only by root. If teachat-server runs as a regular user, give it read access to the key (for example with a certbot deploy hook that copies the files somewhere it can read).
+- `privkey.pem` is readable only by root. Use the certbot hook from `contrib/` (see "Running as a service" below), which copies it where the server can read it.
 - Renewals need no restart: the server reloads the files when they change.
+
+### Running as a service
+
+The repo ships a hardened systemd unit and a certbot hook in [contrib/](contrib/). The server then starts on boot, restarts if it crashes, logs to the journal and runs as its own unprivileged user:
+
+```bash
+# 1. a system user for the server, and the binary
+sudo useradd --system --home /var/lib/teachat --shell /usr/sbin/nologin teachat
+go install github.com/daniel-cmdline/teachat/cmd/teachat-server@latest
+sudo install -m 0755 ~/go/bin/teachat-server /usr/local/bin/
+
+# 2. the service (from contrib/systemd/)
+sudo cp contrib/systemd/teachat-server.service /etc/systemd/system/
+
+# 3a. with a domain: Let's Encrypt + the deploy hook (from contrib/certbot/)
+sudo install -D -m 0755 contrib/certbot/teachat-deploy-hook.sh /usr/local/lib/teachat/teachat-deploy-hook.sh
+sudo certbot certonly --standalone -d chat.example.com \
+  --deploy-hook /usr/local/lib/teachat/teachat-deploy-hook.sh
+
+# 3b. without a domain: edit the service and switch to the plain ExecStart line
+#     (self-signed certificate, created on first start)
+
+# 4. start it, now and on every boot
+sudo systemctl daemon-reload
+sudo systemctl enable --now teachat-server
+journalctl -u teachat-server -f      # logs, including the fingerprint
+```
+
+- **The hook** solves the `privkey.pem` permission problem: after every renewal, certbot runs it as root, and it copies the certificate and key into `/var/lib/teachat/tls/`, owned by the `teachat` user. The server notices the new files and reloads them by itself, so renewals don't disconnect anyone.
+- **The unit is locked down:** the server needs no capabilities (port 7347 is above 1024) and can only write to `/var/lib/teachat`. Everything else on the system is read-only or hidden from it.
+- Behind a firewall, open port 7347 (TCP). For `certbot --standalone`, port 80 must be reachable while the certificate is issued and renewed.
 
 ## Client flags
 
@@ -126,6 +157,7 @@ teachat --server chat.example.com:7347
 ```
 cmd/teachat-server/  the server: rooms and message relay
 cmd/teachat/         the terminal client
+contrib/             systemd unit and certbot hook for running the server as a service
 internal/ui/  the client's screen (built on tview)
 internal/tlstrust/  TLS certificate and trust on first use
 docs/         project site and documentation
