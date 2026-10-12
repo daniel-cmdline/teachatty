@@ -2,6 +2,16 @@
 
 Registro das features entregues, da mais nova para a mais antiga. Adicione uma entrada a cada commit.
 
+## 2026-10-12 09:50 — Cores por alias
+
+- Na área de mensagens, o alias de cada pessoa aparece numa cor própria, escolhida pelo hash do alias (FNV-32a) numa paleta de 12 cores. O mesmo alias tem sempre a mesma cor, em qualquer cliente, sem mudar o servidor nem o protocolo.
+- Suas próprias mensagens: alias em negrito, na cor normal do texto. Vale só para as linhas que você enviou, não para o alias: se outra pessoa entra com o seu alias, ela aparece colorida, não em negrito.
+- Só o alias é colorido; o texto da mensagem continua na cor normal.
+- **Segurança:** para colorir, o tview passou a interpretar tags como `[red]`. Tudo que vem de fora (alias, texto, nome da sala no título) passa por `tview.Escape`, então quem manda `[red]oi` continua vendo e mostrando `[red]oi` literal.
+- **Limites:** com 12 cores, colisões acontecem (5 pessoas numa sala: ~60% de chance de duas terem a mesma cor). O cliente acha o alias cortando a linha no primeiro `": "`, porque o servidor manda `alias: texto` como string única; um alias com `": "` dentro é cortado errado. Os dois somem quando as mensagens virarem estruturadas (JSON) no protocolo.
+- Testado ao vivo com 5 clientes na mesma sala: cores diferentes por alias, negrito só nas próprias mensagens, `[red]oi` aparecendo literal.
+- **Docs (HTML): pendente.** Atualizar o site e a documentação junto com as próximas features de UI.
+
 ## 2026-10-12 09:40 — Site e documentação separados
 
 - A página única `teachat-por-dentro.html` virou duas, em `docs/`, com o CSS compartilhado em `docs/style.css`:

@@ -22,6 +22,7 @@ What works today:
 - Aliases: your name appears in front of every message you send.
 - Command-line flags for server, room and alias.
 - A full-screen terminal UI: messages on top, an input box at the bottom that grows as you type. Incoming messages never overwrite what you're typing.
+- Each alias gets its own color, the same on every client. Your own messages show your alias in bold.
 - Server and client as separate binaries.
 
 What's coming next:

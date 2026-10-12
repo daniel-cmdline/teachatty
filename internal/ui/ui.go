@@ -4,6 +4,7 @@ package ui
 
 import (
 	"fmt"
+	"hash/fnv"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -17,6 +18,32 @@ type UI struct {
 	messages *tview.TextView
 }
 
+// cores dos aliases. Tons médios, que dá para ler em terminal escuro e claro.
+var palette = []string{
+	"#e06c75", "#e5a04b", "#d7c25a", "#98c379", "#4fd6a0", "#56b6c2",
+	"#61afef", "#a3a0ff", "#c678dd", "#f08fc0", "#d19a66", "#7fb3d5",
+}
+
+// aliasColor escolhe a cor pelo hash do alias: o mesmo alias tem sempre a mesma cor,
+// em qualquer cliente, sem o servidor precisar saber de cor nenhuma.
+func aliasColor(alias string) string {
+	h := fnv.New32a()
+	h.Write([]byte(alias))
+	return palette[h.Sum32()%uint32(len(palette))]
+}
+
+// format monta a linha com o alias colorido. Com as cores ligadas, o tview interpreta
+// tags como "[red]" no texto, então tudo que vem de fora passa por tview.Escape:
+// sem isso, qualquer um mandaria "[red]" e mudaria a sua tela.
+// mine = mensagem que você mesmo enviou: alias em negrito, na cor normal do texto.
+func format(alias, text string, mine bool) string {
+	style := "[" + aliasColor(alias) + "]"
+	if mine {
+		style = "[::b]"
+	}
+	return style + tview.Escape(alias) + "[-::-]: " + tview.Escape(text)
+}
+
 // New monta a tela. send é chamada a cada Enter com o texto digitado.
 func New(room, alias string, send func(text string)) *UI {
 	u := &UI{app: tview.NewApplication()}
@@ -25,8 +52,9 @@ func New(room, alias string, send func(text string)) *UI {
 	// quando a tela enche, as mensagens novas ficam escondidas embaixo.
 	// ScrollToEnd liga o "seguir o fim". PgUp desliga, para dar para ler o passado.
 	u.messages = tview.NewTextView()
-	u.messages.SetBorder(true).SetTitle(" " + room + " · " + alias + " ")
+	u.messages.SetBorder(true).SetTitle(" " + tview.Escape(room) + " · " + tview.Escape(alias) + " ")
 	u.messages.ScrollToEnd()
+	u.messages.SetDynamicColors(true) // liga as tags de cor, usadas no alias
 
 	// caixa de digitação: TextArea quebra linhas longas em vez de rolar para o lado.
 	// Sem quebra por palavra: quebrando em qualquer caractere, dá para calcular
@@ -70,7 +98,7 @@ func New(room, alias string, send func(text string)) *UI {
 			if strings.TrimSpace(text) != "" {
 				send(text)
 				// sua própria mensagem aparece igual às dos outros: "alias: texto"
-				fmt.Fprintf(u.messages, "%s: %s\n", alias, text)
+				fmt.Fprintln(u.messages, format(alias, text, true))
 			}
 			input.SetText("", false)
 			return nil
@@ -88,8 +116,14 @@ func New(room, alias string, send func(text string)) *UI {
 // Print mostra uma linha recebida. Pode ser chamada de outra goroutine:
 // QueueUpdateDraw entrega a mudança para a goroutine da tela, que redesenha.
 func (u *UI) Print(line string) {
+	// o servidor manda "alias: texto" como uma string só; o alias é o que vem
+	// antes do primeiro ": ". Sem ": ", a linha aparece inteira, sem cor.
+	out := tview.Escape(line)
+	if alias, text, ok := strings.Cut(line, ": "); ok {
+		out = format(alias, text, false)
+	}
 	u.app.QueueUpdateDraw(func() {
-		fmt.Fprintln(u.messages, line)
+		fmt.Fprintln(u.messages, out)
 	})
 }
 

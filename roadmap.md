@@ -38,6 +38,8 @@ Nesta ordem. Cada um é pequeno de propósito.
 
 - **Ponte com o Discord.** Assinar canais do Discord (que tenham o bot do teachat) e ler as mensagens no terminal, em vez de no app do Discord, que é pesado e tem muito ruído. Só leitura no começo.
 - **Listagem de salas** (`teachat --list`) para salas públicas.
+- **Mensagens estruturadas** (`{"alias": ..., "text": ...}` em vez de `alias: texto`). Tira o parsing frágil do cliente e abre espaço para avisos de entrada/saída, histórico e cores escolhidas.
+- **UI:** agrupar mensagens seguidas da mesma pessoa (alias só na primeira), destacar menções (`@daniel`), horário nas mensagens.
 
 ## Decisões tomadas
 
