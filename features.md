@@ -2,6 +2,18 @@
 
 Registro das features entregues, da mais nova para a mais antiga. Adicione uma entrada a cada commit.
 
+## 2026-10-12 10:58 — Modo pipe
+
+- Quando o stdin não é um terminal (`comando | teachat`), o cliente não abre a tela: envia cada linha para a sala, repete a linha no terminal (como o `tee`) e sai quando a entrada acaba. Código em `cmd/client/pipe.go`; o `main.go` só ganhou o `term.IsTerminal`.
+- `tail -f app.log | teachat --room ops` funciona como transmissão contínua, até o Ctrl+C.
+- Linha vazia aparece no eco, mas não vai para a sala. Linha sem `\n` no fim também é enviada.
+- Sem limite de tamanho de linha: `bufio.Reader.ReadString` em vez do `bufio.Scanner`, que desiste em 64 KB.
+- **Saída limpa:** no fim, manda o frame de close do WebSocket e espera o servidor responder (até 2 s), para as últimas linhas não se perderem. Código de saída 0; falha ao conectar ou conexão caindo no meio: 1, com o erro no stderr.
+- **Por que lê a sala mesmo sem mostrar nada:** as mensagens dos outros continuam chegando. Sem ler, os buffers de rede enchem e o broadcast do servidor trava a sala inteira esperando pelo pipe. Uma goroutine lê e descarta tudo.
+- **Testado:** 2000 linhas (`seq`) chegam todas, inclusive a última; uma linha de 200 KB chega inteira; servidor fora do ar dá `connection refused` e código 1. Com uma sala inundada por 5000 mensagens de 2 KB e um pipe lento conectado, todas as 5000 chegaram aos outros. Com um cliente que nunca lê no lugar do pipe, a sala travou em 2082 de 5000: é o limite "cliente lento atrasa a sala", agora medido.
+- `golang.org/x/term` passou de dependência indireta para direta (já estava no projeto).
+- **Docs (HTML): pendente.** O site ainda marca pipes como "em breve", e a documentação diz que `echo oi | teachat` falha.
+
 ## 2026-10-12 10:06 — Alias padrão é o seu usuário
 
 - Sem `--alias`, o cliente usa o seu usuário do sistema (`$USER`) em vez de `anonimo`. Quem não tem `$USER` definido (cron, alguns containers) continua como `anonimo`.

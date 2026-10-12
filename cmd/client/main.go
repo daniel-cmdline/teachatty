@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/gorilla/websocket"
+	"golang.org/x/term"
 
 	"github.com/daniel-cmdline/teachat/internal/ui"
 )
@@ -36,14 +37,21 @@ func main() {
 	}
 	defer conn.Close()
 
+	// stdin não é um terminal (comando | teachat): modo pipe, sem tela
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
+		pipe(conn)
+		return
+	}
+
 	// a tela chama esta função a cada Enter; só a goroutine da tela escreve na
 	// conexão, então a regra da gorilla de um escritor por conexão continua valendo
 	screen := ui.New(*room, *alias, func(text string) {
 		conn.WriteMessage(websocket.TextMessage, []byte(text))
 	})
 
-	// recebe mensagens em paralelo enquanto você digita
+	// canal vazio para avisar que a conexão caiu; a goroutine de recebimento fecha o canal
 	closed := make(chan struct{})
+	// recebe mensagens em paralelo enquanto você digita
 	go func() {
 		for {
 			_, msg, err := conn.ReadMessage()

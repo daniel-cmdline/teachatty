@@ -17,7 +17,7 @@ Chat de terminal para desenvolvedores e sysadmins. Minimalista: leve, sem distra
 
 - **Servidor** (`cmd/server`): salas em memória, um mutex por sala, porta fixa `:23456`.
 - **Cliente** (`cmd/client`): flags `--server`, `--room` e `--alias`. Tela cheia com tview (`internal/ui`): mensagens em cima, caixa de digitação embaixo.
-- O cliente exige um terminal: `echo oi | teachat` falha até o modo pipe chegar.
+- Modo pipe: `comando | teachat` envia cada linha para a sala, mostra no terminal e sai no fim da entrada.
 - Ainda sem criptografia: o tráfego é `ws://` em texto aberto.
 - As features entregues ficam registradas em [features.md](features.md).
 
@@ -26,13 +26,8 @@ Chat de terminal para desenvolvedores e sysadmins. Minimalista: leve, sem distra
 Nesta ordem. Cada um é pequeno de propósito.
 
 1. **Flag `--addr` no servidor.** Hoje a porta é fixa no código. Para auto-hospedar, ela precisa ser configurável.
-2. **Modo pipe.**
-   ```bash
-   comandocomplicado | teachat --room minhaempresa --password xxx
-   ```
-   O cliente detecta que o stdin não é um terminal (`term.IsTerminal`), pula a tela do tview, envia cada linha e sai no final. Hoje, sem terminal, o cliente simplesmente falha. Uso: mandar logs e saídas de comandos para uma sala privada do time.
-3. **Salas com senha + TLS, juntos.** Senha nunca deve trafegar em `ws://` aberto. TLS significa `ListenAndServeTLS` no servidor e `wss://` no cliente, com um certificado autoassinado fixado no cliente (pinning) para uso em rede local.
-4. **Histórico de mensagens.** Necessário para o modo pipe ser útil quando não há ninguém na sala, e para salas persistentes. Plano: SQLite com `modernc.org/sqlite` (Go puro, então continua sendo um binário único).
+2. **Salas com senha + TLS, juntos.** Senha nunca deve trafegar em `ws://` aberto. TLS significa `ListenAndServeTLS` no servidor e `wss://` no cliente, com um certificado autoassinado fixado no cliente (pinning) para uso em rede local.
+3. **Histórico de mensagens.** Necessário para o modo pipe ser útil quando não há ninguém na sala, e para salas persistentes. Plano: SQLite com `modernc.org/sqlite` (Go puro, então continua sendo um binário único).
 
 ## Futuro
 
@@ -53,12 +48,13 @@ Nesta ordem. Cada um é pequeno de propósito.
 - Na tela: Enter envia, PgUp/PgDn rolam as mensagens, Ctrl+C sai. A própria mensagem é mostrada pelo cliente, não devolvida pelo servidor.
 - Sem mouse na tela, para selecionar e copiar texto do chat continuar funcionando normalmente.
 - A tela fica em `internal/ui`. O `Room` do servidor sai do `package main` depois, como mudança separada.
+- Modo pipe sai quando a entrada acaba, sem nunca abrir a tela. Entrar no chat depois travaria scripts e cron (ninguém para apertar Ctrl+C), e o stdin já é o pipe, não o teclado.
+- Modo pipe repete cada linha no terminal (como o `tee`), para quem roda o comando continuar vendo a saída. Uma mensagem por linha, sem agrupar: o caminho mais simples. Logs grandes inundam a sala; agrupar fica para depois, se incomodar.
 - O módulo se chama `github.com/daniel-cmdline/teachat`, igual ao caminho do repositório, para os imports internos e o `go install` funcionarem.
 
 ## Perguntas em aberto
 
 - Salas com senha vs. apagar sala vazia: se a sala some quando esvazia, qualquer um pode recriá-la com outra senha. Salas com senha devem ser persistentes?
-- Modo pipe: quando o pipe termina, o cliente sai ou entra no chat?
 - A senha pode ir na URL de conexão, ou deve ir num cabeçalho ou numa primeira mensagem para não aparecer em logs?
 - O alias não é verificado: qualquer um entra como `--alias daniel`. A senha protege a sala, mas não prova quem é quem dentro dela. Precisa de identidade?
 

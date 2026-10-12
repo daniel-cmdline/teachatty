@@ -23,12 +23,12 @@ What works today:
 - Command-line flags for server, room and alias.
 - A full-screen terminal UI: messages on top, an input box at the bottom that grows as you type. Incoming messages never overwrite what you're typing.
 - Each alias gets its own color, the same on every client. Your own messages show your alias in bold.
+- Pipe mode: `some-command | teachat --room ops` sends each line to the room, still prints it to your terminal, and exits when the input ends.
 - Server and client as separate binaries.
 
 What's coming next:
 
 - Configurable server port
-- Pipe mode: `some-command | teachat --room ops`
 - Password-protected rooms and TLS (`wss://`)
 - Message history
 
@@ -59,7 +59,14 @@ Run a second client in the same room and start typing.
 
 Typing anything jumps back to the newest messages.
 
-The client needs a real terminal for now, so piping into it (`echo hi | ...`) fails until pipe mode lands.
+When stdin isn't a terminal, the client skips the screen and runs in pipe mode instead:
+
+```bash
+make 2>&1 | go run ./cmd/client --room ops     # each line goes to the room
+tail -f /var/log/app.log | go run ./cmd/client --room ops   # streams until you stop it
+```
+
+You still see every line in your terminal. Empty lines are shown but not sent. Pipe mode never opens the chat screen, so it's safe in scripts and cron.
 
 To connect from another machine, point the client at the server and make sure port `23456` is open in the server's firewall:
 
