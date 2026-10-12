@@ -33,7 +33,7 @@
       <p class="lede">For devs and sysadmins. No heavy app, no browser, no noise: you join a room with one command, talk, and leave with <kbd>Ctrl</kbd>+<kbd>C</kbd>. It runs on your company's server, and messages never leave the network.</p>
       <div class="cta">
         <a class="btn primary" href="docs.html">docs</a>
-        <a class="btn" href="https://github.com/daniel-cmdline/teachat">github</a>
+        <a class="btn" href="https://github.com/daniel-cmdline/teachatty">github</a>
         <a class="btn" href="#start">try the public server</a>
       </div>
       <p class="cmd" style="margin-top:18px">try it now: $ <b>teachatty --server teachatty.com</b></p>
@@ -162,13 +162,13 @@
     <div class="sec-head"><h2>Start in a minute</h2></div>
     <p>Requires Go 1.27 or newer. The fastest way in is the public server at <b>teachatty.com</b>:</p>
   </div>
-  <pre style="max-width:var(--read);margin-top:16px">go install github.com/daniel-cmdline/teachat/cmd/teachatty@latest
+  <pre style="max-width:var(--read);margin-top:16px">go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest
 teachatty --server teachatty.com</pre>
   <div class="read" style="margin-top:22px">
     <p>Or run your own, from a clone:</p>
   </div>
-  <pre style="max-width:var(--read);margin-top:16px">git clone https://github.com/daniel-cmdline/teachat.git
-cd teachat
+  <pre style="max-width:var(--read);margin-top:16px">git clone https://github.com/daniel-cmdline/teachatty.git
+cd teachatty
 
 <span class="c"># the server (port 7347, default room local)</span>
 go run ./cmd/teachatty-server
@@ -197,7 +197,7 @@ uptime | go run ./cmd/teachatty</pre>
 </section>
 
 <footer>
-  <span>teachatty · <a href="https://github.com/daniel-cmdline/teachat">github.com/daniel-cmdline/teachat</a></span>
+  <span>teachatty · <a href="https://github.com/daniel-cmdline/teachatty">github.com/daniel-cmdline/teachatty</a></span>
   <span>Go · gorilla/websocket v1.5.3 · tview v0.42.0 · RFC 6455</span>
 </footer>
 

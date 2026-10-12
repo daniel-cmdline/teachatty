@@ -2,6 +2,11 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-10-12 16:07 — Repository and module renamed to teachatty
+
+- The GitHub repository is now `daniel-cmdline/teachatty`, and the Go module path follows it: `github.com/daniel-cmdline/teachatty`, with every internal import, link and install command updated (`go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest`). GitHub redirects the old address.
+- Commit messages no longer carry a co-author line, and it was removed from the earlier commits too (only the messages were rewritten; code, dates and order are unchanged).
+
 ## 2026-10-12 16:02 — teachat is now teachatty
 
 - **New name, new domain: teachatty.com.** Everything renamed: the binaries (`teachatty`, `teachatty-server`; folders `cmd/teachatty`, `cmd/teachatty-server`), every message and help screen, the config directory (`~/.config/teachatty/`), the self-signed certificate's name, the systemd unit (`teachatty-server.service`, user `teachatty`, `/var/lib/teachatty`), the certbot hook (`teachatty-deploy-hook.sh`, `TEACHATTY_USER`/`TEACHATTY_TLS_DIR`), `.gitignore`, the README, the roadmap, the site, the docs, and the older entries of this log.

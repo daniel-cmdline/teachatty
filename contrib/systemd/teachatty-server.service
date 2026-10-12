@@ -9,7 +9,7 @@
 
 [Unit]
 Description=teachatty server (terminal chat)
-Documentation=https://github.com/daniel-cmdline/teachat
+Documentation=https://github.com/daniel-cmdline/teachatty
 After=network-online.target
 Wants=network-online.target
 

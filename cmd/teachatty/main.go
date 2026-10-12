@@ -17,9 +17,9 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/term"
 
-	"github.com/daniel-cmdline/teachat/internal/tlstrust"
-	"github.com/daniel-cmdline/teachat/internal/ui"
-	"github.com/daniel-cmdline/teachat/internal/version"
+	"github.com/daniel-cmdline/teachatty/internal/tlstrust"
+	"github.com/daniel-cmdline/teachatty/internal/ui"
+	"github.com/daniel-cmdline/teachatty/internal/version"
 )
 
 // defaultPort is teachatty's port, used when --server doesn't name one

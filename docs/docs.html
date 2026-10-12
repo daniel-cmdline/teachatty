@@ -15,7 +15,7 @@
   <div class="wrap" style="max-width:1280px">
     <a class="brand" href="index.html">tea<b>chatty</b> <span style="color:var(--muted);font-weight:500">docs</span></a>
     <a class="btn" href="index.html">← site</a>
-    <a class="btn" href="https://github.com/daniel-cmdline/teachat">github</a>
+    <a class="btn" href="https://github.com/daniel-cmdline/teachatty">github</a>
   </div>
 </nav>
 
@@ -65,11 +65,11 @@
   </div>
   <h3>Try the public server</h3>
   <p class="read">A public teachatty server runs at <b>teachatty.com</b>. Without a port, the client uses 7347:</p>
-  <pre style="max-width:88ch">go install github.com/daniel-cmdline/teachat/cmd/teachatty@latest
+  <pre style="max-width:88ch">go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest
 teachatty --server teachatty.com</pre>
   <h3>Run from source</h3>
-  <pre style="max-width:88ch">git clone https://github.com/daniel-cmdline/teachat.git
-cd teachat
+  <pre style="max-width:88ch">git clone https://github.com/daniel-cmdline/teachatty.git
+cd teachatty
 
 <span class="c"># server</span>
 go run ./cmd/teachatty-server
@@ -90,8 +90,8 @@ go run ./cmd/teachatty-server -h</pre>
 go run ./cmd/teachatty --server 192.168.0.10:9000</pre>
   <h3>Install or build the binaries</h3>
   <p class="read">The folders are named after the binaries, so <code>go install</code> and <code>go build</code> produce <code>teachatty</code> and <code>teachatty-server</code>:</p>
-  <pre style="max-width:88ch">go install github.com/daniel-cmdline/teachat/cmd/teachatty@latest
-go install github.com/daniel-cmdline/teachat/cmd/teachatty-server@latest
+  <pre style="max-width:88ch">go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest
+go install github.com/daniel-cmdline/teachatty/cmd/teachatty-server@latest
 
 <span class="c"># or, from a clone</span>
 go build ./cmd/teachatty
@@ -103,7 +103,7 @@ go build ./cmd/teachatty-server
   <p class="read">The repo ships a hardened systemd unit and a certbot hook in <code>contrib/</code>. The server then starts on boot, restarts if it crashes, logs to the journal and runs as its own unprivileged user.</p>
   <pre style="max-width:88ch"><span class="c"># 1. a system user for the server, and the binary</span>
 sudo useradd --system --home /var/lib/teachatty --shell /usr/sbin/nologin teachatty
-go install github.com/daniel-cmdline/teachat/cmd/teachatty-server@latest
+go install github.com/daniel-cmdline/teachatty/cmd/teachatty-server@latest
 sudo install -m 0755 ~/go/bin/teachatty-server /usr/local/bin/
 
 <span class="c"># 2. the service (from contrib/systemd/)</span>
@@ -1293,7 +1293,7 @@ func pipe(conn *websocket.Conn) {
 <section id="roadmap">
   <div class="read">
     <div class="sec-head"><span class="sec-num">15</span><h2>Roadmap</h2></div>
-    <p>In this order, one feature at a time. The full list, with the decisions made and the open questions, is in <a href="https://github.com/daniel-cmdline/teachat/blob/main/roadmap.md">roadmap.md</a>. What has shipped is in <a href="https://github.com/daniel-cmdline/teachat/blob/main/features.md">features.md</a>.</p>
+    <p>In this order, one feature at a time. The full list, with the decisions made and the open questions, is in <a href="https://github.com/daniel-cmdline/teachatty/blob/main/roadmap.md">roadmap.md</a>. What has shipped is in <a href="https://github.com/daniel-cmdline/teachatty/blob/main/features.md">features.md</a>.</p>
   </div>
   <ol class="road">
     <li><div><b>Release v0.1.0</b><p>A git tag and prebuilt binaries for Linux and macOS (amd64 and arm64), plus <code>.deb</code> and <code>.rpm</code> packages, so nobody needs Go installed.</p></div></li>
@@ -1303,7 +1303,7 @@ func pipe(conn *websocket.Conn) {
 </section>
 
 <footer>
-  <span>teachatty · <a href="https://github.com/daniel-cmdline/teachat">github.com/daniel-cmdline/teachat</a></span>
+  <span>teachatty · <a href="https://github.com/daniel-cmdline/teachatty">github.com/daniel-cmdline/teachatty</a></span>
   <span>Go · gorilla/websocket v1.5.3 · tview v0.42.0 · RFC 6455</span>
 </footer>
 </main>

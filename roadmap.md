@@ -70,10 +70,10 @@ In this order. Each one is small on purpose.
 - `--no-pipes` lets a server keep pipe mode out (chat only, no build logs). The client declares pipe mode in the URL (`mode=pipe`); it's a courtesy rule, not a security boundary, so the rate limit stays the real defense against abuse.
 - The server is meant to run as a systemd service: `contrib/systemd/teachatty-server.service` (own system user, restart on failure, journal, hardened: no capabilities, read-only system, writes only to `/var/lib/teachatty`) and `contrib/certbot/teachatty-deploy-hook.sh`, which copies Let's Encrypt's root-only key for the `teachatty` user after each renewal, so the server's reload picks it up without a restart.
 - The client's look comes from the logo: mint borders, amber title, the terminal's own background and text color (so light and dark terminals both work), a teacup banner on join, gray timestamps (local time of arrival), a placeholder in the empty box. Mentions (`@alias`, whole word, any case) are highlighted in amber and ring the terminal bell.
-- The project is called **teachatty** (domain: teachatty.com): binaries `teachatty` and `teachatty-server`, config in `~/.config/teachatty/`, systemd unit `teachatty-server.service` running as user `teachatty`. Renamed from teachat on 2026-10-12. The GitHub repository and the Go module path are still `daniel-cmdline/teachat` until the repository is renamed (the module path must match it for `go install`).
+- The project is called **teachatty** (domain: teachatty.com): binaries `teachatty` and `teachatty-server`, config in `~/.config/teachatty/`, systemd unit `teachatty-server.service` running as user `teachatty`. Renamed from teachat on 2026-10-12, repository and Go module path included (`github.com/daniel-cmdline/teachatty`).
 - `--server` without a port means 7347, so `teachatty --server teachatty.com` needs no `:7347`. The address is normalized before anything else, so `teachatty.com` and `teachatty.com:7347` are one server for trust on first use.
 - teachatty.com serves both the chat (port 7347) and, later, the site from `docs/` (port 443) from the same machine: one hostname can only point to one place, so the site can't live on GitHub Pages under the same name.
-- The module is `github.com/daniel-cmdline/teachat`, matching the repository path, so internal imports and `go install` work.
+- The module is `github.com/daniel-cmdline/teachatty`, matching the repository path, so internal imports and `go install` work.
 
 ## Open questions
 

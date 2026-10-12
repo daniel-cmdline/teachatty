@@ -13,8 +13,8 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/daniel-cmdline/teachat/internal/tlstrust"
-	"github.com/daniel-cmdline/teachat/internal/version"
+	"github.com/daniel-cmdline/teachatty/internal/tlstrust"
+	"github.com/daniel-cmdline/teachatty/internal/version"
 )
 
 // Upgrader instance that upgrades the HTTP connection to WebSocket

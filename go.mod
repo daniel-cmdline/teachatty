@@ -1,4 +1,4 @@
-module github.com/daniel-cmdline/teachat
+module github.com/daniel-cmdline/teachatty
 
 go 1.27.1
 

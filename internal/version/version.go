@@ -5,7 +5,7 @@ import "runtime/debug"
 
 // version can be set at build time, which is what release builds do:
 //
-//	go build -ldflags "-X github.com/daniel-cmdline/teachat/internal/version.version=v0.1.0"
+//	go build -ldflags "-X github.com/daniel-cmdline/teachatty/internal/version.version=v0.1.0"
 var version = ""
 
 // String returns the version, from the first source that has one:

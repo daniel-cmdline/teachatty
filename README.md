@@ -46,7 +46,7 @@ What's coming next:
 There's a public teachatty server at **teachatty.com**. Install the client and jump in:
 
 ```bash
-go install github.com/daniel-cmdline/teachat/cmd/teachatty@latest
+go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest
 teachatty --server teachatty.com
 ```
 
@@ -55,8 +55,8 @@ No port needed: the client uses teachatty's port, 7347, when you don't name one.
 ## Install
 
 ```bash
-go install github.com/daniel-cmdline/teachat/cmd/teachatty@latest          # the client
-go install github.com/daniel-cmdline/teachat/cmd/teachatty-server@latest   # the server
+go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest          # the client
+go install github.com/daniel-cmdline/teachatty/cmd/teachatty-server@latest   # the server
 ```
 
 ## Quick start
@@ -64,8 +64,8 @@ go install github.com/daniel-cmdline/teachat/cmd/teachatty-server@latest   # the
 Requires Go 1.27 or newer.
 
 ```bash
-git clone https://github.com/daniel-cmdline/teachat.git
-cd teachat
+git clone https://github.com/daniel-cmdline/teachatty.git
+cd teachatty
 
 # start the server (listens on port 7347)
 go run ./cmd/teachatty-server
@@ -134,7 +134,7 @@ The repo ships a hardened systemd unit and a certbot hook in [contrib/](contrib/
 ```bash
 # 1. a system user for the server, and the binary
 sudo useradd --system --home /var/lib/teachatty --shell /usr/sbin/nologin teachatty
-go install github.com/daniel-cmdline/teachat/cmd/teachatty-server@latest
+go install github.com/daniel-cmdline/teachatty/cmd/teachatty-server@latest
 sudo install -m 0755 ~/go/bin/teachatty-server /usr/local/bin/
 
 # 2. the service (from contrib/systemd/)
