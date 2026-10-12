@@ -12,12 +12,14 @@ import (
 )
 
 func main() {
+	//flag.String retorna ponteiros (&value) 
 	server := flag.String("server", "localhost:23456", "endereço do servidor teachat")
 	room := flag.String("room", "geral", "sala para entrar")
 	alias := flag.String("alias", "anonimo", "seu nome no chat")
 	flag.Parse()
 
 	// monta ws://SERVER/ws?room=...&alias=... a partir das flags
+	//deferencia o valor do ponteiro para obter a string
 	u := url.URL{
 		Scheme:   "ws",
 		Host:     *server,

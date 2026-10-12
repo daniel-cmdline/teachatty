@@ -26,11 +26,11 @@ func (r *Room) leave(conn *websocket.Conn) (empty bool) {
 	return len(r.members) == 0
 }
 
-func (r *Room) broadcast(from *websocket.Conn, msg []byte) {
+func (r *Room) broadcast(myOwnConn *websocket.Conn, msg []byte) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for c := range r.members {
-		if c != from {
+		if c != myOwnConn {
 			c.WriteMessage(websocket.TextMessage, msg)
 		}
 	}
