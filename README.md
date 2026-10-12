@@ -12,6 +12,8 @@ teachatty is a chat that lives in your terminal. You join a room, type, press En
 
 It's built to be **self-hosted**. A team can run its own teachatty server on an internal machine, so messages never leave the company network.
 
+teachatty is **free and open source software under the [GNU AGPL-3.0](LICENSE)**, and it will stay that way.
+
 ## Status
 
 **Early development.** teachatty already works for chatting between machines, but it's still taking shape. Expect breaking changes.
@@ -31,11 +33,12 @@ What works today:
 - Abuse limits for the open internet: 5 messages/s per connection (senders are slowed down, nothing is dropped), 10 connections per IP, 1 MB per message.
 - A hardened systemd unit and a certbot hook for running the server as a service.
 - `--version` on both binaries.
-- Server and client as separate binaries, installable with `go install`.
+- Server and client as separate binaries, installable with `go install`, or as `.deb` and `.rpm` packages (development builds) from [teachatty.com/downloads](https://teachatty.com/downloads/).
+- A public server at teachatty.com.
 
 What's coming next:
 
-- A v0.1.0 release with prebuilt binaries, `.deb` and `.rpm` packages
+- The v0.1.0 release: a tag and a release page for the packages
 - Access control: a server-wide token or password-protected rooms
 - Message history
 
@@ -43,20 +46,41 @@ What's coming next:
 
 ## Try it now
 
-There's a public teachatty server at **teachatty.com**. Install the client and jump in:
+There's a public teachatty server at **teachatty.com**, open to everyone. [Install](#install) the client and jump in:
 
 ```bash
-go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest
-teachatty --server teachatty.com
+teachatty --server teachatty.com                            # the lobby: the local room
+teachatty --server teachatty.com --room tea-with-friends    # your own room
 ```
 
-No port needed: the client uses teachatty's port, 7347, when you don't name one. Say hi in the `local` room.
+No port needed: the client uses teachatty's port, 7347, when you don't name one. Without `--room` you land in `local`, the lobby everyone shares. To meet friends, make up a room name and send them the same command: the room appears when the first person joins and vanishes when the last one leaves. Rooms have no passwords yet, so anyone who knows the name can join; pick one that's hard to guess. Pipe mode is turned off on the public server (`--no-pipes`).
 
 ## Install
 
+Packages for amd64 and arm64, Linux and macOS tarballs and `checksums.txt` are at **[teachatty.com/downloads](https://teachatty.com/downloads/)**. The `latest` names always point to the newest build (development builds until v0.1.0 is tagged).
+
 ```bash
+# Debian, Ubuntu, Mint
+curl -LO https://teachatty.com/downloads/teachatty_latest_amd64.deb
+sudo apt install ./teachatty_latest_amd64.deb
+
+# Fedora, RHEL, Rocky, Alma
+sudo dnf install https://teachatty.com/downloads/teachatty-latest.x86_64.rpm
+
+# anywhere with Go 1.27+
 go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest          # the client
 go install github.com/daniel-cmdline/teachatty/cmd/teachatty-server@latest   # the server
+```
+
+The server package (`teachatty-server_latest_amd64.deb`, `teachatty-server-latest.x86_64.rpm`) installs the binary, the hardened systemd unit, the `teachatty` system user and the certbot hook. Put flags in `/etc/default/teachatty-server`, then `sudo systemctl enable --now teachatty-server`.
+
+## Your own network
+
+Run the server on any machine in your office, homelab or VPN, and everyone points the client at it. Messages never leave your network, and nothing needs internet access:
+
+```bash
+teachatty-server                          # on one machine (port 7347, TLS on)
+teachatty --server 192.168.0.10           # on everyone else's
 ```
 
 ## Quick start
@@ -129,7 +153,7 @@ teachatty --server chat.example.com:7347
 
 ### Running as a service
 
-The repo ships a hardened systemd unit and a certbot hook in [contrib/](contrib/). The server then starts on boot, restarts if it crashes, logs to the journal and runs as its own unprivileged user:
+With the `teachatty-server` package (see [Install](#install)), this is already set up: edit `/etc/default/teachatty-server`, and for Let's Encrypt use `--deploy-hook /usr/share/teachatty-server/teachatty-deploy-hook.sh`. For a manual install, the repo ships a hardened systemd unit and a certbot hook in [contrib/](contrib/). The server then starts on boot, restarts if it crashes, logs to the journal and runs as its own unprivileged user:
 
 ```bash
 # 1. a system user for the server, and the binary
@@ -174,6 +198,7 @@ journalctl -u teachatty-server -f      # logs, including the fingerprint
 cmd/teachatty-server/  the server: rooms and message relay
 cmd/teachatty/         the terminal client
 contrib/             systemd unit and certbot hook for running the server as a service
+packaging/           the server package's unit, config and install scripts (.goreleaser.yaml builds the packages)
 internal/ui/  the client's screen (built on tview)
 internal/tlstrust/  TLS certificate and trust on first use
 docs/         project site and documentation
@@ -181,6 +206,14 @@ docs/         project site and documentation
 
 Documentation lives in [docs/](docs/): `index.html` is the project site and `docs.html` is the full documentation (usage, client and server reference, protocol, internals).
 
-Run the tests with `go test ./...`.
+Run the tests with `go test -race ./...`. Build the packages locally with `goreleaser release --snapshot --clean` (output in `dist/`).
 
 The roadmap and the feature log are in [roadmap.md](roadmap.md) and [features.md](features.md).
+
+## Contributing
+
+Bug reports, ideas and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+
+## License
+
+teachatty is free software: you can redistribute it and/or modify it under the terms of the [GNU Affero General Public License v3.0](LICENSE). If you run a modified teachatty server for others, the AGPL asks you to offer them its source too.

@@ -19,16 +19,18 @@ A terminal chat for developers and sysadmins. Minimalist: lightweight, no distra
 - **Client** (`cmd/teachatty`): flags `--server`, `--room`, `--alias`, `--no-tls` and `--version`. Full screen with tview (`internal/ui`): messages on top, input box at the bottom.
 - Pipe mode: `command | teachatty` sends the input to the room (lines arriving within 100 ms go as one message), echoes it to the terminal and exits when the input ends.
 - Encrypted by default: TLS 1.3 with a self-signed certificate and trust on first use, or the administrator's own certificate (`--tls-cert`/`--tls-key`). All in `internal/tlstrust`.
+- **Public server at teachatty.com** (a VPS, Ubuntu 24.04): `teachatty-server --no-pipes --max-per-ip 10` with the Let's Encrypt certificate, plus nginx serving the site (`docs/`) and the packages at https://teachatty.com/downloads/.
+- **Packages**: `.deb` and `.rpm` for the client and the server (amd64, arm64), and Linux/macOS tarballs, built by goreleaser (`.goreleaser.yaml`, server package files in `packaging/`). Development builds until v0.1.0 is tagged.
+- **License**: GNU AGPL-3.0. Contribution guide in [CONTRIBUTING.md](CONTRIBUTING.md).
 - Shipped features are logged in [features.md](features.md).
 
 ## Next steps
 
 In this order. Each one is small on purpose.
 
-1. **Public server at teachatty.com.** A small VPS (Oracle Cloud's free tier is the first candidate) running the systemd unit from `contrib/`, with a Let's Encrypt certificate for teachatty.com, so `teachatty --server teachatty.com` works for anyone. The README and the site already point people there.
-2. **Release v0.1.0.** A git tag and prebuilt binaries (goreleaser: Linux and macOS, amd64 and arm64), so people don't need Go installed.
-3. **Access control: a server-wide shared token or per-room passwords.** Decide after the release, based on what people ask for. TLS is in place, so a secret can travel safely; whatever is stored on the server must be a salted hash (bcrypt or argon2), never the secret itself. See the open questions below.
-4. **Message history.** Needed for pipe mode to be useful when nobody is in the room, and for persistent rooms. Plan: SQLite with `modernc.org/sqlite` (pure Go, so it stays a single binary).
+1. **Release v0.1.0.** Tag `v0.1.0` and run `goreleaser release --clean` (the config is in `.goreleaser.yaml`); publish the results on a GitHub release page and in teachatty.com/downloads, replacing the development builds there now.
+2. **Access control: a server-wide shared token or per-room passwords.** Decide after the release, based on what people ask for. TLS is in place, so a secret can travel safely; whatever is stored on the server must be a salted hash (bcrypt or argon2), never the secret itself. See the open questions below.
+3. **Message history.** Needed for pipe mode to be useful when nobody is in the room, and for persistent rooms. Plan: SQLite with `modernc.org/sqlite` (pure Go, so it stays a single binary).
 
 ## Future
 
@@ -58,6 +60,9 @@ In this order. Each one is small on purpose.
 - 1 MB limit per message on the server (`SetReadLimit`). 64 KB would be enough for typing, but would break large log lines in pipe mode (stack traces, JSON). Over the limit, the server closes only that connection (close 1009).
 - `--addr` on the server in Go's `host:port` format: no host listens on all interfaces, a host listens only on that one.
 - TLS before passwords, and on its own: TLS is useful without passwords, passwords are useless without TLS.
+- License: GNU AGPL-3.0 (2026-10-12). teachatty stays open source forever: anyone who distributes a modified version, or runs one as a service for others, must share its source. Companies running it unmodified are unaffected.
+- Packages are built with goreleaser (nfpm inside), not hand-written `debian/` or `.spec` files: one config builds both formats for both architectures. The server package does not start the service on install; the admin reviews `/etc/default/teachatty-server` first and enables it. Its flags live in that environment file (`TEACHATTY_SERVER_ARGS`), the usual place for a daemon's flags on Debian and Fedora, until the config file planned below exists.
+- The `latest` download names on teachatty.com are symlinks to the newest build, so install commands in the docs never change between versions.
 - TLS on by default (`--no-tls` to turn it off, for testing): optional security tends to stay off.
 - Trust model: self-signed certificate + trust on first use, like SSH. The server generates an ECDSA P-256 certificate (10 years) in `~/.config/teachatty/` and prints its fingerprint (`SHA256:` + hash of the public key; pinning the key, not the certificate, survives a renewal with the same key). The client saves the fingerprint in `~/.config/teachatty/known_servers` on first connection and refuses a different one later. It accepts new servers without asking (like SSH's `accept-new`), so pipes and cron never block. TLS 1.3 minimum, standard library only, all in `internal/tlstrust`.
 - An administrator can bring their own certificate (`--tls-cert`/`--tls-key`: Let's Encrypt, a company CA). The client checks every certificate against the machine's trusted authorities first, like a browser, with no pinning, so renewals with a new key keep working; only certificates that don't verify go through trust on first use. The server reloads the files when they change, so certbot renewals need no restart.

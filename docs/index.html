@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>teachatty</title>
-<meta name="description" content="A terminal chat for devs and sysadmins: self-hosted and minimalist.">
+<meta name="description" content="A terminal chat for devs and sysadmins: open source (AGPL-3.0), self-hosted and minimalist. Join the public server at teachatty.com.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
@@ -14,11 +14,12 @@
 <nav class="toc" aria-label="Sections">
   <div class="wrap">
     <a class="brand" href="#top">tea<b>chatty</b></a>
+    <a class="chip" href="#join">join</a>
+    <a class="chip" href="#start">install</a>
     <a class="chip" href="#screen">the screen</a>
     <a class="chip" href="#why">why</a>
     <a class="chip" href="#numbers">numbers</a>
     <a class="chip" href="#message">how it works</a>
-    <a class="chip" href="#start">get started</a>
     <a class="btn primary" href="docs.html">docs</a>
   </div>
 </nav>
@@ -28,19 +29,51 @@
 <header class="hero" id="top">
   <div class="hero-grid">
     <div>
-      <div class="eyebrow">terminal chat · self-hosted · in development</div>
+      <div class="eyebrow">terminal chat · open source · self-hosted</div>
       <h1>A chat that lives in your terminal<span class="cursor" aria-hidden="true"></span></h1>
       <p class="lede">For devs and sysadmins. No heavy app, no browser, no noise: you join a room with one command, talk, and leave with <kbd>Ctrl</kbd>+<kbd>C</kbd>. It runs on your company's server, and messages never leave the network.</p>
       <div class="cta">
-        <a class="btn primary" href="docs.html">docs</a>
+        <a class="btn primary" href="#start">install</a>
+        <a class="btn" href="#join">join the tea</a>
         <a class="btn" href="https://github.com/daniel-cmdline/teachatty">github</a>
-        <a class="btn" href="#start">try the public server</a>
       </div>
       <p class="cmd" style="margin-top:18px">try it now: $ <b>teachatty --server teachatty.com</b></p>
     </div>
     <img class="logo" src="../assets/teachatty.png" alt="teachatty logo: a neon green cup with a terminal prompt and an amber speech bubble">
   </div>
 </header>
+
+<section id="join">
+  <div class="read">
+    <div class="eyebrow">free software · AGPL-3.0</div>
+    <div class="sec-head" style="margin-top:10px"><h2>The tea is for everyone. Pull up a chair.</h2></div>
+    <p class="lede">teachatty is open source, and it will stay open source, forever. No paid tier, no account to sign up for, no tracking: a terminal, a room, and whoever drops by. Install the client, and you're one command away.</p>
+  </div>
+  <div class="cards">
+    <div class="card">
+      <b>Join the public server</b>
+      <p>A teachatty server runs at <b style="display:inline">teachatty.com</b>, open to anyone. With no <code>--room</code>, you land in <code>local</code>, the lobby everyone shares. Say hi.</p>
+      <pre>teachatty --server teachatty.com</pre>
+    </div>
+    <div class="card">
+      <b>Bring your friends</b>
+      <p>Make up a room name and send your friends the same line. The room appears when the first person joins and vanishes when the last one leaves. There are no passwords yet, so anyone who knows the name can walk in: pick one that's hard to guess.</p>
+      <pre>teachatty --server teachatty.com --room tea-with-friends</pre>
+    </div>
+    <div class="card">
+      <b>Or keep it on your own network</b>
+      <p>Run the server on any machine in your office, homelab or VPN, and point everyone at it. Messages never leave your network, and it works without internet access. Encrypted with TLS out of the box.</p>
+      <pre><span class="c"># on one machine</span>
+teachatty-server
+<span class="c"># on everyone else's</span>
+teachatty --server 192.168.0.10</pre>
+    </div>
+    <div class="card">
+      <b>Open source, forever</b>
+      <p>Every line is public under the <a href="https://github.com/daniel-cmdline/teachatty/blob/main/LICENSE">GNU AGPL-3.0</a>: read it, change it, run it, share it. Anyone who ships or hosts a modified teachatty has to share its source with their users too, so nobody can ever lock it away. Ideas and patches are welcome: see <a href="https://github.com/daniel-cmdline/teachatty/blob/main/CONTRIBUTING.md">how to contribute</a>.</p>
+    </div>
+  </div>
+</section>
 
 <section id="screen">
   <div class="read">
@@ -159,15 +192,46 @@
 
 <section id="start">
   <div class="read">
-    <div class="sec-head"><h2>Start in a minute</h2></div>
-    <p>Requires Go 1.27 or newer. The fastest way in is the public server at <b>teachatty.com</b>:</p>
+    <div class="sec-head"><h2>Install</h2></div>
+    <p>Pick what fits your machine. The client is <code>teachatty</code>. You only need <code>teachatty-server</code> if you want to host your own rooms.</p>
   </div>
-  <pre style="max-width:var(--read);margin-top:16px">go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest
-teachatty --server teachatty.com</pre>
-  <div class="read" style="margin-top:22px">
-    <p>Or run your own, from a clone:</p>
+  <div class="cards">
+    <div class="card">
+      <b>Debian · Ubuntu · Mint (.deb)</b>
+      <pre>curl -LO https://teachatty.com/downloads/teachatty_latest_amd64.deb
+sudo apt install ./teachatty_latest_amd64.deb</pre>
+    </div>
+    <div class="card">
+      <b>Fedora · RHEL · Rocky · Alma (.rpm)</b>
+      <pre>sudo dnf install https://teachatty.com/downloads/teachatty-latest.x86_64.rpm</pre>
+    </div>
+    <div class="card">
+      <b>Anywhere with Go 1.27+</b>
+      <pre>go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest
+<span class="c"># and the server, if you want one</span>
+go install github.com/daniel-cmdline/teachatty/cmd/teachatty-server@latest</pre>
+    </div>
+    <div class="card">
+      <b>Your own server, as a service</b>
+      <pre>curl -LO https://teachatty.com/downloads/teachatty-server_latest_amd64.deb
+sudo apt install ./teachatty-server_latest_amd64.deb
+sudo systemctl enable --now teachatty-server</pre>
+      <p style="margin-top:10px">Or <code>sudo dnf install https://teachatty.com/downloads/teachatty-server-latest.x86_64.rpm</code>. It runs as its own locked-down user, and its flags go in <code>/etc/default/teachatty-server</code>.</p>
+    </div>
   </div>
-  <pre style="max-width:var(--read);margin-top:16px">git clone https://github.com/daniel-cmdline/teachatty.git
+  <p class="muted" style="margin-top:16px">ARM (<code>arm64</code>/<code>aarch64</code>) packages, Linux and macOS tarballs and <code>checksums.txt</code> are all in <a href="downloads/">downloads/</a>. These are development builds of the upcoming v0.1.0.</p>
+
+  <div class="read" style="margin-top:34px">
+    <h3>Then connect</h3>
+  </div>
+  <pre style="max-width:var(--read)">teachatty --server teachatty.com                       <span class="c"># the public lobby</span>
+teachatty --server teachatty.com --room tea-with-friends   <span class="c"># your own room</span>
+teachatty --server 192.168.0.10                         <span class="c"># a server on your network</span></pre>
+
+  <div class="read" style="margin-top:34px">
+    <h3>Or run it from source</h3>
+  </div>
+  <pre style="max-width:var(--read)">git clone https://github.com/daniel-cmdline/teachatty.git
 cd teachatty
 
 <span class="c"># the server (port 7347, default room local)</span>
@@ -178,7 +242,7 @@ go run ./cmd/teachatty
 
 <span class="c"># send a command's output to the room</span>
 uptime | go run ./cmd/teachatty</pre>
-  <p class="muted" style="margin-top:14px">Flags, keys, another machine on the network and how to build the binaries: in the <a href="docs.html#getting-started">documentation</a>.</p>
+  <p class="muted" style="margin-top:14px">Flags, keys, other machines on the network and running the server with your own domain: in the <a href="docs.html#getting-started">documentation</a>.</p>
 </section>
 
 <section id="next">
@@ -187,7 +251,7 @@ uptime | go run ./cmd/teachatty</pre>
     <p>teachatty is just getting started and grows one feature at a time.</p>
   </div>
   <ol class="road">
-    <li><div><b>Release v0.1.0</b><p>A git tag and prebuilt binaries for Linux and macOS (amd64 and arm64), plus <code>.deb</code> and <code>.rpm</code> packages, so nobody needs Go installed.</p></div></li>
+    <li><div><b>Release v0.1.0</b><p>The packages above, made official: a git tag and a release page, so <code>.deb</code>, <code>.rpm</code> and the tarballs carry a stable version instead of a development build.</p></div></li>
     <li><div><b>Access control</b><p>A server-wide token or password-protected rooms, decided after the release. TLS is in place, so a secret travels encrypted; the server stores only a salted hash.</p></div></li>
     <li><div><b>Message history</b><p>Pure-Go SQLite. Whoever joins sees what was already said, and pipe mode keeps logs.</p></div></li>
   </ol>
@@ -197,7 +261,7 @@ uptime | go run ./cmd/teachatty</pre>
 </section>
 
 <footer>
-  <span>teachatty · <a href="https://github.com/daniel-cmdline/teachatty">github.com/daniel-cmdline/teachatty</a></span>
+  <span>teachatty · free software under the <a href="https://github.com/daniel-cmdline/teachatty/blob/main/LICENSE">AGPL-3.0</a> · <a href="https://github.com/daniel-cmdline/teachatty">github.com/daniel-cmdline/teachatty</a></span>
   <span>Go · gorilla/websocket v1.5.3 · tview v0.42.0 · RFC 6455</span>
 </footer>
 

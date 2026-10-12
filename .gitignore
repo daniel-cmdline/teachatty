@@ -1,3 +1,6 @@
 # binaries built at the repository root
 /teachatty
 /teachatty-server
+
+# goreleaser output
+/dist/

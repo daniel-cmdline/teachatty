@@ -1,6 +1,9 @@
 # teachatty-server as a systemd service: starts on boot, restarts if it crashes,
 # logs to the journal (journalctl -u teachatty-server), runs as its own user.
 #
+# This is the unit for a manual install in /usr/local/bin. The .deb/.rpm package ships
+# its own copy (packaging/teachatty-server.service), with the flags in /etc/default.
+#
 # Install (see README, "Running as a service"):
 #   sudo useradd --system --home /var/lib/teachatty --shell /usr/sbin/nologin teachatty
 #   sudo install -m 0755 teachatty-server /usr/local/bin/

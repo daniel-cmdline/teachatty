@@ -1,0 +1,112 @@
+# Release builds: binaries for Linux and macOS, tarballs, .deb and .rpm packages and
+# checksums, all in dist/.
+#
+#   goreleaser release --clean                # from a vX.Y.Z tag
+#   goreleaser release --snapshot --clean     # anything else: a pre-release version, nothing published
+version: 2
+
+project_name: teachatty
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: teachatty
+    main: ./cmd/teachatty
+    binary: teachatty
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X github.com/daniel-cmdline/teachatty/internal/version.version=v{{ .Version }}
+  - id: teachatty-server
+    main: ./cmd/teachatty-server
+    binary: teachatty-server
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X github.com/daniel-cmdline/teachatty/internal/version.version=v{{ .Version }}
+
+archives:
+  - id: teachatty
+    ids: [teachatty]
+    name_template: teachatty_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files: [LICENSE, README.md]
+  - id: teachatty-server
+    ids: [teachatty-server]
+    name_template: teachatty-server_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files: [LICENSE, README.md, contrib/**/*]
+
+nfpms:
+  - id: teachatty
+    package_name: teachatty
+    ids: [teachatty]
+    file_name_template: "{{ .ConventionalFileName }}"
+    formats: [deb, rpm]
+    bindir: /usr/bin
+    vendor: teachatty
+    homepage: https://teachatty.com
+    maintainer: Daniel <daniel.mantilha@gmail.com>
+    description: |-
+      A minimalist terminal chat for developers and sysadmins (client).
+      Join a room with one command; pipe command output into it.
+    license: AGPL-3.0-only
+    section: net
+    contents:
+      - src: LICENSE
+        dst: /usr/share/doc/teachatty/copyright
+        file_info: { mode: 0644 }
+
+  - id: teachatty-server
+    package_name: teachatty-server
+    ids: [teachatty-server]
+    file_name_template: "{{ .ConventionalFileName }}"
+    formats: [deb, rpm]
+    bindir: /usr/bin
+    vendor: teachatty
+    homepage: https://teachatty.com
+    maintainer: Daniel <daniel.mantilha@gmail.com>
+    description: |-
+      A minimalist terminal chat for developers and sysadmins (server).
+      Self-hosted rooms over TLS, with a hardened systemd unit.
+    license: AGPL-3.0-only
+    section: net
+    contents:
+      - src: packaging/teachatty-server.service
+        dst: /usr/lib/systemd/system/teachatty-server.service
+        file_info: { mode: 0644 }
+      - src: packaging/teachatty-server.default
+        dst: /etc/default/teachatty-server
+        type: config|noreplace
+        file_info: { mode: 0644 }
+      - src: packaging/teachatty-server.sysusers
+        dst: /usr/lib/sysusers.d/teachatty-server.conf
+        file_info: { mode: 0644 }
+      - src: contrib/certbot/teachatty-deploy-hook.sh
+        dst: /usr/share/teachatty-server/teachatty-deploy-hook.sh
+        file_info: { mode: 0755 }
+      - src: LICENSE
+        dst: /usr/share/doc/teachatty-server/copyright
+        file_info: { mode: 0644 }
+    scripts:
+      postinstall: packaging/postinstall.sh
+      preremove: packaging/preremove.sh
+      postremove: packaging/postremove.sh
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  # no tag yet: the next planned release, marked as a development build
+  version_template: "0.1.0-dev.{{ .ShortCommit }}"
+
+changelog:
+  disable: true
+
+release:
+  disable: true

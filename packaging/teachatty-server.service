@@ -1,0 +1,48 @@
+# teachatty-server as installed by the .deb/.rpm package. Same hardening as
+# contrib/systemd/teachatty-server.service (the unit for a manual install in
+# /usr/local/bin); the flags come from /etc/default/teachatty-server.
+#
+#   sudo systemctl enable --now teachatty-server
+#   journalctl -u teachatty-server -f      # logs, including the certificate fingerprint
+
+[Unit]
+Description=teachatty server (terminal chat)
+Documentation=https://teachatty.com/docs.html https://github.com/daniel-cmdline/teachatty
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=teachatty
+Group=teachatty
+
+EnvironmentFile=-/etc/default/teachatty-server
+ExecStart=/usr/bin/teachatty-server $TEACHATTY_SERVER_ARGS
+
+Restart=on-failure
+RestartSec=2
+
+# teachatty keeps its files in $XDG_CONFIG_HOME/teachatty: with this, /var/lib/teachatty,
+# which StateDirectory creates and gives to the teachatty user
+Environment=XDG_CONFIG_HOME=/var/lib
+StateDirectory=teachatty
+StateDirectoryMode=0750
+
+# Hardening: the server only needs the network and its own directory. Port 7347 is
+# above 1024, so it needs no capabilities at all.
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

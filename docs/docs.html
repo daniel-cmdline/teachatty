@@ -47,6 +47,7 @@
   <div class="read">
     <div class="sec-head"><span class="sec-num">01</span><h2>Overview</h2></div>
     <p>teachatty is a terminal chat for developers and sysadmins. A server keeps rooms in memory and relays messages; each person runs the client in their own terminal, joins a room and talks. It's built to run on your own company's server.</p>
+    <p>teachatty is free software under the <a href="https://github.com/daniel-cmdline/teachatty/blob/main/LICENSE">GNU AGPL-3.0</a>, and will stay that way. Contributions are welcome: see <a href="https://github.com/daniel-cmdline/teachatty/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
     <div class="callout"><p><b>Status:</b> early development. It works for chatting between machines, encrypted with TLS by default, but breaking changes are on the way. See the <a href="#limits">limitations</a>.</p></div>
   </div>
   <dl class="ref">
@@ -61,12 +62,23 @@
 <section id="getting-started">
   <div class="read">
     <div class="sec-head"><span class="sec-num">02</span><h2>Getting started</h2></div>
-    <p>Requirements: Go 1.27 or newer, a UTF-8 terminal, and port 7347 open on the server machine.</p>
+    <p>Requirements: a UTF-8 terminal, and port 7347 open on the server machine. Go 1.27 or newer only if you install or build from source.</p>
   </div>
+  <h3 id="install">Install</h3>
+  <p class="read">Packages for Debian/Ubuntu (<code>.deb</code>) and Fedora/RHEL (<code>.rpm</code>), for amd64 and arm64, plus Linux and macOS tarballs and <code>checksums.txt</code>, are at <a href="https://teachatty.com/downloads/">teachatty.com/downloads</a>. The <code>latest</code> names always point to the newest build. Until v0.1.0 is tagged, these are development builds.</p>
+  <pre style="max-width:88ch"><span class="c"># Debian, Ubuntu, Mint</span>
+curl -LO https://teachatty.com/downloads/teachatty_latest_amd64.deb
+sudo apt install ./teachatty_latest_amd64.deb
+
+<span class="c"># Fedora, RHEL, Rocky, Alma</span>
+sudo dnf install https://teachatty.com/downloads/teachatty-latest.x86_64.rpm
+
+<span class="c"># anywhere with Go 1.27+</span>
+go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest</pre>
   <h3>Try the public server</h3>
-  <p class="read">A public teachatty server runs at <b>teachatty.com</b>. Without a port, the client uses 7347:</p>
-  <pre style="max-width:88ch">go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest
-teachatty --server teachatty.com</pre>
+  <p class="read">A public teachatty server runs at <b>teachatty.com</b>. Without a port, the client uses 7347. With no <code>--room</code>, you land in <code>local</code>, the lobby everyone shares. To meet friends, make up a room name and send them the same command: the room appears when the first person joins. Rooms have no passwords yet, so pick a name that's hard to guess. Pipe mode is turned off on the public server (<code>--no-pipes</code>).</p>
+  <pre style="max-width:88ch">teachatty --server teachatty.com
+teachatty --server teachatty.com --room tea-with-friends</pre>
   <h3>Run from source</h3>
   <pre style="max-width:88ch">git clone https://github.com/daniel-cmdline/teachatty.git
 cd teachatty
@@ -100,7 +112,19 @@ go build ./cmd/teachatty-server
 ./teachatty-server
 ./teachatty --room dev --alias daniel</pre>
   <h3 id="service">Run the server as a service</h3>
-  <p class="read">The repo ships a hardened systemd unit and a certbot hook in <code>contrib/</code>. The server then starts on boot, restarts if it crashes, logs to the journal and runs as its own unprivileged user.</p>
+  <p class="read">The easiest way is the <code>teachatty-server</code> package: it installs the binary, a hardened systemd unit, the <code>teachatty</code> system user and the certbot hook. Flags go in <code>/etc/default/teachatty-server</code>, which upgrades never overwrite:</p>
+  <pre style="max-width:88ch">curl -LO https://teachatty.com/downloads/teachatty-server_latest_amd64.deb
+sudo apt install ./teachatty-server_latest_amd64.deb
+<span class="c"># or: sudo dnf install https://teachatty.com/downloads/teachatty-server-latest.x86_64.rpm</span>
+
+<span class="c"># with a domain: Let's Encrypt, then point TEACHATTY_SERVER_ARGS at the copied files</span>
+sudo certbot certonly --standalone -d chat.example.com \
+  --deploy-hook /usr/share/teachatty-server/teachatty-deploy-hook.sh
+sudoedit /etc/default/teachatty-server
+
+sudo systemctl enable --now teachatty-server
+journalctl -u teachatty-server -f      <span class="c"># logs, including the fingerprint</span></pre>
+  <p class="read">Without the package, the repo ships the same unit and hook in <code>contrib/</code>. The server then starts on boot, restarts if it crashes, logs to the journal and runs as its own unprivileged user.</p>
   <pre style="max-width:88ch"><span class="c"># 1. a system user for the server, and the binary</span>
 sudo useradd --system --home /var/lib/teachatty --shell /usr/sbin/nologin teachatty
 go install github.com/daniel-cmdline/teachatty/cmd/teachatty-server@latest
@@ -1296,7 +1320,7 @@ func pipe(conn *websocket.Conn) {
     <p>In this order, one feature at a time. The full list, with the decisions made and the open questions, is in <a href="https://github.com/daniel-cmdline/teachatty/blob/main/roadmap.md">roadmap.md</a>. What has shipped is in <a href="https://github.com/daniel-cmdline/teachatty/blob/main/features.md">features.md</a>.</p>
   </div>
   <ol class="road">
-    <li><div><b>Release v0.1.0</b><p>A git tag and prebuilt binaries for Linux and macOS (amd64 and arm64), plus <code>.deb</code> and <code>.rpm</code> packages, so nobody needs Go installed.</p></div></li>
+    <li><div><b>Release v0.1.0</b><p>The packages at <a href="https://teachatty.com/downloads/">teachatty.com/downloads</a>, made official: a git tag and a release page, so <code>.deb</code>, <code>.rpm</code> and the tarballs carry a stable version instead of a development build.</p></div></li>
     <li><div><b>Access control</b><p>A server-wide token or password-protected rooms, decided after the release. TLS is in place, so a secret travels encrypted; the server stores only a salted hash.</p></div></li>
     <li><div><b>Message history</b><p>SQLite with <code>modernc.org/sqlite</code>. Needed for pipe mode to keep logs and for persistent rooms.</p></div></li>
   </ol>

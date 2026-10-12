@@ -2,6 +2,15 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-10-12 18:22 — Open source (AGPL-3.0), packages, teachatty.com live
+
+- **License: GNU AGPL-3.0** (`LICENSE`). teachatty is open source and stays that way: whoever distributes a modified version, or runs one as a service for others, must share its source.
+- **`.deb` and `.rpm` packages** for the client (`teachatty`) and the server (`teachatty-server`), amd64 and arm64, plus Linux and macOS tarballs and `checksums.txt`, all built by goreleaser (`.goreleaser.yaml`). The server package installs a hardened systemd unit that reads its flags from `/etc/default/teachatty-server` (kept on upgrades), creates the `teachatty` system user (sysusers.d), ships the certbot hook in `/usr/share/teachatty-server/`, and doesn't start the service until the admin enables it; upgrades restart a running server, removal stops it and keeps `/var/lib/teachatty`. Files in `packaging/`. Development builds (`0.1.0-dev.<commit>`) until v0.1.0 is tagged.
+- **teachatty.com is live**: nginx serves the site and docs over HTTPS (Let's Encrypt, HTTP redirects to HTTPS) and the packages at https://teachatty.com/downloads/, where `*latest*` names always point to the newest build. teachatty-server runs as the hardened systemd service with the same certificate, `--no-pipes` and `--max-per-ip 10`. Firewall open on 22, 80, 443 and 7347 only; SSH accepts keys only.
+- **The site's pitch:** "The tea is for everyone. Pull up a chair." A new section on the home page: join the public lobby, make a room for your friends with `--room`, keep it on your own network, and open source forever. A new install section (`.deb`, `.rpm`, `go install`, the server as a service) replaces "Start in a minute". The docs, README and roadmap follow, with the public server's `--no-pipes` noted.
+- **CONTRIBUTING.md**: how to report bugs and security issues, the development setup, branches (PRs target `dev`; `main` is stable), code and commit conventions, and the pull request checklist.
+- **Tested:** `goreleaser check`; packages installed and removed in clean Debian stable and Fedora containers (versions, `teachatty` user, unit, `/etc/default` kept on removal, AGPL in the rpm metadata); on teachatty.com, two clients exchanging messages over TLS verified against the system's CAs, pipe mode refused with the server's reason, the 11th connection from one IP refused, HTTPS and the downloads over IPv4 and IPv6, and `certbot renew --dry-run`.
+
 ## 2026-10-12 16:07 — Repository and module renamed to teachatty
 
 - The GitHub repository is now `daniel-cmdline/teachatty`, and the Go module path follows it: `github.com/daniel-cmdline/teachatty`, with every internal import, link and install command updated (`go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest`). GitHub redirects the old address.

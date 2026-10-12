@@ -1,0 +1,13 @@
+# Flags for teachatty-server, read by its systemd unit. See teachatty-server -h.
+# After editing: sudo systemctl restart teachatty-server
+#
+# Empty = port 7347 on all interfaces, TLS with a self-signed certificate (created on
+# first start in /var/lib/teachatty; its fingerprint is in the journal).
+#
+# With a Let's Encrypt certificate, copied for the teachatty user by
+# /usr/share/teachatty-server/teachatty-deploy-hook.sh (certbot --deploy-hook):
+#   TEACHATTY_SERVER_ARGS="--tls-cert /var/lib/teachatty/tls/fullchain.pem --tls-key /var/lib/teachatty/tls/privkey.pem"
+#
+# Other useful flags: --addr 10.0.0.5:7347 (one interface only), --no-pipes,
+# --max-per-ip 0 (no per-IP cap, e.g. a whole company behind one NAT address).
+TEACHATTY_SERVER_ARGS=""

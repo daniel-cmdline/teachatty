@@ -1,0 +1,2 @@
+# the system user teachatty-server runs as (systemd-sysusers)
+u teachatty - "teachatty server" /var/lib/teachatty /usr/sbin/nologin
