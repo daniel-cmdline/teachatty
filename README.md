@@ -57,22 +57,82 @@ No port needed: the client uses teachatty's port, 7347, when you don't name one.
 
 ## Install
 
-Packages for amd64 and arm64, Linux and macOS tarballs and `checksums.txt` are at **[teachatty.com/downloads](https://teachatty.com/downloads/)**. The `latest` names always point to the newest build (development builds until v0.1.0 is tagged).
+teachatty comes in two parts. **The client** (`teachatty`) is what you chat with, and it's all you need to join teachatty.com. **The server** (`teachatty-server`) is optional: install it only if you want to host rooms of your own.
 
+### 1 · Download the client &nbsp;—&nbsp; everyone needs this
+
+| Your system | amd64 · x86_64 · Intel | arm64 · aarch64 · Apple Silicon |
+|---|---|---|
+| **Debian · Ubuntu · Mint** | [⬇ `teachatty_latest_amd64.deb`](https://teachatty.com/downloads/teachatty_latest_amd64.deb) | [⬇ `teachatty_latest_arm64.deb`](https://teachatty.com/downloads/teachatty_latest_arm64.deb) |
+| **Fedora · RHEL · Rocky · Alma** | [⬇ `teachatty-latest.x86_64.rpm`](https://teachatty.com/downloads/teachatty-latest.x86_64.rpm) | [⬇ `teachatty-latest.aarch64.rpm`](https://teachatty.com/downloads/teachatty-latest.aarch64.rpm) |
+| **macOS** | [⬇ `teachatty_latest_darwin_amd64.tar.gz`](https://teachatty.com/downloads/teachatty_latest_darwin_amd64.tar.gz) | [⬇ `teachatty_latest_darwin_arm64.tar.gz`](https://teachatty.com/downloads/teachatty_latest_darwin_arm64.tar.gz) |
+| **Any other Linux** | [⬇ `teachatty_latest_linux_amd64.tar.gz`](https://teachatty.com/downloads/teachatty_latest_linux_amd64.tar.gz) | [⬇ `teachatty_latest_linux_arm64.tar.gz`](https://teachatty.com/downloads/teachatty_latest_linux_arm64.tar.gz) |
+
+Or install it straight from the terminal:
+
+**Debian · Ubuntu · Mint**
 ```bash
-# Debian, Ubuntu, Mint
 curl -LO https://teachatty.com/downloads/teachatty_latest_amd64.deb
 sudo apt install ./teachatty_latest_amd64.deb
-
-# Fedora, RHEL, Rocky, Alma
-sudo dnf install https://teachatty.com/downloads/teachatty-latest.x86_64.rpm
-
-# anywhere with Go 1.27+
-go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest          # the client
-go install github.com/daniel-cmdline/teachatty/cmd/teachatty-server@latest   # the server
 ```
 
-The server package (`teachatty-server_latest_amd64.deb`, `teachatty-server-latest.x86_64.rpm`) installs the binary, the hardened systemd unit, the `teachatty` system user and the certbot hook. Put flags in `/etc/default/teachatty-server`, then `sudo systemctl enable --now teachatty-server`.
+**Fedora · RHEL · Rocky · Alma**
+```bash
+sudo dnf install https://teachatty.com/downloads/teachatty-latest.x86_64.rpm
+```
+
+**Anywhere with Go 1.27+**
+```bash
+go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest
+```
+
+> [!TIP]
+> **That's it, nothing else to set up.** The packages put `teachatty` in `/usr/bin`, which is already in your `PATH`. Open any terminal, in any folder, and run:
+>
+> ```bash
+> teachatty --server teachatty.com
+> ```
+>
+> With `go install`, it lands in `~/go/bin`, which Go's standard setup adds to your `PATH`. If `teachatty` isn't found, add `export PATH=$PATH:$HOME/go/bin` to your `~/.bashrc`. From a tarball, copy `teachatty` into a folder in your `PATH`, such as `/usr/local/bin`. On macOS, a binary downloaded with a browser isn't signed yet, so clear the quarantine flag once: `xattr -d com.apple.quarantine /usr/local/bin/teachatty`.
+
+### 2 · Download the server &nbsp;—&nbsp; optional, to host your own rooms
+
+For your team, your homelab or your own network. You don't need it to chat on teachatty.com.
+
+| Your system | amd64 · x86_64 · Intel | arm64 · aarch64 · Apple Silicon |
+|---|---|---|
+| **Debian · Ubuntu · Mint** | [⬇ `teachatty-server_latest_amd64.deb`](https://teachatty.com/downloads/teachatty-server_latest_amd64.deb) | [⬇ `teachatty-server_latest_arm64.deb`](https://teachatty.com/downloads/teachatty-server_latest_arm64.deb) |
+| **Fedora · RHEL · Rocky · Alma** | [⬇ `teachatty-server-latest.x86_64.rpm`](https://teachatty.com/downloads/teachatty-server-latest.x86_64.rpm) | [⬇ `teachatty-server-latest.aarch64.rpm`](https://teachatty.com/downloads/teachatty-server-latest.aarch64.rpm) |
+| **macOS** | [⬇ `teachatty-server_latest_darwin_amd64.tar.gz`](https://teachatty.com/downloads/teachatty-server_latest_darwin_amd64.tar.gz) | [⬇ `teachatty-server_latest_darwin_arm64.tar.gz`](https://teachatty.com/downloads/teachatty-server_latest_darwin_arm64.tar.gz) |
+| **Any other Linux** | [⬇ `teachatty-server_latest_linux_amd64.tar.gz`](https://teachatty.com/downloads/teachatty-server_latest_linux_amd64.tar.gz) | [⬇ `teachatty-server_latest_linux_arm64.tar.gz`](https://teachatty.com/downloads/teachatty-server_latest_linux_arm64.tar.gz) |
+
+**Debian · Ubuntu · Mint**
+```bash
+curl -LO https://teachatty.com/downloads/teachatty-server_latest_amd64.deb
+sudo apt install ./teachatty-server_latest_amd64.deb
+sudo systemctl enable --now teachatty-server
+```
+
+**Fedora · RHEL · Rocky · Alma**
+```bash
+sudo dnf install https://teachatty.com/downloads/teachatty-server-latest.x86_64.rpm
+sudo systemctl enable --now teachatty-server
+```
+
+**Anywhere with Go 1.27+** (runs in the foreground; see [Running as a service](#running-as-a-service))
+```bash
+go install github.com/daniel-cmdline/teachatty/cmd/teachatty-server@latest
+teachatty-server
+```
+
+> [!NOTE]
+> **The packages set everything up:** a locked-down systemd service that starts on boot, its own `teachatty` system user, TLS on port 7347 with a certificate created on first start, the certbot hook, and a config file for flags, `/etc/default/teachatty-server`. Open port 7347/TCP in the firewall, and everyone on your network connects with:
+>
+> ```bash
+> teachatty --server 192.168.0.10
+> ```
+
+Every file, with `checksums.txt`, is at **[teachatty.com/downloads](https://teachatty.com/downloads/)**. The `latest` names always point to the newest build. These are development builds until v0.1.0 is tagged.
 
 ## Your own network
 

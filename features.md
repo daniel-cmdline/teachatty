@@ -2,6 +2,13 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-10-12 19:05 — README: separate client and server downloads
+
+- The README's Install section matches the site: **1 · Download the client** (everyone needs it) and **2 · Download the server** (optional, to host your own rooms). Each has a download table (Debian/Ubuntu, Fedora/RHEL, macOS, any other Linux; amd64 and arm64) with direct links, then the install commands per OS and `go install`. The server `.rpm` has its own row and command instead of a mention in a sentence.
+- A highlighted note says nothing else is needed: the packages install into `/usr/bin`, already in `PATH`, so `teachatty --server teachatty.com` works from any folder. It also covers `~/go/bin` for `go install`, tarballs, and macOS's quarantine flag for unsigned binaries.
+- The site (in its own repository) got the same split: client and server download groups, one row per OS, download buttons, and the PATH note.
+- **Tested:** all 16 download links in the README answer 200; the site's layout checked in screenshots at desktop and phone widths.
+
 ## 2026-10-12 18:52 — The website gets its own private repository
 
 - The site and documentation now live in the private repository `daniel-cmdline/teachatty-site`, so they keep a history outside this one. CLAUDE.md has the deploy command, which never uploads `.git/`.
