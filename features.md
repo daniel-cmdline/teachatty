@@ -2,6 +2,12 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-10-12 20:15 — A demo GIF at the top of the README
+
+- `assets/demo.gif` (205 KB, 26 s), right under the tagline in the README: daniel and ana in two terminals side by side join the room `tea` on teachatty.com, chat with mateus and joao, and each `@mention` lights up in amber on the mentioned person's screen. The site shows the same recording as a looping video under its hero.
+- Recorded on the live server with v0.1.0, using [vhs](https://github.com/charmbracelet/vhs) and tmux. mateus and joao are scripted clients that answer when their cue shows up in the room, so the timing follows the conversation. The kit (`record.sh`, the tape, the bots) lives in the site's repository under `demo/`, so the demo can be re-recorded whenever the screen changes.
+- **Tested:** the kit re-recorded from its saved location with all three scripted lines on cue; frames checked for the typed commands, both screens updating together and the mentions highlighted.
+
 ## 2026-10-12 19:57 — v0.1.0: man pages, changelog, Go 1.26
 
 - **v0.1.0**, the first release: an annotated tag on `main`, packages rebuilt from it and published at https://teachatty.com/downloads/, replacing the development builds. `go install ...@latest` now resolves to v0.1.0.

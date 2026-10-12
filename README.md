@@ -6,6 +6,14 @@
   A minimalist terminal chat for developers and sysadmins.
 </p>
 
+<p align="center">
+  <img src="assets/demo.gif" alt="Two terminals side by side, daniel and ana, chatting in the room tea on teachatty.com with mateus and joao. Mentions of @ana and @daniel light up in amber on the mentioned person's screen." width="900">
+</p>
+
+<p align="center">
+  <code>teachatty --server teachatty.com</code> &nbsp;·&nbsp; <a href="#install">install</a> &nbsp;·&nbsp; <a href="https://teachatty.com/docs.html">docs</a>
+</p>
+
 ---
 
 teachatty is a chat that lives in your terminal. You join a room, type, press Enter, and everyone in the room sees it. There's no heavy desktop app and no noise: it's a small server and a small client, used like any other Unix tool.
