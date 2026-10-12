@@ -13,10 +13,11 @@ Chat de terminal para desenvolvedores e sysadmins. Minimalista: leve, sem distra
 - **Auto-hospedável.** Uma empresa pode rodar a própria instância num servidor interno, sem tráfego indo para a internet (`--server`).
 - **Minimalista.** Só entra feature que se paga.
 
-## Estado atual (2026-10-11)
+## Estado atual (2026-10-12)
 
 - **Servidor** (`cmd/server`): salas em memória, um mutex por sala, porta fixa `:23456`.
-- **Cliente** (`cmd/client`): flags `--server`, `--room` e `--alias`.
+- **Cliente** (`cmd/client`): flags `--server`, `--room` e `--alias`. Tela cheia com tview (`internal/ui`): mensagens em cima, caixa de digitação embaixo.
+- O cliente exige um terminal: `echo oi | teachat` falha até o modo pipe chegar.
 - Ainda sem criptografia: o tráfego é `ws://` em texto aberto.
 - As features entregues ficam registradas em [features.md](features.md).
 
@@ -25,14 +26,13 @@ Chat de terminal para desenvolvedores e sysadmins. Minimalista: leve, sem distra
 Nesta ordem. Cada um é pequeno de propósito.
 
 1. **Flag `--addr` no servidor.** Hoje a porta é fixa no código. Para auto-hospedar, ela precisa ser configurável.
-2. **UI que não se atropela.** Hoje a mensagem recebida é escrita por cima da linha que está sendo digitada. Plano: `golang.org/x/term` (`term.NewTerminal`), que redesenha a linha de digitação abaixo das mensagens recebidas.
-3. **Modo pipe.**
+2. **Modo pipe.**
    ```bash
    comandocomplicado | teachat --room minhaempresa --password xxx
    ```
-   O cliente detecta que o stdin não é um terminal, envia cada linha e sai no final. Uso: mandar logs e saídas de comandos para uma sala privada do time.
-4. **Salas com senha + TLS, juntos.** Senha nunca deve trafegar em `ws://` aberto. TLS significa `ListenAndServeTLS` no servidor e `wss://` no cliente, com um certificado autoassinado fixado no cliente (pinning) para uso em rede local.
-5. **Histórico de mensagens.** Necessário para o modo pipe ser útil quando não há ninguém na sala, e para salas persistentes. Plano: SQLite com `modernc.org/sqlite` (Go puro, então continua sendo um binário único).
+   O cliente detecta que o stdin não é um terminal (`term.IsTerminal`), pula a tela do tview, envia cada linha e sai no final. Hoje, sem terminal, o cliente simplesmente falha. Uso: mandar logs e saídas de comandos para uma sala privada do time.
+3. **Salas com senha + TLS, juntos.** Senha nunca deve trafegar em `ws://` aberto. TLS significa `ListenAndServeTLS` no servidor e `wss://` no cliente, com um certificado autoassinado fixado no cliente (pinning) para uso em rede local.
+4. **Histórico de mensagens.** Necessário para o modo pipe ser útil quando não há ninguém na sala, e para salas persistentes. Plano: SQLite com `modernc.org/sqlite` (Go puro, então continua sendo um binário único).
 
 ## Futuro
 
@@ -46,6 +46,10 @@ Nesta ordem. Cada um é pequeno de propósito.
 - Sem `--room`, o cliente entra na sala `geral`.
 - O estado das conexões fica em RAM, não num banco de dados: ele só existe enquanto o processo está vivo. O banco entra junto com o histórico.
 - `Room` fica no `package main` (`cmd/server/room.go`) até alguma outra parte além do servidor precisar dela.
+- O cliente é tela cheia (tview), não inline. Inline, o chat iria para o scrollback do terminal e se perderia no meio da saída de comandos.
+- Na tela: Enter envia, PgUp/PgDn rolam as mensagens, Ctrl+C sai. A própria mensagem é mostrada pelo cliente, não devolvida pelo servidor.
+- Sem mouse na tela, para selecionar e copiar texto do chat continuar funcionando normalmente.
+- A tela fica em `internal/ui`. O `Room` do servidor sai do `package main` depois, como mudança separada.
 - O módulo se chama `github.com/daniel-cmdline/teachat`, igual ao caminho do repositório, para os imports internos e o `go install` funcionarem.
 
 ## Perguntas em aberto
@@ -53,6 +57,7 @@ Nesta ordem. Cada um é pequeno de propósito.
 - Salas com senha vs. apagar sala vazia: se a sala some quando esvazia, qualquer um pode recriá-la com outra senha. Salas com senha devem ser persistentes?
 - Modo pipe: quando o pipe termina, o cliente sai ou entra no chat?
 - A senha pode ir na URL de conexão, ou deve ir num cabeçalho ou numa primeira mensagem para não aparecer em logs?
+- O alias não é verificado: qualquer um entra como `--alias daniel`. A senha protege a sala, mas não prova quem é quem dentro dela. Precisa de identidade?
 
 ## Capacidade (teste de carga, 2026-10-11)
 

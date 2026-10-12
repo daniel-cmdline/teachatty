@@ -21,12 +21,12 @@ What works today:
 - Rooms: joining a room that doesn't exist creates it, and a room disappears when its last member leaves.
 - Aliases: your name appears in front of every message you send.
 - Command-line flags for server, room and alias.
+- A full-screen terminal UI: messages on top, an input box at the bottom that grows as you type. Incoming messages never overwrite what you're typing.
 - Server and client as separate binaries.
 
 What's coming next:
 
 - Configurable server port
-- Typing that isn't interrupted by incoming messages
 - Pipe mode: `some-command | teachat --room ops`
 - Password-protected rooms and TLS (`wss://`)
 - Message history
@@ -48,7 +48,17 @@ go run ./cmd/server
 go run ./cmd/client --room dev --alias daniel
 ```
 
-Run a second client in the same room and start typing. Press `Ctrl+D` to leave.
+Run a second client in the same room and start typing.
+
+| Key | Action |
+|---|---|
+| `Enter` | Send the message |
+| `PgUp` / `PgDn` | Scroll through messages |
+| `Ctrl+C` | Leave |
+
+Typing anything jumps back to the newest messages.
+
+The client needs a real terminal for now, so piping into it (`echo hi | ...`) fails until pipe mode lands.
 
 To connect from another machine, point the client at the server and make sure port `23456` is open in the server's firewall:
 
@@ -69,6 +79,7 @@ go run ./cmd/client --server 192.168.0.10:23456 --room dev --alias mateus
 ```
 cmd/server/   the server: rooms and message relay
 cmd/client/   the terminal client
+internal/ui/  the client's screen (built on tview)
 ```
 
 The roadmap and the feature log are in [roadmap.md](roadmap.md) and [features.md](features.md). Both are written in Portuguese for now.

@@ -1,14 +1,13 @@
 package main
 
 import (
-	"bufio"
 	"flag"
-	"fmt"
 	"log"
 	"net/url"
-	"os"
 
 	"github.com/gorilla/websocket"
+
+	"github.com/daniel-cmdline/teachat/internal/ui"
 )
 
 func main() {
@@ -33,23 +32,37 @@ func main() {
 	}
 	defer conn.Close()
 
+	// a tela chama esta função a cada Enter; só a goroutine da tela escreve na
+	// conexão, então a regra da gorilla de um escritor por conexão continua valendo
+	screen := ui.New(*room, *alias, func(text string) {
+		conn.WriteMessage(websocket.TextMessage, []byte(text))
+	})
+
 	// recebe mensagens em paralelo enquanto você digita
+	closed := make(chan struct{})
 	go func() {
 		for {
 			_, msg, err := conn.ReadMessage()
 			if err != nil {
-				log.Fatal("conexão encerrada")
+				// não dá para usar log.Fatal aqui: ele sai sem restaurar o terminal.
+				// Avisa o main e fecha a tela; quem encerra é o main.
+				close(closed)
+				screen.Stop()
+				return
 			}
-			fmt.Println(string(msg))
+			screen.Print(string(msg))
 		}
 	}()
 
-	// cada Enter envia a linha
-	sc := bufio.NewScanner(os.Stdin)
-	for sc.Scan() {
-		conn.WriteMessage(websocket.TextMessage, sc.Bytes())
+	// Run toma conta do terminal até o Ctrl+C ou até a conexão cair
+	if err := screen.Run(); err != nil {
+		log.Fatal(err)
 	}
-	if err := sc.Err(); err != nil {
-		log.Fatal("erro lendo o teclado: ", err)
+
+	// o terminal já voltou ao normal; agora dá para avisar se foi a conexão que caiu
+	select {
+	case <-closed:
+		log.Fatal("conexão encerrada")
+	default:
 	}
 }
