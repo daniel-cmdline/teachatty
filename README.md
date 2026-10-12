@@ -25,6 +25,8 @@ What works today:
 - Each alias gets its own color, the same on every client. Your own messages show your alias in bold.
 - Pipe mode: `some-command | teachat --room ops` sends each line to the room, still prints it to your terminal, and exits when the input ends.
 - TLS by default, with trust on first use: no certificates to manage.
+- A member that stops reading (laptop asleep, dropped network) is dropped after 5 seconds instead of freezing the room.
+- `--version` on both binaries.
 - Server and client as separate binaries.
 
 What's coming next:
@@ -33,6 +35,13 @@ What's coming next:
 - Message history
 
 > 🔒 **Encrypted by default.** On first start the server creates a self-signed certificate and prints its fingerprint. Clients trust a server the first time they connect and refuse a different certificate afterwards, like SSH. The first connection is the one to verify: compare the fingerprint the client shows with the one the server prints. Running on a real domain? Pass your own certificate with `--tls-cert` and `--tls-key`.
+
+## Install
+
+```bash
+go install github.com/daniel-cmdline/teachat/cmd/teachat@latest          # the client
+go install github.com/daniel-cmdline/teachat/cmd/teachat-server@latest   # the server
+```
 
 ## Quick start
 
@@ -43,13 +52,13 @@ git clone https://github.com/daniel-cmdline/teachat.git
 cd teachat
 
 # start the server (listens on port 7347)
-go run ./cmd/server
+go run ./cmd/teachat-server
 
 # in another terminal: no flags needed, you land in the "local" room
-go run ./cmd/client
+go run ./cmd/teachat
 
 # help (also: `help`, or any unknown argument)
-go run ./cmd/client -h
+go run ./cmd/teachat -h
 ```
 
 Run a second client in the same room and start typing.
@@ -65,8 +74,8 @@ Typing anything jumps back to the newest messages.
 When stdin isn't a terminal, the client skips the screen and runs in pipe mode instead:
 
 ```bash
-make 2>&1 | go run ./cmd/client --room ops     # each line goes to the room
-tail -f /var/log/app.log | go run ./cmd/client --room ops   # streams until you stop it
+make 2>&1 | go run ./cmd/teachat --room ops     # each line goes to the room
+tail -f /var/log/app.log | go run ./cmd/teachat --room ops   # streams until you stop it
 ```
 
 You still see every line in your terminal. Empty lines are shown but not sent. Pipe mode never opens the chat screen, so it's safe in scripts and cron.
@@ -74,7 +83,7 @@ You still see every line in your terminal. Empty lines are shown but not sent. P
 To connect from another machine, point the client at the server and make sure port `7347` is open in the server's firewall:
 
 ```bash
-go run ./cmd/client --server 192.168.0.10:7347
+go run ./cmd/teachat --server 192.168.0.10:7347
 ```
 
 ## Server flags
@@ -107,13 +116,14 @@ teachat --server chat.example.com:7347
 | `--server` | `localhost:7347` | Address of the teachat server |
 | `--room` | `local` | Room to join. `local` is created when the server starts and always exists, so everyone who skips `--room` meets there |
 | `--alias` | your login (`$USER`) | Name shown in front of your messages. Falls back to `anonymous` when `$USER` is unset |
+| `--version` | | Print the version and exit |
 | `--no-tls` | off | Connect over plain `ws://`, to a server started with `--no-tls` |
 
 ## Project layout
 
 ```
-cmd/server/   the server: rooms and message relay
-cmd/client/   the terminal client
+cmd/teachat-server/  the server: rooms and message relay
+cmd/teachat/         the terminal client
 internal/ui/  the client's screen (built on tview)
 internal/tlstrust/  TLS certificate and trust on first use
 docs/         project site and documentation

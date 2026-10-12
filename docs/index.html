@@ -164,13 +164,13 @@
 cd teachat
 
 <span class="c"># the server (port 7347, default room local)</span>
-go run ./cmd/server
+go run ./cmd/teachat-server
 
 <span class="c"># in another terminal: no flags, you land in the local room</span>
-go run ./cmd/client
+go run ./cmd/teachat
 
 <span class="c"># send a command's output to the room</span>
-uptime | go run ./cmd/client</pre>
+uptime | go run ./cmd/teachat</pre>
   <p class="muted" style="margin-top:14px">Flags, keys, another machine on the network and how to build the binaries: in the <a href="docs.html#getting-started">documentation</a>.</p>
 </section>
 

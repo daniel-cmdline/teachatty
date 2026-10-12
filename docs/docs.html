@@ -49,8 +49,8 @@
     <div class="callout"><p><b>Status:</b> early development. It works for chatting between machines, encrypted with TLS by default, but breaking changes are on the way. See the <a href="#limits">limitations</a>.</p></div>
   </div>
   <dl class="ref">
-    <dt>server</dt><dd><code>cmd/server</code>. Listens on port 7347, keeps rooms in memory, relays each message to the other members of the room.</dd>
-    <dt>client</dt><dd><code>cmd/client</code>. In a terminal, it opens the full screen: messages on top, input box at the bottom. In a pipe (<code>command | teachat</code>), it sends each line and exits.</dd>
+    <dt>server</dt><dd><code>cmd/teachat-server</code>. Listens on port 7347, keeps rooms in memory, relays each message to the other members of the room.</dd>
+    <dt>client</dt><dd><code>cmd/teachat</code>. In a terminal, it opens the full screen: messages on top, input box at the bottom. In a pipe (<code>command | teachat</code>), it sends each line and exits.</dd>
     <dt>room</dt><dd>Any name. Joining a room that doesn't exist creates it; when the last member leaves, it stops existing. The exception is <code>local</code>, the default room: it starts with the server and exists as long as it runs. Anyone who doesn't pick a room lands there.</dd>
     <dt>alias</dt><dd>The name in front of your messages: <code>daniel: hi</code>. Defaults to your system user. Not verified.</dd>
     <dt>message</dt><dd>One line of text. It only goes to whoever is in the room at that moment: there's no history.</dd>
@@ -67,26 +67,30 @@
 cd teachat
 
 <span class="c"># server</span>
-go run ./cmd/server
+go run ./cmd/teachat-server
 <span class="c"># teachat-server listening on :7347 · default room: local · TLS · fingerprint SHA256:...</span>
 
 <span class="c"># client, in another terminal: no flags, joins the local room</span>
-go run ./cmd/client
+go run ./cmd/teachat
 <span class="c"># * trusting new server localhost:7347 (fingerprint SHA256:...), saved in ~/.config/teachat/known_servers</span>
 
 <span class="c"># help, on both</span>
-go run ./cmd/client -h
-go run ./cmd/server -h</pre>
+go run ./cmd/teachat -h
+go run ./cmd/teachat-server -h</pre>
   <h3>Another machine on the network</h3>
   <p class="read">Point the client at the server's address and make sure port 7347 is open in its firewall:</p>
-  <pre style="max-width:88ch">go run ./cmd/client --server 192.168.0.10:7347</pre>
+  <pre style="max-width:88ch">go run ./cmd/teachat --server 192.168.0.10:7347</pre>
   <p class="read">To use another port, or listen on a single interface, the server has <code>--addr</code>. The client points at the same address with <code>--server</code>:</p>
-  <pre style="max-width:88ch">go run ./cmd/server --addr :9000
-go run ./cmd/client --server 192.168.0.10:9000</pre>
-  <h3>Build the binaries</h3>
-  <p class="read"><code>go build</code> names the binary after the folder (<code>client</code>, <code>server</code>). To get the name <code>teachat</code>:</p>
-  <pre style="max-width:88ch">go build -o teachat ./cmd/client
-go build -o teachat-server ./cmd/server
+  <pre style="max-width:88ch">go run ./cmd/teachat-server --addr :9000
+go run ./cmd/teachat --server 192.168.0.10:9000</pre>
+  <h3>Install or build the binaries</h3>
+  <p class="read">The folders are named after the binaries, so <code>go install</code> and <code>go build</code> produce <code>teachat</code> and <code>teachat-server</code>:</p>
+  <pre style="max-width:88ch">go install github.com/daniel-cmdline/teachat/cmd/teachat@latest
+go install github.com/daniel-cmdline/teachat/cmd/teachat-server@latest
+
+<span class="c"># or, from a clone</span>
+go build ./cmd/teachat
+go build ./cmd/teachat-server
 
 ./teachat-server
 ./teachat --room dev --alias daniel</pre>
@@ -105,6 +109,7 @@ go build -o teachat-server ./cmd/server
         <tr><td><code>--room</code></td><td><code>local</code></td><td>room to join. Created if it doesn't exist. <code>local</code> always exists</td></tr>
         <tr><td><code>--alias</code></td><td>your user (<code>$USER</code>)</td><td>your name in the chat, in front of each message. Without <code>$USER</code> (cron, some containers): <code>anonymous</code></td></tr>
         <tr><td><code>--no-tls</code></td><td>off</td><td>connect over plain <code>ws://</code>, for a server started with <code>--no-tls</code></td></tr>
+        <tr><td><code>--version</code></td><td></td><td>print the version and exit</td></tr>
       </tbody>
     </table>
   </div>
@@ -141,7 +146,7 @@ go build -o teachat-server ./cmd/server
         <tr><td><code>teachat help</code></td><td>the help</td><td class="num">0</td></tr>
         <tr><td>stray argument or unknown flag (<code>teachat dev</code>, <code>--romm</code>)</td><td><code>unknown argument: dev</code> + the help</td><td class="num">2</td></tr>
         <tr><td>pipe mode: input ended and everything was sent</td><td>—</td><td class="num">0</td></tr>
-        <tr><td>pipe mode: the connection dropped midway</td><td><code>connection closed: </code> + the reason</td><td class="num">1</td></tr>
+        <tr><td>pipe mode: the connection dropped midway (even while waiting for input, like a quiet <code>tail -f</code>)</td><td><code>connection closed: </code> + the reason</td><td class="num">1</td></tr>
         <tr><td>pipe mode: a line was over 1 MB</td><td><code>connection closed: websocket: close 1009 (message too big)</code></td><td class="num">1</td></tr>
       </tbody>
     </table>
@@ -176,6 +181,7 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># streams until 
         <tr><td><code>--addr</code></td><td><code>:7347</code></td><td>where to listen, <code>host:port</code>. No host means all interfaces: <code>--addr :9000</code>. With a host, only that one: <code>--addr 10.0.0.5:7347</code> listens only on the internal network</td></tr>
         <tr><td><code>--no-tls</code></td><td>off</td><td>serve plain <code>ws://</code>, without encryption. For testing</td></tr>
         <tr><td><code>--tls-cert</code>, <code>--tls-key</code></td><td>self-signed</td><td>your own certificate and key (PEM), e.g. Let's Encrypt's <code>fullchain.pem</code> and <code>privkey.pem</code>. Reloaded when the files change (<a href="#security">security</a>)</td></tr>
+        <tr><td><code>--version</code></td><td></td><td>print the version and exit</td></tr>
       </tbody>
     </table>
   </div>
@@ -185,7 +191,7 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># streams until 
   <dl class="ref">
     <dt>room</dt><dd>Room name. Any text. Doesn't exist → it's created. Missing or empty → room <code>local</code>.</dd>
     <dt>alias</dt><dd>Name of whoever connects. Any text, even empty. Not validated, and doesn't need to be unique.</dd>
-    <dt>origin</dt><dd>Accepts connections from any origin (<code>CheckOrigin</code> always returns true).</dd>
+    <dt>origin</dt><dd>Refuses any request with an <code>Origin</code> header (403). Browsers always send one on WebSocket connections and the teachat client never does, so web pages can't connect to the server behind a user's back.</dd>
   </dl>
   <h3>Messages</h3>
   <dl class="ref">
@@ -234,7 +240,7 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># streams until 
     <h3>The layers</h3>
   </div>
   <div class="layers">
-    <div class="layer"><span class="name">cmd/client · cmd/server · internal/*</span><span class="what">Flags, rooms, aliases, broadcast, the client's screen and TLS trust. This is teachat's code: <code>main.go</code>, <code>room.go</code>, <code>ui.go</code> and <code>tlstrust.go</code>.</span><span class="tag you">our code</span></div>
+    <div class="layer"><span class="name">cmd/teachat · cmd/teachat-server · internal/*</span><span class="what">Flags, rooms, aliases, broadcast, the client's screen and TLS trust. This is teachat's code: <code>main.go</code>, <code>room.go</code>, <code>ui.go</code> and <code>tlstrust.go</code>.</span><span class="tag you">our code</span></div>
     <div class="layer"><span class="name">gorilla/websocket</span><span class="what">Upgrade handshake, building and reading frames, masking, ping/pong, close. Provides <code>ReadMessage</code> and <code>WriteMessage</code>.</span><span class="tag lib">library</span></div>
     <div class="layer"><span class="name">tview + tcell</span><span class="what">Client only. Puts the terminal in raw mode, reads each key, draws the screen (message area, input box, borders) and restores the terminal on exit.</span><span class="tag lib">library</span></div>
     <div class="layer"><span class="name">crypto/tls</span><span class="what">TLS 1.3: the handshake, the encryption of every byte after it, and the self-signed certificate (<code>crypto/x509</code>).</span><span class="tag go">Go stdlib</span></div>
@@ -246,16 +252,17 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># streams until 
 
   <h3>Repository layout</h3>
   <div class="split">
-    <pre>cmd/server/main.go   <span class="c">server: /ws handler, rooms map</span>
-cmd/server/room.go   <span class="c">Room: join, leave, broadcast</span>
-cmd/server/main_test.go  <span class="c">tests (go test ./...)</span>
-cmd/client/main.go   <span class="c">client: flags, connection, receiving</span>
-cmd/client/pipe.go   <span class="c">client: pipe mode</span>
-internal/ui/ui.go    <span class="c">the client's screen (tview)</span>
-internal/tlstrust/   <span class="c">TLS: certificate, trust on first use</span>
-docs/                <span class="c">this site and this documentation</span>
-roadmap.md           <span class="c">next steps and decisions</span>
-features.md          <span class="c">log of what shipped</span></pre>
+    <pre>cmd/teachat-server/main.go       <span class="c">server: /ws handler, rooms map</span>
+cmd/teachat-server/room.go       <span class="c">Room: join, leave, broadcast</span>
+cmd/teachat-server/main_test.go  <span class="c">tests (go test ./...)</span>
+cmd/teachat/main.go              <span class="c">client: flags, connection, receiving</span>
+cmd/teachat/pipe.go              <span class="c">client: pipe mode</span>
+internal/ui/ui.go                <span class="c">the client's screen (tview)</span>
+internal/tlstrust/               <span class="c">TLS: certificate, trust on first use</span>
+internal/version/                <span class="c">--version</span>
+docs/                            <span class="c">this site and this documentation</span>
+roadmap.md                       <span class="c">next steps and decisions</span>
+features.md                      <span class="c">log of what shipped</span></pre>
     <div class="scroll">
       <table>
         <thead><tr><th>dependency</th><th>version</th><th>used for</th></tr></thead>
@@ -473,7 +480,15 @@ Sec-WebSocket-Accept: <span class="s">s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</span></pre><
 
   <h3>The code</h3>
   <div class="split">
-    <div style="min-width:0"><div class="file">cmd/server/room.go</div><pre class="go">// Room has its own mutex: one room broadcasting doesn't block the others
+    <div style="min-width:0"><div class="file">cmd/teachat-server/room.go</div><pre class="go">// writeWait is how long one member gets to take a message. A member that doesn't read
+// (a laptop that went to sleep, a network that dropped without closing the connection, a
+// teachat pipe suspended with Ctrl+Z, a badly written client) fills its network buffers and then
+// blocks every write to it; without a limit, broadcast would wait forever while holding
+// the room's lock, and the whole room would freeze. A var, not a const, so the tests can
+// shorten it.
+var writeWait = 5 * time.Second
+
+// Room has its own mutex: one room broadcasting doesn't block the others
 type Room struct {
 	mu      sync.Mutex
 	members map[*websocket.Conn]string // connection -&gt; alias
@@ -497,12 +512,21 @@ func (r *Room) broadcast(myOwnConn *websocket.Conn, msg []byte) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for c := range r.members {
-		if c != myOwnConn {
-			c.WriteMessage(websocket.TextMessage, msg)
+		if c == myOwnConn {
+			continue
+		}
+		c.SetWriteDeadline(time.Now().Add(writeWait))
+		if err := c.WriteMessage(websocket.TextMessage, msg); err != nil {
+			// too slow or already gone: drop it so the room keeps going. Closing the
+			// connection also wakes its own goroutine (blocked in ReadMessage), which then
+			// leaves the room the normal way; deleting it here (allowed while ranging over
+			// a map) stops the next broadcasts from waiting on it again.
+			delete(r.members, c)
+			c.Close()
 		}
 	}
 }</pre></div>
-    <div style="min-width:0"><div class="file">cmd/server/main.go · handleWS</div><pre class="go">func handleWS(w http.ResponseWriter, r *http.Request) {
+    <div style="min-width:0"><div class="file">cmd/teachat-server/main.go · handleWS</div><pre class="go">func handleWS(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -613,6 +637,7 @@ func (r *Room) broadcast(myOwnConn *websocket.Conn, msg []byte) {
       <p>The test: 50,000 connections in one room receiving 10 messages in a row, while two people in a small room exchanged messages. With the global lock, each broadcast in the big room held the whole server for hundreds of milliseconds, and the small room waited in line.</p>
       <p>With one lock per room, the green bar barely shows on the chart, and that's the result. Go's race detector (<code>go build -race</code>) found no problems with 30 clients joining and leaving 4 rooms at the same time.</p>
       <p class="muted">A detail: each room's lock also guarantees gorilla's one-writer-per-connection rule. Each connection belongs to a single room, and only that room's broadcast writes to it.</p>
+      <p class="muted">Holding the lock while writing has a cost: a member that stops reading would make broadcast wait forever, freezing the room. So each write has a 5-second deadline (<code>writeWait</code>); a member that misses it is removed and its connection closed.</p>
     </div>
   </div>
 </section>
@@ -827,13 +852,13 @@ if lines &lt;= 5 {
       </div>
     </div>
     <div class="read">
-      <p class="muted">The second case is the "<a href="#limits">slow client stalls the room</a>" limitation, now measured. The teachat client doesn't fall into it because it always reads; a badly written client can still stall a room. The real fix is a per-connection send queue on the server.</p>
+      <p class="muted">The second case was the room freezing for good. The server now gives each member 5 seconds to take a message and drops the ones that can't (<a href="#limits">limitations</a>), so the room only pauses. The teachat client never gets there, because it always reads.</p>
     </div>
   </div>
 
   <h3>The code</h3>
   <div class="split">
-    <div style="min-width:0"><div class="file">cmd/client/main.go · after opening the connection</div><pre class="go">// stdin is not a terminal (command | teachat): pipe mode, no screen
+    <div style="min-width:0"><div class="file">cmd/teachat/main.go · after opening the connection</div><pre class="go">// stdin is not a terminal (command | teachat): pipe mode, no screen
 if !term.IsTerminal(int(os.Stdin.Fd())) {
 	os.Stderr.Write(notice.Bytes())
 	pipe(conn)
@@ -926,7 +951,7 @@ func (u *UI) Print(line string) {
 	})
 }</pre></div>
   </div>
-  <div style="min-width:0;margin-top:22px"><div class="file">cmd/client/pipe.go</div><pre class="go">// pipe is the screenless mode (command | teachat): it sends each stdin line to the room,
+  <div style="min-width:0;margin-top:22px"><div class="file">cmd/teachat/pipe.go</div><pre class="go">// pipe is the screenless mode (command | teachat): it sends each stdin line to the room,
 // echoes the line to the terminal (like tee) and exits when the input ends.
 // It never opens the screen on purpose: in a script or cron there's nobody to press Ctrl+C.
 func pipe(conn *websocket.Conn) {
@@ -937,11 +962,20 @@ func pipe(conn *websocket.Conn) {
 	// sees done closed also sees the right value (same guarantee as "closed" in main.go).
 	done := make(chan struct{})
 	var readErr error
+	// closing is set right before we send our own close frame at the end, so the reader
+	// can tell "we're finishing" from "the connection dropped while we wait for input"
+	var closing atomic.Bool
 	go func() {
 		for {
 			if _, _, err := conn.ReadMessage(); err != nil {
 				readErr = err
 				close(done)
+				// dropped while main may be blocked waiting for the next input line (a quiet
+				// tail -f, or after being suspended and dropped by the server): exit now
+				// instead of hanging until a line arrives. No screen here, nothing to restore.
+				if !closing.Load() {
+					log.Fatal("connection closed: ", err)
+				}
 				return
 			}
 		}
@@ -988,6 +1022,7 @@ func pipe(conn *websocket.Conn) {
 
 	// close properly: send the close frame and wait for the server to answer (then the
 	// reader goroutine ends and closes done). Exiting without this can lose the last lines.
+	closing.Store(true)
 	conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	select {
 	case &lt;-done:
@@ -1059,11 +1094,10 @@ func pipe(conn *websocket.Conn) {
   </div>
   <div class="limits">
     <div class="limit"><b>The first connection is trusted blindly</b><p>Trust on first use protects every connection after the first. If someone intercepts that very first one, the client trusts them. Compare the fingerprint with the one the server prints.</p></div>
-    <div class="limit"><b>A slow client stalls its room</b><p>Broadcast writes to one member at a time, under the room's lock. A connection that doesn't read holds up its room: measured, a room stalled at 2,082 of 5,000 messages. The fix is a per-connection send queue.</p></div>
+    <div class="limit"><b>A stuck member pauses its room for 5 s</b><p>Broadcast writes to one member at a time, under the room's lock. A member that stops reading (a laptop asleep, a dropped network, a suspended pipe) holds its room for up to 5 seconds, then the server drops it and the room carries on. Before this limit, the room froze for good (measured: stuck at 2,082 of 5,000 messages). A per-connection send queue would remove the pause entirely.</p></div>
     <div class="limit"><b>Large logs flood the room</b><p>Pipe mode sends one message per line. A 5,000-line build is 5,000 messages on everyone's screen.</p></div>
     <div class="limit"><b>Aliases aren't verified</b><p>Anyone can join as <code>--alias daniel</code>. A password will protect the room, but won't prove who's who inside it.</p></div>
     <div class="limit"><b>No history</b><p>A message sent to an empty room is lost, and whoever joins later doesn't see the past. Pipe mode depends on this to keep logs.</p></div>
-    <div class="limit"><b>Any origin</b><p>The server accepts WebSocket from any origin, so a page open in a browser on the network can connect to it.</p></div>
   </div>
 </section>
 

@@ -14,11 +14,15 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/daniel-cmdline/teachat/internal/tlstrust"
+	"github.com/daniel-cmdline/teachat/internal/version"
 )
 
 // Upgrader instance that upgrades the HTTP connection to WebSocket
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true }, // accepts any origin
+	// browsers always send an Origin header on WebSocket connections, and the teachat
+	// client never does. Refusing any request that has one keeps web pages (opened in a
+	// browser on the same network) from connecting to the server behind the user's back.
+	CheckOrigin: func(r *http.Request) bool { return r.Header.Get("Origin") == "" },
 }
 
 const (
@@ -49,9 +53,14 @@ func main() {
 	// instead of the self-signed one; clients then verify it like a browser does
 	certFile := flag.String("tls-cert", "", "certificate file (PEM), e.g. Let's Encrypt's fullchain.pem; default: self-signed")
 	keyFile := flag.String("tls-key", "", "private key file (PEM) for --tls-cert, e.g. privkey.pem")
+	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Usage = usage
 	flag.Parse()
 	checkArgs()
+	if *showVersion {
+		fmt.Println("teachat-server", version.String())
+		return
+	}
 	if *noTLS && (*certFile != "" || *keyFile != "") {
 		log.Fatal("--no-tls can't be combined with --tls-cert/--tls-key")
 	}

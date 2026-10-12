@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"cmp"
 	"flag"
+	"fmt"
 	"log"
 	"net/url"
 	"os"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/daniel-cmdline/teachat/internal/tlstrust"
 	"github.com/daniel-cmdline/teachat/internal/ui"
+	"github.com/daniel-cmdline/teachat/internal/version"
 )
 
 func main() {
@@ -24,9 +26,14 @@ func main() {
 	// value, so without $USER (cron, some containers) it is "anonymous".
 	alias := flag.String("alias", cmp.Or(os.Getenv("USER"), "anonymous"), "your name in the chat")
 	noTLS := flag.Bool("no-tls", false, "connect over plain ws:// without encryption")
+	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Usage = usage
 	flag.Parse()
 	checkArgs()
+	if *showVersion {
+		fmt.Println("teachat", version.String())
+		return
+	}
 
 	// build wss://SERVER/ws?room=...&alias=... from the flags (ws:// with --no-tls)
 	// dereference the pointer to get the string

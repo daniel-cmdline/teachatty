@@ -160,3 +160,74 @@ func TestMessageTooBigClosesOnlyThatConnection(t *testing.T) {
 		t.Fatalf("bia got %.40q, want %q", msg, "carol: hi")
 	}
 }
+
+// a member that never reads is dropped after writeWait, and the room keeps going
+func TestStuckMemberIsDroppedAndTheRoomKeepsGoing(t *testing.T) {
+	old := writeWait
+	writeWait = 200 * time.Millisecond
+	defer func() { writeWait = old }()
+
+	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	defer srv.Close()
+
+	stuck := connect(t, srv, "room=stuck&alias=stuck") // connects and never reads
+	defer stuck.Close()
+	ana := connect(t, srv, "room=stuck&alias=ana")
+	defer ana.Close()
+	bia := connect(t, srv, "room=stuck&alias=bia")
+	defer bia.Close()
+	eventually(t, "three join", func() bool { return members("stuck") == 3 })
+
+	// bia reads everything in the background, like a normal client
+	got := make(chan int, 1)
+	go func() {
+		n := 0
+		bia.SetReadDeadline(time.Now().Add(10 * time.Second))
+		for {
+			if _, _, err := bia.ReadMessage(); err != nil {
+				got <- n
+				return
+			}
+			if n++; n == 40 {
+				got <- n
+				return
+			}
+		}
+	}()
+
+	// 40 x 512 KB = 20 MB: far more than the stuck member's network buffers can hold.
+	// Sent from a goroutine: if the room freezes, ana blocks too, and the timeout below
+	// still fires instead of the test hanging.
+	go func() {
+		msg := make([]byte, 512<<10)
+		for i := 0; i < 40; i++ {
+			if ana.WriteMessage(websocket.TextMessage, msg) != nil {
+				return
+			}
+		}
+	}()
+	select {
+	case n := <-got:
+		if n != 40 {
+			t.Fatalf("bia got %d of 40 messages", n)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("the room froze: bia stopped receiving")
+	}
+	eventually(t, "the stuck member is dropped", func() bool { return members("stuck") == 2 })
+}
+
+// browsers send an Origin header; the teachat client doesn't
+func TestBrowserOriginIsRefused(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	defer srv.Close()
+
+	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws?alias=web"
+	_, resp, err := websocket.DefaultDialer.Dial(url, http.Header{"Origin": {"https://evil.example"}})
+	if err == nil {
+		t.Fatal("a connection with an Origin header should be refused")
+	}
+	if resp == nil || resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403, got %v", resp)
+	}
+}

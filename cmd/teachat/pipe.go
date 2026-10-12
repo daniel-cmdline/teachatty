@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -23,11 +24,20 @@ func pipe(conn *websocket.Conn) {
 	// sees done closed also sees the right value (same guarantee as "closed" in main.go).
 	done := make(chan struct{})
 	var readErr error
+	// closing is set right before we send our own close frame at the end, so the reader
+	// can tell "we're finishing" from "the connection dropped while we wait for input"
+	var closing atomic.Bool
 	go func() {
 		for {
 			if _, _, err := conn.ReadMessage(); err != nil {
 				readErr = err
 				close(done)
+				// dropped while main may be blocked waiting for the next input line (a quiet
+				// tail -f, or after being suspended and dropped by the server): exit now
+				// instead of hanging until a line arrives. No screen here, nothing to restore.
+				if !closing.Load() {
+					log.Fatal("connection closed: ", err)
+				}
 				return
 			}
 		}
@@ -74,6 +84,7 @@ func pipe(conn *websocket.Conn) {
 
 	// close properly: send the close frame and wait for the server to answer (then the
 	// reader goroutine ends and closes done). Exiting without this can lose the last lines.
+	closing.Store(true)
 	conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	select {
 	case <-done:

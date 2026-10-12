@@ -2,6 +2,18 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-10-12 15:11 — Stuck members no longer freeze rooms, origin check, binary names, --version
+
+- **Bug fixed: one stuck member froze its whole room for good.** Broadcast writes to members one at a time while holding the room's lock; a member that stops reading (a laptop asleep, a network that dropped without closing, a teachat pipe suspended with Ctrl+Z) filled its buffers and blocked broadcast forever. Each write now has a 5-second deadline (`writeWait`): a member that misses it is removed and its connection closed, and the room carries on after one pause.
+- Correction to something said while planning: the full-screen client can't be suspended with Ctrl+Z, because raw mode delivers Ctrl+Z as an ordinary key. The real triggers are the ones above.
+- **Pipe mode exits as soon as its connection drops**, even while waiting for input. Before, a quiet `tail -f | teachat` whose connection dropped (for example, dropped by the server after being suspended) hung until the next line arrived.
+- **Origin check:** the server refuses requests with an `Origin` header (403). Browsers always send one on WebSocket connections and the teachat client never does, so web pages can't connect behind a user's back.
+- **Binary names:** `cmd/client` → `cmd/teachat`, `cmd/server` → `cmd/teachat-server`, so `go install github.com/daniel-cmdline/teachat/cmd/teachat@latest` installs `teachat`. The root `.gitignore` now ignores `/teachat` and `/teachat-server`.
+- **`--version`** on both binaries (`internal/version`): a release build's `-ldflags` value, else the version Go stamps (a tag, or `v0.0.0-<date>-<commit>+dirty` from a clone), else `dev` (go run).
+- **Tests:** 2 new server tests: a member that never reads is dropped and the others receive all 40 messages of 512 KB (checked that it fails cleanly, with "the room froze", when the deadline is removed); a request with an `Origin` header gets 403. 16 tests in total, with `-race`.
+- **Tested end to end:** a suspended pipe client in a room flooded with 40 lines of 500 KB: the flood finished in ~6 s (one 5 s pause), a full-screen watcher received the last line, and the suspended client, once resumed, exited with `connection closed`. A quiet pipe exits right away when the server stops.
+- **Docs:** README (install with `go install`, new paths, `--version`), roadmap (release is next; access control decided after it, with the hash + salt requirement noted), and the HTML: new paths, install section, origin, the stuck-member limitation, `--version`, code excerpts regenerated.
+
 ## 2026-10-12 14:38 — Bring your own certificate
 
 - **Server:** `--tls-cert` and `--tls-key` serve the administrator's certificate instead of the self-signed one, for example Let's Encrypt's `fullchain.pem` and `privkey.pem`. The startup line describes it: `TLS · certificate for chat.example.com, issued by R11, valid until 2026-12-30`. Both flags go together, and neither combines with `--no-tls`.
