@@ -34,7 +34,10 @@ disappears when the last member leaves. The %q room is the exception: it
 starts with the server and exists as long as the server runs. Anyone who
 connects without choosing a room lands there.
 
-Messages larger than %d MB are refused and that connection is closed.
+Messages larger than %d MB are refused and that connection is closed. Each
+connection may send 5 messages a second (bursts of 20) and 256 KB a second;
+above that the server reads it more slowly, so senders are slowed down, not cut
+off. Each IP may hold --max-per-ip connections; use 0 behind a company NAT.
 
 Traffic is encrypted with TLS by default. On first start the server creates
 a self-signed certificate in ~/.config/teachat/ and prints its fingerprint

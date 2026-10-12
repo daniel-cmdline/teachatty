@@ -48,6 +48,8 @@ func main() {
 	// --addr: where to listen. ":9000" = port 9000 on all interfaces;
 	// "10.0.0.5:7347" = only that interface (for example, only the internal network)
 	addr := flag.String("addr", defaultAddr, "address to listen on, host:port (empty host = all interfaces)")
+	flag.BoolVar(&noPipes, "no-pipes", false, "refuse clients in pipe mode (command | teachat), e.g. to keep build logs out")
+	flag.IntVar(&maxPerIP, "max-per-ip", maxPerIP, "max simultaneous connections from one IP address (0 = no limit, e.g. behind a company NAT)")
 	noTLS := flag.Bool("no-tls", false, "serve plain ws:// without encryption (for testing)")
 	// --tls-cert/--tls-key: the administrator's own certificate (Let's Encrypt, company CA)
 	// instead of the self-signed one; clients then verify it like a browser does
@@ -90,6 +92,22 @@ func main() {
 // handleWS serves each connection on /ws, in the goroutine net/http creates for it.
 // It's a named function (not an anonymous one inside main) so the tests can use it.
 func handleWS(w http.ResponseWriter, r *http.Request) {
+	// --no-pipes: the teachat client declares pipe mode in the URL. A courtesy rule, not
+	// a security boundary: a client that doesn't declare it isn't stopped (the rate limit
+	// is what holds back abuse); it keeps teammates' build logs out of a chat room.
+	if noPipes && r.URL.Query().Get("mode") == "pipe" {
+		http.Error(w, "this server doesn't accept pipe mode (it was started with --no-pipes)", http.StatusForbidden)
+		return
+	}
+
+	// one IP can't hold more than --max-per-ip connections (see limits.go)
+	release, ok := acquireIP(r)
+	if !ok {
+		http.Error(w, "too many connections from your address", http.StatusTooManyRequests)
+		return
+	}
+	defer release()
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -115,9 +133,15 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 	room.join(conn, alias)
 	mu.Unlock()
 
+	msgs, bytes := limiters()
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
+			break
+		}
+		// over its budget, this connection waits here before the next read: nothing is
+		// dropped, the sender is just slowed down (see limits.go)
+		if msgs.Wait(r.Context()) != nil || bytes.WaitN(r.Context(), len(msg)) != nil {
 			break
 		}
 		// relay the message to the others in the same room

@@ -2,6 +2,17 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-10-12 15:20 — Ready for the open internet: rate limits, per-IP cap, batched pipes, --no-pipes
+
+- **Rate limit per connection:** 5 messages a second with bursts of 20, and 256 KB a second with bursts up to one 1 MB message. Over the limit, the server waits before reading that connection again: nothing is dropped and nobody is disconnected, TCP slows the sender down. A script flooding a room is simply slowed to the limit. Code in `cmd/teachat-server/limits.go`, with `golang.org/x/time/rate` (new dependency, Go team, pure Go).
+- **Per-IP connection cap:** at most 10 simultaneous connections per IP (each costs ~17 KB), configurable with `--max-per-ip` (`0` = no cap, for a company behind NAT). Over the cap the server answers 429 before the WebSocket handshake, and the client says `the server refused the connection: too many connections from your address`.
+- **Pipe mode batches lines:** lines that arrive within 100 ms of the first one go out as one multi-line message (up to 64 KB). `seq 1 5000 | teachat` is now 1 message instead of 5,000, so build logs neither flood the room nor hit the rate limit. Slow output (a line every 300 ms) still goes out line by line. In the full screen, a batch shows the alias on its first line only. The "large logs flood the room" limitation is gone.
+- **`--no-pipes` on the server:** refuses clients in pipe mode, for rooms that want chat and no build logs. The client now declares pipe mode in the connection URL (`mode=pipe`); a `--no-pipes` server answers 403 with the reason. A courtesy rule, not a security boundary: a client that doesn't declare the mode isn't stopped, and the rate limit is what holds back abuse.
+- **Refused connections show the server's own reason.** For the deliberate refusals (403, 429), the client prints the body the server sent, e.g. `the server refused the connection: this server doesn't accept pipe mode (it was started with --no-pipes)`, instead of a generic `bad handshake`.
+- **Tests:** 3 new server tests: 30 messages sent at once all arrive, but take ~2 s (burst of 20, then 5/s); the third connection from one IP gets 429 with the cap at 2, and connecting works again once one leaves; with `--no-pipes`, a pipe-mode connection gets 403 with the reason while an interactive one gets in. The stuck-member test lifts the rate limit, since it pushes 20 MB on purpose. 19 tests in total, with `-race`.
+- **Tested end to end:** `seq 1 5000` arrives as 1 message with all 5,000 lines; slow output stays one message per line; the 2 MB line is still refused; the 4th connection from one IP with `--max-per-ip 3` is refused with the clear message, and works again after the others leave; a batch looks right in the full screen.
+- **Docs:** both help screens, README, roadmap, and the HTML (server flags and rate, `--no-pipes`, 403/429 exit codes, batched pipe mode, a reverse-proxy caveat for the per-IP cap, code excerpts regenerated).
+
 ## 2026-10-12 15:11 — Stuck members no longer freeze rooms, origin check, binary names, --version
 
 - **Bug fixed: one stuck member froze its whole room for good.** Broadcast writes to members one at a time while holding the room's lock; a member that stops reading (a laptop asleep, a network that dropped without closing, a teachat pipe suspended with Ctrl+Z) filled its buffers and blocked broadcast forever. Each write now has a 5-second deadline (`writeWait`): a member that misses it is removed and its connection closed, and the room carries on after one pause.

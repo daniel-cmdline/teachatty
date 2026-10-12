@@ -14,7 +14,8 @@ func usage() {
 
 Usage:
   teachat [flags]               open the full-screen chat
-  command | teachat [flags]     pipe mode: send each line to the room and exit
+  command | teachat [flags]     pipe mode: send the input to the room and exit
+                                (lines arriving together go as one message)
 
 Flags:
 `)

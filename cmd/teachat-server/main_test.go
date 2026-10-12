@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"golang.org/x/time/rate"
 )
 
 // connect connects to handleWS running on a test server, the way the client would.
@@ -166,6 +168,7 @@ func TestStuckMemberIsDroppedAndTheRoomKeepsGoing(t *testing.T) {
 	old := writeWait
 	writeWait = 200 * time.Millisecond
 	defer func() { writeWait = old }()
+	noRateLimit(t) // this test pushes 20 MB on purpose
 
 	srv := httptest.NewServer(http.HandlerFunc(handleWS))
 	defer srv.Close()
@@ -230,4 +233,106 @@ func TestBrowserOriginIsRefused(t *testing.T) {
 	if resp == nil || resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("expected 403, got %v", resp)
 	}
+}
+
+// noRateLimit lifts the per-connection rate limits for the rest of a test
+func noRateLimit(t *testing.T) {
+	oldMsg, oldBurst, oldBytes := msgRate, msgBurst, byteRate
+	msgRate, msgBurst, byteRate = rate.Inf, 1<<20, rate.Inf
+	t.Cleanup(func() { msgRate, msgBurst, byteRate = oldMsg, oldBurst, oldBytes })
+}
+
+// over the rate limit, messages are slowed down, never dropped
+func TestFloodIsSlowedDownNotDropped(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	defer srv.Close()
+
+	ana := connect(t, srv, "room=flood&alias=ana")
+	defer ana.Close()
+	bia := connect(t, srv, "room=flood&alias=bia")
+	defer bia.Close()
+	eventually(t, "both join", func() bool { return members("flood") == 2 })
+
+	// burst of 20 goes through at once; the other 10 at 5 a second take ~2 s
+	const total = 30
+	start := time.Now()
+	go func() {
+		for i := 0; i < total; i++ {
+			if ana.WriteMessage(websocket.TextMessage, []byte("spam")) != nil {
+				return
+			}
+		}
+	}()
+	bia.SetReadDeadline(time.Now().Add(10 * time.Second))
+	for i := 0; i < total; i++ {
+		if _, _, err := bia.ReadMessage(); err != nil {
+			t.Fatalf("bia got only %d of %d messages: %v", i, total, err)
+		}
+	}
+	if took := time.Since(start); took < 1500*time.Millisecond {
+		t.Fatalf("%d messages arrived in %v: the rate limit isn't slowing the sender down", total, took)
+	}
+}
+
+func TestConnectionsPerIPAreCapped(t *testing.T) {
+	old := maxPerIP
+	maxPerIP = 2
+	defer func() { maxPerIP = old }()
+
+	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	defer srv.Close()
+
+	a := connect(t, srv, "alias=a")
+	b := connect(t, srv, "alias=b")
+	defer b.Close()
+
+	// the third one from the same IP is refused with 429
+	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws?alias=c"
+	if _, resp, err := websocket.DefaultDialer.Dial(url, nil); err == nil || resp == nil || resp.StatusCode != http.StatusTooManyRequests {
+		t.Fatalf("expected 429 for the third connection, got %v %v", resp, err)
+	}
+
+	// once one leaves, there's room again
+	a.Close()
+	eventually(t, "a slot frees up", func() bool {
+		c, _, err := websocket.DefaultDialer.Dial(url, nil)
+		if err != nil {
+			return false
+		}
+		c.Close()
+		return true
+	})
+}
+
+func TestNoPipesRefusesPipeModeOnly(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	defer srv.Close()
+	base := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws?alias=ci"
+
+	// by default, pipe mode is welcome
+	c, _, err := websocket.DefaultDialer.Dial(base+"&mode=pipe", nil)
+	if err != nil {
+		t.Fatalf("pipe mode refused without --no-pipes: %v", err)
+	}
+	c.Close()
+
+	noPipes = true
+	defer func() { noPipes = false }()
+
+	// with --no-pipes: a pipe is refused with 403 and the reason in the body
+	_, resp, err := websocket.DefaultDialer.Dial(base+"&mode=pipe", nil)
+	if err == nil || resp == nil || resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403 for pipe mode, got %v %v", resp, err)
+	}
+	reason, _ := io.ReadAll(resp.Body)
+	if !strings.Contains(string(reason), "doesn't accept pipe mode") {
+		t.Fatalf("the refusal should say why, got %q", reason)
+	}
+
+	// and someone typing still gets in
+	c, _, err = websocket.DefaultDialer.Dial(base, nil)
+	if err != nil {
+		t.Fatalf("an interactive client was refused: %v", err)
+	}
+	c.Close()
 }

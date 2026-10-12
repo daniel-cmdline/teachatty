@@ -78,7 +78,7 @@ make 2>&1 | go run ./cmd/teachat --room ops     # each line goes to the room
 tail -f /var/log/app.log | go run ./cmd/teachat --room ops   # streams until you stop it
 ```
 
-You still see every line in your terminal. Empty lines are shown but not sent. Pipe mode never opens the chat screen, so it's safe in scripts and cron.
+You still see every line in your terminal. Lines that arrive within 100 ms of each other go to the room as one message, so a long build log doesn't flood it. Empty lines are shown but not sent. Pipe mode never opens the chat screen, so it's safe in scripts and cron.
 
 To connect from another machine, point the client at the server and make sure port `7347` is open in the server's firewall:
 
@@ -92,9 +92,11 @@ go run ./cmd/teachat --server 192.168.0.10:7347
 |---|---|---|
 | `--addr` | `:7347` | Where to listen, `host:port`. No host means all interfaces (`--addr :9000`); a host limits it to that interface (`--addr 10.0.0.5:7347`) |
 | `--no-tls` | off | Serve plain `ws://` without encryption (testing only) |
+| `--max-per-ip` | `10` | Max simultaneous connections from one IP address; `0` = no limit (e.g. a company behind NAT) |
+| `--no-pipes` | off | Refuse clients in pipe mode (`command \| teachat`), for rooms that want chat and no build logs |
 | `--tls-cert`, `--tls-key` | self-signed | Your own certificate and key (PEM), e.g. Let's Encrypt's `fullchain.pem` and `privkey.pem`. Clients that trust the authority verify it like a browser, and the files are reloaded when they change, so renewals need no restart |
 
-Messages larger than 1 MB are refused, and only the connection that sent them is closed.
+Messages larger than 1 MB are refused, and only the connection that sent them is closed. Each connection may send 5 messages a second (bursts of 20) and 256 KB a second; above that, the server slows the sender down instead of dropping anything.
 
 ### Running with a Let's Encrypt certificate
 

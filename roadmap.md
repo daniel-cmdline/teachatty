@@ -49,7 +49,7 @@ In this order. Each one is small on purpose.
 - No mouse on screen, so selecting and copying chat text keeps working normally.
 - The screen lives in `internal/ui`. The server's `Room` moves out of `package main` later, as a separate change.
 - Pipe mode exits when the input ends and never opens the screen. Joining the chat afterwards would hang scripts and cron (nobody to press Ctrl+C), and stdin is already the pipe, not the keyboard.
-- Pipe mode echoes each line to the terminal (like `tee`), so whoever runs the command still sees the output. One message per line, no grouping: the simplest path. Large logs flood the room; grouping can come later if it becomes a problem.
+- Pipe mode echoes each line to the terminal (like `tee`), so whoever runs the command still sees the output. Lines that arrive within 100 ms of each other are sent as one multi-line message (up to 64 KB): a build log is a few messages instead of thousands, and it stays under the server's rate limit.
 - Default port 7347 (previously 23456).
 - `-h` on both binaries, with defaults read from the flags themselves so the help never drifts out of date.
 - Everything is in English: what the program shows in the terminal (help, logs, errors, startup messages, test output), code comments, the site and documentation (`docs/`), and these project notes. Until 2026-10-12, comments, docs and notes were in Portuguese.
@@ -65,6 +65,8 @@ In this order. Each one is small on purpose.
 - The server refuses requests with an `Origin` header: browsers always send one on WebSocket connections, the teachat client never does.
 - The command folders are named after the binaries (`cmd/teachat`, `cmd/teachat-server`), so `go install` produces the right names.
 - `--version` reads the version Go stamps into the binary (a tag with `go install ...@v0.1.0`, a pseudo-version with the commit when built from a clone), or one set with `-ldflags` for release builds. Shared by both binaries in `internal/version`.
+- Abuse limits, needed before running on the open internet: 5 messages/s per connection (bursts of 20) and 256 KB/s; over the limit the server reads more slowly instead of dropping or disconnecting. At most 10 connections per IP (`--max-per-ip`, 0 = no limit for companies behind NAT); over the cap the server answers 429. `golang.org/x/time/rate` for the limiters.
+- `--no-pipes` lets a server keep pipe mode out (chat only, no build logs). The client declares pipe mode in the URL (`mode=pipe`); it's a courtesy rule, not a security boundary, so the rate limit stays the real defense against abuse.
 - The module is `github.com/daniel-cmdline/teachat`, matching the repository path, so internal imports and `go install` work.
 
 ## Open questions

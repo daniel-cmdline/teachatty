@@ -5,7 +5,9 @@ import (
 	"cmp"
 	"flag"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -35,17 +37,25 @@ func main() {
 		return
 	}
 
+	// stdin is not a terminal (command | teachat): pipe mode, no screen
+	pipeMode := !term.IsTerminal(int(os.Stdin.Fd()))
+
 	// build wss://SERVER/ws?room=...&alias=... from the flags (ws:// with --no-tls)
 	// dereference the pointer to get the string
 	scheme := "wss"
 	if *noTLS {
 		scheme = "ws"
 	}
+	query := url.Values{"room": {*room}, "alias": {*alias}}
+	// pipe mode says so, so a server started with --no-pipes can refuse it
+	if pipeMode {
+		query.Set("mode", "pipe")
+	}
 	u := url.URL{
 		Scheme:   scheme,
 		Host:     *server,
 		Path:     "/ws",
-		RawQuery: url.Values{"room": {*room}, "alias": {*alias}}.Encode(),
+		RawQuery: query.Encode(),
 	}
 
 	// TLS trust (trusted on first use, then pinned) lives in internal/tlstrust.
@@ -60,14 +70,20 @@ func main() {
 		}
 		dialer.TLSClientConfig = cfg
 	}
-	conn, _, err := dialer.Dial(u.String(), nil)
+	conn, resp, err := dialer.Dial(u.String(), nil)
 	if err != nil {
+		// the server refuses some connections on purpose, before the WebSocket handshake
+		// (403: pipes not allowed; 429: too many connections from your IP), and says why
+		// in the response body: show that reason instead of a generic "bad handshake"
+		if resp != nil && (resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusTooManyRequests) {
+			reason, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+			log.Fatal("the server refused the connection: ", strings.TrimSpace(string(reason)))
+		}
 		log.Fatal(tlstrust.DialHint(err, !*noTLS))
 	}
 	defer conn.Close()
 
-	// stdin is not a terminal (command | teachat): pipe mode, no screen
-	if !term.IsTerminal(int(os.Stdin.Fd())) {
+	if pipeMode {
 		os.Stderr.Write(notice.Bytes())
 		pipe(conn)
 		return

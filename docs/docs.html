@@ -141,6 +141,8 @@ go build ./cmd/teachat-server
         <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>—</td><td class="num">0</td></tr>
         <tr><td>the connection drops (server stopped, network down)</td><td><code>connection closed: </code> + the reason, e.g. <code>close 1006 (abnormal closure)</code></td><td class="num">1</td></tr>
         <tr><td>couldn't connect</td><td>the connection error, e.g. <code>connection refused</code></td><td class="num">1</td></tr>
+        <tr><td>too many connections from your IP (server's <code>--max-per-ip</code>)</td><td><code>the server refused the connection: too many connections from your address</code></td><td class="num">1</td></tr>
+        <tr><td>pipe mode into a server started with <code>--no-pipes</code></td><td><code>the server refused the connection: this server doesn't accept pipe mode ...</code></td><td class="num">1</td></tr>
         <tr><td>the server's fingerprint changed</td><td><code>the identity of server ... has changed</code>, with both fingerprints (<a href="#security">security</a>)</td><td class="num">1</td></tr>
         <tr><td>TLS on one side only</td><td>the error + a hint: <code>try --no-tls</code> or <code>drop --no-tls</code></td><td class="num">1</td></tr>
         <tr><td><code>teachat help</code></td><td>the help</td><td class="num">0</td></tr>
@@ -154,17 +156,18 @@ go build ./cmd/teachat-server
   <p class="note">In full screen, the terminal is always restored before the message appears.</p>
 
   <h3 id="pipe-mode">Pipe mode</h3>
-  <p class="read">When stdin isn't a terminal, the client doesn't open the screen. It sends each input line to the room, echoes it to your terminal (like <code>tee</code>) and exits when the input ends.</p>
+  <p class="read">When stdin isn't a terminal, the client doesn't open the screen. It sends the input to the room, echoes each line to your terminal (like <code>tee</code>) and exits when the input ends.</p>
   <pre style="max-width:88ch">make 2>&amp;1 | teachat --room ops              <span class="c"># the build output goes to the room</span>
 uptime | teachat --room ops                  <span class="c"># one line, then exit</span>
 tail -f /var/log/app.log | teachat --room ops   <span class="c"># streams until Ctrl+C</span></pre>
   <dl class="ref">
-    <dt>one message per line</dt><dd>Each line becomes an <code>alias: line</code> message in the room. No grouping: a 5,000-line log is 5,000 messages.</dd>
+    <dt>batched</dt><dd>Lines that arrive within 100 ms of each other go out as one multi-line message (up to 64 KB), shown with the alias on the first line only. A 5,000-line build log is a single message; slow output (a line every few hundred ms) still goes out line by line, with no visible delay.</dd>
     <dt>echo</dt><dd>Every line also shows in your terminal, empty ones included. Empty lines aren't sent to the room.</dd>
     <dt>size</dt><dd>Up to 1 MB per line, the server's limit. A bigger line is refused: the pipe stops and exits with code 1, saying <code>message too big</code>.</dd>
     <dt>the room</dt><dd>What others send while the pipe runs isn't shown; it's read and discarded.</dd>
     <dt>never opens the screen</dt><dd>Safe in scripts, CI and cron: nobody needs to press Ctrl+C at the end.</dd>
     <dt>no history</dt><dd>If nobody is in the room, the lines are lost.</dd>
+    <dt>servers that say no</dt><dd>The client declares pipe mode when it connects (<code>mode=pipe</code> in the URL). A server started with <code>--no-pipes</code> refuses it, and the client exits with the server's reason.</dd>
   </dl>
 </section>
 
@@ -180,6 +183,8 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># streams until 
       <tbody>
         <tr><td><code>--addr</code></td><td><code>:7347</code></td><td>where to listen, <code>host:port</code>. No host means all interfaces: <code>--addr :9000</code>. With a host, only that one: <code>--addr 10.0.0.5:7347</code> listens only on the internal network</td></tr>
         <tr><td><code>--no-tls</code></td><td>off</td><td>serve plain <code>ws://</code>, without encryption. For testing</td></tr>
+        <tr><td><code>--no-pipes</code></td><td>off</td><td>refuse clients in <a href="#pipe-mode">pipe mode</a>, for rooms that want chat and no build logs (403 with the reason). A courtesy rule: a client that doesn't declare pipe mode isn't stopped; the rate limit is what holds back abuse</td></tr>
+        <tr><td><code>--max-per-ip</code></td><td><code>10</code></td><td>max simultaneous connections from one IP address; <code>0</code> = no limit (a company behind NAT reaches the server from a single IP)</td></tr>
         <tr><td><code>--tls-cert</code>, <code>--tls-key</code></td><td>self-signed</td><td>your own certificate and key (PEM), e.g. Let's Encrypt's <code>fullchain.pem</code> and <code>privkey.pem</code>. Reloaded when the files change (<a href="#security">security</a>)</td></tr>
         <tr><td><code>--version</code></td><td></td><td>print the version and exit</td></tr>
       </tbody>
@@ -187,10 +192,11 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># streams until 
   </div>
   <p class="note">Busy port or bad address: the server exits with the error (<code>address already in use</code>, <code>missing port in address</code>) and code 1, without announcing anything first.</p>
   <h3>Endpoint</h3>
-  <pre style="max-width:88ch">GET /ws?room=&lt;room&gt;&amp;alias=&lt;alias&gt;   <span class="c">upgrade to WebSocket, over TLS (wss://) by default</span></pre>
+  <pre style="max-width:88ch">GET /ws?room=&lt;room&gt;&amp;alias=&lt;alias&gt;[&amp;mode=pipe]   <span class="c">upgrade to WebSocket, over TLS (wss://) by default</span></pre>
   <dl class="ref">
     <dt>room</dt><dd>Room name. Any text. Doesn't exist → it's created. Missing or empty → room <code>local</code>.</dd>
     <dt>alias</dt><dd>Name of whoever connects. Any text, even empty. Not validated, and doesn't need to be unique.</dd>
+    <dt>mode</dt><dd><code>pipe</code> when the client runs in pipe mode, absent otherwise. Only read by <code>--no-pipes</code>.</dd>
     <dt>origin</dt><dd>Refuses any request with an <code>Origin</code> header (403). Browsers always send one on WebSocket connections and the teachat client never does, so web pages can't connect to the server behind a user's back.</dd>
   </dl>
   <h3>Messages</h3>
@@ -198,6 +204,7 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># streams until 
     <dt>client → server</dt><dd>A text frame with the bare message: <code>hi</code>.</dd>
     <dt>server → client</dt><dd>A text frame with the alias in front: <code>daniel: hi</code>. Goes to every member of the room except the sender.</dd>
     <dt>size</dt><dd>Up to 1 MB per message (<code>maxMessage</code>). Above that, the server answers with close 1009 (<code>message too big</code>) and closes only that connection; the room carries on.</dd>
+    <dt>rate</dt><dd>Each connection may send 5 messages a second, with bursts of 20, and 256 KB a second. Above that, the server reads that connection more slowly: nothing is dropped and nobody is disconnected, the sender is just slowed down (TCP backpressure).</dd>
     <dt>history</dt><dd>None. A room is a list of connections; it doesn't store messages.</dd>
   </dl>
   <h3>Room lifecycle</h3>
@@ -527,6 +534,22 @@ func (r *Room) broadcast(myOwnConn *websocket.Conn, msg []byte) {
 	}
 }</pre></div>
     <div style="min-width:0"><div class="file">cmd/teachat-server/main.go · handleWS</div><pre class="go">func handleWS(w http.ResponseWriter, r *http.Request) {
+	// --no-pipes: the teachat client declares pipe mode in the URL. A courtesy rule, not
+	// a security boundary: a client that doesn't declare it isn't stopped (the rate limit
+	// is what holds back abuse); it keeps teammates' build logs out of a chat room.
+	if noPipes &amp;&amp; r.URL.Query().Get("mode") == "pipe" {
+		http.Error(w, "this server doesn't accept pipe mode (it was started with --no-pipes)", http.StatusForbidden)
+		return
+	}
+
+	// one IP can't hold more than --max-per-ip connections (see limits.go)
+	release, ok := acquireIP(r)
+	if !ok {
+		http.Error(w, "too many connections from your address", http.StatusTooManyRequests)
+		return
+	}
+	defer release()
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -552,9 +575,15 @@ func (r *Room) broadcast(myOwnConn *websocket.Conn, msg []byte) {
 	room.join(conn, alias)
 	mu.Unlock()
 
+	msgs, bytes := limiters()
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
+			break
+		}
+		// over its budget, this connection waits here before the next read: nothing is
+		// dropped, the sender is just slowed down (see limits.go)
+		if msgs.Wait(r.Context()) != nil || bytes.WaitN(r.Context(), len(msg)) != nil {
 			break
 		}
 		// relay the message to the others in the same room
@@ -859,7 +888,52 @@ if lines &lt;= 5 {
   <h3>The code</h3>
   <div class="split">
     <div style="min-width:0"><div class="file">cmd/teachat/main.go · after opening the connection</div><pre class="go">// stdin is not a terminal (command | teachat): pipe mode, no screen
-if !term.IsTerminal(int(os.Stdin.Fd())) {
+pipeMode := !term.IsTerminal(int(os.Stdin.Fd()))
+
+// build wss://SERVER/ws?room=...&amp;alias=... from the flags (ws:// with --no-tls)
+// dereference the pointer to get the string
+scheme := "wss"
+if *noTLS {
+	scheme = "ws"
+}
+query := url.Values{"room": {*room}, "alias": {*alias}}
+// pipe mode says so, so a server started with --no-pipes can refuse it
+if pipeMode {
+	query.Set("mode", "pipe")
+}
+u := url.URL{
+	Scheme:   scheme,
+	Host:     *server,
+	Path:     "/ws",
+	RawQuery: query.Encode(),
+}
+
+// TLS trust (trusted on first use, then pinned) lives in internal/tlstrust.
+// A notice like "trusting new server ..." goes into a buffer and is shown below,
+// once we know whether it goes to the screen or to stderr.
+var notice bytes.Buffer
+dialer := *websocket.DefaultDialer
+if !*noTLS {
+	cfg, err := tlstrust.Client(*server, &amp;notice)
+	if err != nil {
+		log.Fatal(err)
+	}
+	dialer.TLSClientConfig = cfg
+}
+conn, resp, err := dialer.Dial(u.String(), nil)
+if err != nil {
+	// the server refuses some connections on purpose, before the WebSocket handshake
+	// (403: pipes not allowed; 429: too many connections from your IP), and says why
+	// in the response body: show that reason instead of a generic "bad handshake"
+	if resp != nil &amp;&amp; (resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusTooManyRequests) {
+		reason, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		log.Fatal("the server refused the connection: ", strings.TrimSpace(string(reason)))
+	}
+	log.Fatal(tlstrust.DialHint(err, !*noTLS))
+}
+defer conn.Close()
+
+if pipeMode {
 	os.Stderr.Write(notice.Bytes())
 	pipe(conn)
 	return
@@ -951,7 +1025,15 @@ func (u *UI) Print(line string) {
 	})
 }</pre></div>
   </div>
-  <div style="min-width:0;margin-top:22px"><div class="file">cmd/teachat/pipe.go</div><pre class="go">// pipe is the screenless mode (command | teachat): it sends each stdin line to the room,
+  <div style="min-width:0;margin-top:22px"><div class="file">cmd/teachat/pipe.go</div><pre class="go">// batching in pipe mode: how long to wait for more lines after the first one, and the
+// largest batch. 100 ms is unnoticeable for a human reading the room; 64 KB keeps each
+// message far below the server's 1 MB limit.
+const (
+	batchWait = 100 * time.Millisecond
+	batchMax  = 64 &lt;&lt; 10
+)
+
+// pipe is the screenless mode (command | teachat): it sends each stdin line to the room,
 // echoes the line to the terminal (like tee) and exits when the input ends.
 // It never opens the screen on purpose: in a script or cron there's nobody to press Ctrl+C.
 func pipe(conn *websocket.Conn) {
@@ -986,39 +1068,83 @@ func pipe(conn *websocket.Conn) {
 		log.Fatal("connection closed: ", readErr)
 	}
 
-	// ReadString has no line length limit (bufio.Scanner gives up at 64 KB)
-	r := bufio.NewReader(os.Stdin)
-	for {
-		line, err := r.ReadString('\n')
-		if line != "" {
-			line = strings.TrimRight(line, "\r\n")
-			fmt.Println(line) // echo: you still see the command's output
-			// an empty line is echoed, but not sent to the room
-			if strings.TrimSpace(line) != "" {
-				select {
-				case &lt;-done:
-					dropped()
-				default:
-				}
-				if err := conn.WriteMessage(websocket.TextMessage, []byte(line)); err != nil {
-					// the real reason usually arrives through the reader (e.g. close 1009, line
-					// too big); wait for it briefly before showing the write error
-					select {
-					case &lt;-done:
-						dropped()
-					case &lt;-time.After(time.Second):
-						log.Fatal("connection closed: ", err)
-					}
-				}
+	// send writes one message, reporting the real reason if the connection is gone
+	send := func(text string) {
+		select {
+		case &lt;-done:
+			dropped()
+		default:
+		}
+		if err := conn.WriteMessage(websocket.TextMessage, []byte(text)); err != nil {
+			// the real reason usually arrives through the reader (e.g. close 1009, line
+			// too big); wait for it briefly before showing the write error
+			select {
+			case &lt;-done:
+				dropped()
+			case &lt;-time.After(time.Second):
+				log.Fatal("connection closed: ", err)
 			}
 		}
-		if err == io.EOF {
-			break
+	}
+
+	// stdin is read in its own goroutine, so the loop below can wait for "the next line
+	// or a short pause, whichever comes first". ReadString has no line length limit
+	// (bufio.Scanner gives up at 64 KB).
+	lines := make(chan string)
+	go func() {
+		r := bufio.NewReader(os.Stdin)
+		for {
+			line, err := r.ReadString('\n')
+			if line != "" {
+				lines &lt;- strings.TrimRight(line, "\r\n")
+			}
+			if err != nil {
+				if err != io.EOF {
+					log.Fatal("error reading input: ", err)
+				}
+				close(lines)
+				return
+			}
 		}
-		if err != nil {
-			log.Fatal("error reading input: ", err)
+	}()
+
+	// batching: lines that arrive within batchWait of the first one go out together, as
+	// one multi-line message of up to batchMax bytes. A 5,000-line build log becomes a
+	// handful of messages instead of flooding the room (and the server's rate limit).
+	var batch []string
+	size := 0
+	flush := func() {
+		if len(batch) &gt; 0 {
+			send(strings.Join(batch, "\n"))
+			batch, size = nil, 0
 		}
 	}
+	timer := time.NewTimer(batchWait)
+	timer.Stop()
+	for open := true; open; {
+		select {
+		case line, ok := &lt;-lines:
+			if !ok {
+				open = false
+				break
+			}
+			fmt.Println(line) // echo: you still see the command's output
+			if strings.TrimSpace(line) == "" {
+				continue // an empty line is echoed, but not sent to the room
+			}
+			if size &gt; 0 &amp;&amp; size+len(line) &gt; batchMax {
+				flush()
+			}
+			if len(batch) == 0 {
+				timer.Reset(batchWait)
+			}
+			batch = append(batch, line)
+			size += len(line) + 1
+		case &lt;-timer.C:
+			flush()
+		}
+	}
+	flush()
 
 	// close properly: send the close frame and wait for the server to answer (then the
 	// reader goroutine ends and closes done). Exiting without this can lose the last lines.
@@ -1095,7 +1221,7 @@ func pipe(conn *websocket.Conn) {
   <div class="limits">
     <div class="limit"><b>The first connection is trusted blindly</b><p>Trust on first use protects every connection after the first. If someone intercepts that very first one, the client trusts them. Compare the fingerprint with the one the server prints.</p></div>
     <div class="limit"><b>A stuck member pauses its room for 5 s</b><p>Broadcast writes to one member at a time, under the room's lock. A member that stops reading (a laptop asleep, a dropped network, a suspended pipe) holds its room for up to 5 seconds, then the server drops it and the room carries on. Before this limit, the room froze for good (measured: stuck at 2,082 of 5,000 messages). A per-connection send queue would remove the pause entirely.</p></div>
-    <div class="limit"><b>Large logs flood the room</b><p>Pipe mode sends one message per line. A 5,000-line build is 5,000 messages on everyone's screen.</p></div>
+    <div class="limit"><b>Behind a reverse proxy, everyone is one IP</b><p>The per-IP cap reads the address of the TCP connection. Behind a proxy (nginx, a load balancer), every client looks like the proxy: raise <code>--max-per-ip</code> or set it to 0 there.</p></div>
     <div class="limit"><b>Aliases aren't verified</b><p>Anyone can join as <code>--alias daniel</code>. A password will protect the room, but won't prove who's who inside it.</p></div>
     <div class="limit"><b>No history</b><p>A message sent to an empty room is lost, and whoever joins later doesn't see the past. Pipe mode depends on this to keep logs.</p></div>
   </div>
