@@ -18,7 +18,7 @@ go run ./cmd/teachatty --no-tls --room dev --alias ana
 make 2>&1 | go run ./cmd/teachatty --no-tls --room ops   # pipe mode (stdin not a terminal)
 ```
 
-Packages (`.deb`/`.rpm` for client and server, tarballs, checksums) are built by goreleaser from `.goreleaser.yaml`; server-package-only files (unit with `EnvironmentFile=/etc/default/teachatty-server`, sysusers, install scripts) live in `packaging/`. `goreleaser check`, then `goreleaser release --snapshot --clean` builds into `dist/` without a tag (version `0.1.0-dev.<commit>`). `packaging/teachatty-server.service` and `contrib/systemd/teachatty-server.service` share the same hardening; keep them in sync.
+Packages (`.deb`/`.rpm` for client and server, tarballs, checksums) are built by goreleaser from `.goreleaser.yaml`; server-package-only files (unit with `EnvironmentFile=/etc/default/teachatty-server`, sysusers, install scripts) live in `packaging/`. `goreleaser check`, then `goreleaser release --snapshot --clean` builds into `dist/` between releases (version `<next patch>-dev.<commit>`). A release: add it to [CHANGELOG.md](CHANGELOG.md), bump the date/version in `man/*.1`, tag `vX.Y.Z` on `main` (annotated), push the tag, `goreleaser release --clean`, then upload `dist/` to the server's downloads and relink the `*latest*` names. Man pages are hand-written roff in `man/` (check with `groff -man -Tutf8 -ww -z`); goreleaser gzips them into the packages. `packaging/teachatty-server.service` and `contrib/systemd/teachatty-server.service` share the same hardening; keep them in sync.
 
 The release version is injected with `-ldflags "-X github.com/daniel-cmdline/teachatty/internal/version.version=vX.Y.Z"`. Without it, `internal/version` falls back to Go's build info, then to `dev`.
 

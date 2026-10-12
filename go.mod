@@ -1,6 +1,6 @@
 module github.com/daniel-cmdline/teachatty
 
-go 1.27.1
+go 1.26.0
 
 require (
 	github.com/gdamore/tcell/v2 v2.8.1

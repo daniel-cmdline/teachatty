@@ -1,0 +1,144 @@
+.\" teachatty-server(1): the server. Plain man(7) macros, no build step: read it with man ./man/teachatty-server.1
+.TH TEACHATTY\-SERVER 1 "2026-10-12" "teachatty 0.1.0" "User Commands"
+.SH NAME
+teachatty\-server \- the server for teachatty, a minimalist terminal chat
+.SH SYNOPSIS
+.B teachatty\-server
+.RB [ \-\-addr
+.RI [ host ]: port ]
+.RB [ \-\-tls\-cert
+.I file
+.B \-\-tls\-key
+.IR file " | " \fB\-\-no\-tls\fR ]
+.RB [ \-\-max\-per\-ip
+.IR n ]
+.RB [ \-\-no\-pipes ]
+.br
+.B teachatty\-server
+.RB [ \-\-version " | " \-h " | " help ]
+.SH DESCRIPTION
+.B teachatty\-server
+keeps chat rooms in memory and relays each message to the other members of its
+room. People join with
+.BR teachatty (1).
+.PP
+Joining a room that doesn't exist creates it, and a room disappears when its last
+member leaves. The
+.B local
+room is the exception: it starts with the server and exists as long as it runs.
+Anyone who connects without choosing a room lands there. Nothing is written to disk
+except the server's own certificate: there is no history.
+.SH OPTIONS
+.TP
+.BI \-\-addr " \fR[\fIhost\fR]:\fIport"
+Where to listen. No host means all interfaces; a host limits it to that interface.
+Default:
+.BR :7347 .
+.TP
+.BI \-\-tls\-cert " file" ", \-\-tls\-key " file
+Serve your own certificate and key (PEM) instead of the self\-signed one, e.g.
+Let's Encrypt's
+.I fullchain.pem
+and
+.IR privkey.pem .
+Use
+.IR fullchain.pem ,
+not
+.IR cert.pem :
+without the intermediate certificate, clients can't verify the chain. The files are
+reloaded when they change, so renewals need no restart.
+.TP
+.B \-\-no\-tls
+Serve plain ws:// without encryption. For testing only.
+.TP
+.BI \-\-max\-per\-ip " n"
+Maximum simultaneous connections from one IP address;
+.B 0
+means no limit, e.g. for a company behind one NAT address. Default:
+.BR 10 .
+.TP
+.B \-\-no\-pipes
+Refuse clients in pipe mode (\fIcommand\fR | teachatty), for rooms that want chat
+and no build logs.
+.TP
+.B \-\-version
+Print the version and exit.
+.TP
+.BR \-h ", " \-\-help ", " help
+Print the help and exit.
+.SH LIMITS
+Messages larger than 1 MB are refused, and only the connection that sent them is
+closed. Each connection may send 5 messages a second (bursts of 20) and 256 KB a
+second; above that, the server reads it more slowly, so senders are slowed down
+instead of anything being dropped. A member that stops reading (a laptop asleep, a
+dropped network) is dropped after 5 seconds, so it can't freeze the room.
+Connections from web browsers are refused.
+.SH SECURITY
+Traffic is encrypted with TLS by default. Without
+.BR \-\-tls\-cert ,
+the server creates a self\-signed certificate on first start and prints its
+fingerprint on every start. Clients trust it the first time they connect and refuse a
+different one afterwards, like
+.BR ssh (1),
+so share the fingerprint for people to check. With a certificate from an authority
+the clients trust, they verify it like a browser does, with no pinning.
+.SH FILES
+.TP
+.IR $XDG_CONFIG_HOME/teachatty/ " (usually " ~/.config/teachatty/ )
+The self\-signed certificate and key, created on first start. Under the packaged
+systemd service, this is
+.IR /var/lib/teachatty/teachatty/ .
+.TP
+.I /etc/default/teachatty\-server
+Flags for the packaged systemd service, in
+.BR TEACHATTY_SERVER_ARGS .
+Restart the service after changing it.
+.TP
+.I /usr/share/teachatty\-server/teachatty\-deploy\-hook.sh
+A
+.BR certbot (1)
+deploy hook that copies a renewed certificate to
+.I /var/lib/teachatty/tls/
+for the
+.B teachatty
+user. Only used if you set up Let's Encrypt yourself.
+.SH EXAMPLES
+Listen on port 7347 on all interfaces, with a self\-signed certificate:
+.PP
+.RS
+teachatty\-server
+.RE
+.PP
+Listen only on the internal network:
+.PP
+.RS
+teachatty\-server \-\-addr 10.0.0.5:7347
+.RE
+.PP
+Serve a Let's Encrypt certificate:
+.PP
+.RS
+.nf
+teachatty\-server \-\-tls\-cert /etc/letsencrypt/live/chat.example.com/fullchain.pem \e
+                 \-\-tls\-key  /etc/letsencrypt/live/chat.example.com/privkey.pem
+.fi
+.RE
+.PP
+Run the packaged service:
+.PP
+.RS
+.nf
+sudoedit /etc/default/teachatty\-server
+sudo systemctl enable \-\-now teachatty\-server
+journalctl \-u teachatty\-server \-f
+.fi
+.RE
+.SH SEE ALSO
+.BR teachatty (1),
+.BR systemctl (1),
+.BR certbot (1)
+.PP
+https://teachatty.com/docs.html
+.SH BUGS
+Report bugs at https://github.com/daniel\-cmdline/teachatty/issues.
+Report security issues privately, as described in CONTRIBUTING.md.

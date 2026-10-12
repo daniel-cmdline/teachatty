@@ -4,3 +4,4 @@
 
 # goreleaser output
 /dist/
+/manpages/

@@ -1,0 +1,152 @@
+.\" teachatty(1): the client. Plain man(7) macros, no build step: read it with man ./man/teachatty.1
+.TH TEACHATTY 1 "2026-10-12" "teachatty 0.1.0" "User Commands"
+.SH NAME
+teachatty \- a minimalist terminal chat
+.SH SYNOPSIS
+.B teachatty
+.RB [ \-\-server
+.IR host [: port ]]
+.RB [ \-\-room
+.IR name ]
+.RB [ \-\-alias
+.IR name ]
+.RB [ \-\-no\-tls ]
+.br
+.I command
+.B |
+.B teachatty
+.RI [ flags ]
+.br
+.B teachatty
+.RB [ \-\-version " | " \-h " | " help ]
+.SH DESCRIPTION
+.B teachatty
+joins a chat room on a
+.BR teachatty\-server (1)
+and lets you talk with everyone in it, from the terminal.
+.PP
+When standard input is a terminal, it opens a full\-screen chat: messages on top,
+an input box at the bottom that grows as you type. Incoming messages never overwrite
+what you are typing. Each alias gets its own color, the same on every client, and
+your own messages show your alias in bold.
+.PP
+When standard input is not a terminal (\fIcommand\fR | teachatty), it runs in
+\fBpipe mode\fR: each input line is sent to the room and echoed to standard output,
+like
+.BR tee (1).
+Lines that arrive within 100 ms of each other go to the room as one message, so a
+long build log doesn't flood it. Empty lines are echoed but not sent. Pipe mode never
+opens the screen and exits when the input ends, so it is safe in scripts and
+.BR cron (8).
+.PP
+A room exists while someone is in it: joining a room that doesn't exist creates it.
+The default room,
+.BR local ,
+always exists, so everyone who skips
+.B \-\-room
+meets there. There is no history: a message only reaches whoever is in the room
+when it is sent.
+.SH OPTIONS
+.TP
+.BI \-\-server " host\fR[:\fIport\fR]"
+The server to connect to. Without a port, teachatty's port 7347 is used.
+Default:
+.BR localhost:7347 .
+.TP
+.BI \-\-room " name"
+The room to join. It is created if it doesn't exist. Default:
+.BR local .
+.TP
+.BI \-\-alias " name"
+The name shown in front of your messages. Default: your login
+.RB ( $USER ),
+or
+.B anonymous
+when it is unset.
+.TP
+.B \-\-no\-tls
+Connect over plain ws://, without encryption, to a server started with
+.BR \-\-no\-tls .
+.TP
+.B \-\-version
+Print the version and exit.
+.TP
+.BR \-h ", " \-\-help ", " help
+Print the help and exit.
+.SH KEYS
+.TP
+.B Enter
+Send the message.
+.TP
+.BR PgUp ", " PgDn
+Scroll through the messages. Typing anything jumps back to the newest.
+.TP
+.B Ctrl+C
+Leave.
+.SH MENTIONS
+Write
+.BI @ name
+to mention someone: the message shows in amber and bold on their screen and their
+terminal bell rings, so a terminal in the background gets their attention. The match
+is a whole word, in any case.
+.SH SECURITY
+Connections use TLS (wss://) by default. A certificate signed by an authority this
+machine trusts (Let's Encrypt, an installed company CA) is verified like a browser
+does. A self\-signed certificate is trusted the first time you connect: its
+fingerprint is saved in
+.IR ~/.config/teachatty/known_servers ,
+and if it changes later the client refuses to connect, like
+.BR ssh (1).
+Compare the fingerprint the client shows on first use with the one the server prints.
+.PP
+Aliases are not verified, and rooms have no passwords: anyone who knows a room's
+name can join it.
+.SH EXIT STATUS
+.TP
+.B 0
+Left with Ctrl+C, or pipe mode sent all of its input.
+.TP
+.B 1
+The connection could not be made or dropped, the server refused it (too many
+connections from your address, or pipe mode on a server started with
+.BR \-\-no\-pipes ),
+or the server's certificate changed.
+.TP
+.B 2
+A stray argument or an unknown flag; the help is printed.
+.SH FILES
+.TP
+.I ~/.config/teachatty/known_servers
+Fingerprints of the self\-signed servers you trust, one per line:
+.IR host : port " " fingerprint .
+Delete a line to trust a server again after its certificate legitimately changed.
+.SH EXAMPLES
+Join the public server's lobby:
+.PP
+.RS
+teachatty \-\-server teachatty.com
+.RE
+.PP
+Make a room for your friends; they run the same command:
+.PP
+.RS
+teachatty \-\-server teachatty.com \-\-room tea\-with\-friends
+.RE
+.PP
+Join a server on your network as \fBana\fR:
+.PP
+.RS
+teachatty \-\-server 192.168.0.10 \-\-room dev \-\-alias ana
+.RE
+.PP
+Send a build's output to the room:
+.PP
+.RS
+make 2>&1 | teachatty \-\-server chat.example.com \-\-room ops
+.RE
+.SH SEE ALSO
+.BR teachatty\-server (1)
+.PP
+https://teachatty.com/docs.html
+.SH BUGS
+Report bugs at https://github.com/daniel\-cmdline/teachatty/issues.

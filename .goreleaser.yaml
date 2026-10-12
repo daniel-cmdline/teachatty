@@ -11,6 +11,8 @@ before:
   hooks:
     - go mod tidy
     - go test ./...
+    # man pages ship gzipped, as distros expect
+    - sh -c 'mkdir -p manpages && for f in man/*.1; do gzip -9nc "$f" > "manpages/$(basename "$f").gz"; done'
 
 builds:
   - id: teachatty
@@ -36,11 +38,11 @@ archives:
   - id: teachatty
     ids: [teachatty]
     name_template: teachatty_{{ .Version }}_{{ .Os }}_{{ .Arch }}
-    files: [LICENSE, README.md]
+    files: [LICENSE, README.md, man/teachatty.1]
   - id: teachatty-server
     ids: [teachatty-server]
     name_template: teachatty-server_{{ .Version }}_{{ .Os }}_{{ .Arch }}
-    files: [LICENSE, README.md, contrib/**/*]
+    files: [LICENSE, README.md, man/teachatty-server.1, contrib/**/*]
 
 nfpms:
   - id: teachatty
@@ -60,6 +62,9 @@ nfpms:
     contents:
       - src: LICENSE
         dst: /usr/share/doc/teachatty/copyright
+        file_info: { mode: 0644 }
+      - src: manpages/teachatty.1.gz
+        dst: /usr/share/man/man1/teachatty.1.gz
         file_info: { mode: 0644 }
 
   - id: teachatty-server
@@ -93,6 +98,9 @@ nfpms:
       - src: LICENSE
         dst: /usr/share/doc/teachatty-server/copyright
         file_info: { mode: 0644 }
+      - src: manpages/teachatty-server.1.gz
+        dst: /usr/share/man/man1/teachatty-server.1.gz
+        file_info: { mode: 0644 }
     scripts:
       postinstall: packaging/postinstall.sh
       preremove: packaging/preremove.sh
@@ -102,8 +110,9 @@ checksum:
   name_template: checksums.txt
 
 snapshot:
-  # no tag yet: the next planned release, marked as a development build
-  version_template: "0.1.0-dev.{{ .ShortCommit }}"
+  # between releases: the next patch version, marked as a development build
+  # (0.1.1-dev.abc1234 sorts below the 0.1.1 release in apt and dnf)
+  version_template: "{{ incpatch .Version }}-dev.{{ .ShortCommit }}"
 
 changelog:
   disable: true

@@ -32,7 +32,7 @@ A good bug report includes:
 
 ## Development setup
 
-You need Go 1.27 or newer and a UTF-8 terminal.
+You need Go 1.26 or newer and a UTF-8 terminal.
 
 ```bash
 git clone https://github.com/daniel-cmdline/teachatty.git

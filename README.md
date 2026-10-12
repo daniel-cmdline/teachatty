@@ -33,12 +33,12 @@ What works today:
 - Abuse limits for the open internet: 5 messages/s per connection (senders are slowed down, nothing is dropped), 10 connections per IP, 1 MB per message.
 - A hardened systemd unit and a certbot hook for running the server as a service.
 - `--version` on both binaries.
-- Server and client as separate binaries, installable with `go install`, or as `.deb` and `.rpm` packages (development builds) from [teachatty.com/downloads](https://teachatty.com/downloads/).
+- Server and client as separate binaries, installable with `go install`, or as `.deb` and `.rpm` packages from [teachatty.com/downloads](https://teachatty.com/downloads/).
 - A public server at teachatty.com.
 
 What's coming next:
 
-- The v0.1.0 release: a tag and a release page for the packages
+- Signed apt and dnf repositories, AUR and Homebrew, so updates arrive with your system's upgrades
 - Access control: a server-wide token or password-protected rooms
 - Message history
 
@@ -81,7 +81,7 @@ sudo apt install ./teachatty_latest_amd64.deb
 sudo dnf install https://teachatty.com/downloads/teachatty-latest.x86_64.rpm
 ```
 
-**Anywhere with Go 1.27+**
+**Anywhere with Go 1.26+**
 ```bash
 go install github.com/daniel-cmdline/teachatty/cmd/teachatty@latest
 ```
@@ -119,7 +119,7 @@ sudo dnf install https://teachatty.com/downloads/teachatty-server-latest.x86_64.
 sudo systemctl enable --now teachatty-server
 ```
 
-**Anywhere with Go 1.27+** (runs in the foreground; see [Running as a service](#running-as-a-service))
+**Anywhere with Go 1.26+** (runs in the foreground; see [Running as a service](#running-as-a-service))
 ```bash
 go install github.com/daniel-cmdline/teachatty/cmd/teachatty-server@latest
 teachatty-server
@@ -132,7 +132,7 @@ teachatty-server
 > teachatty --server 192.168.0.10
 > ```
 
-Every file, with `checksums.txt`, is at **[teachatty.com/downloads](https://teachatty.com/downloads/)**. The `latest` names always point to the newest build. These are development builds until v0.1.0 is tagged.
+Every file, with `checksums.txt`, is at **[teachatty.com/downloads](https://teachatty.com/downloads/)**. The `latest` names always point to the newest release, currently **v0.1.0** (see the [changelog](CHANGELOG.md)). Each package includes a man page: `man teachatty`, `man teachatty-server`.
 
 ## Your own network
 
@@ -145,7 +145,7 @@ teachatty --server 192.168.0.10           # on everyone else's
 
 ## Quick start
 
-Requires Go 1.27 or newer.
+Requires Go 1.26 or newer.
 
 ```bash
 git clone https://github.com/daniel-cmdline/teachatty.git

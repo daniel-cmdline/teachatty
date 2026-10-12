@@ -20,7 +20,7 @@ A terminal chat for developers and sysadmins. Minimalist: lightweight, no distra
 - Pipe mode: `command | teachatty` sends the input to the room (lines arriving within 100 ms go as one message), echoes it to the terminal and exits when the input ends.
 - Encrypted by default: TLS 1.3 with a self-signed certificate and trust on first use, or the administrator's own certificate (`--tls-cert`/`--tls-key`). All in `internal/tlstrust`.
 - **Public server at teachatty.com** (a VPS, Ubuntu 24.04): `teachatty-server --no-pipes --max-per-ip 10` with the Let's Encrypt certificate, plus nginx serving the site and the packages at https://teachatty.com/downloads/.
-- **Packages**: `.deb` and `.rpm` for the client and the server (amd64, arm64), and Linux/macOS tarballs, built by goreleaser (`.goreleaser.yaml`, server package files in `packaging/`). Development builds until v0.1.0 is tagged.
+- **Packages**: `.deb` and `.rpm` for the client and the server (amd64, arm64), and Linux/macOS tarballs, built by goreleaser (`.goreleaser.yaml`, server package files in `packaging/`). **v0.1.0 released** (2026-10-12), with man pages; changes by release in [CHANGELOG.md](CHANGELOG.md). Builds with Go 1.26 or newer.
 - **License**: GNU AGPL-3.0. Contribution guide in [CONTRIBUTING.md](CONTRIBUTING.md).
 - Shipped features are logged in [features.md](features.md).
 
@@ -28,7 +28,7 @@ A terminal chat for developers and sysadmins. Minimalist: lightweight, no distra
 
 In this order. Each one is small on purpose.
 
-1. **Release v0.1.0.** Tag `v0.1.0` and run `goreleaser release --clean` (the config is in `.goreleaser.yaml`); publish the results on a GitHub release page and in teachatty.com/downloads, replacing the development builds there now.
+1. **Distribution.** Signed apt and dnf repositories on teachatty.com, Fedora COPR, the AUR (`teachatty-bin`) and a Homebrew tap, so updates arrive with `apt upgrade`/`dnf upgrade`. Then the official repositories: Fedora (go2rpm, package review, then EPEL) and Debian (ITP with the Debian Go team), which Ubuntu inherits.
 2. **Access control: a server-wide shared token or per-room passwords.** Decide after the release, based on what people ask for. TLS is in place, so a secret can travel safely; whatever is stored on the server must be a salted hash (bcrypt or argon2), never the secret itself. See the open questions below.
 3. **Message history.** Needed for pipe mode to be useful when nobody is in the room, and for persistent rooms. Plan: SQLite with `modernc.org/sqlite` (pure Go, so it stays a single binary).
 

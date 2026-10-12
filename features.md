@@ -2,6 +2,16 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-10-12 19:57 — v0.1.0: man pages, changelog, Go 1.26
+
+- **v0.1.0**, the first release: an annotated tag on `main`, packages rebuilt from it and published at https://teachatty.com/downloads/, replacing the development builds. `go install ...@latest` now resolves to v0.1.0.
+- **Man pages** `teachatty(1)` and `teachatty-server(1)`, hand-written roff in `man/`: flags, keys, mentions, security, limits, exit status, files and examples. goreleaser gzips them into the `.deb`/`.rpm` (`/usr/share/man/man1/`) and adds them to the tarballs.
+- **CHANGELOG.md** (Keep a Changelog), grouped by release, for users and distro packagers. `features.md` stays the detailed log.
+- **Go 1.26** is enough to build: `go.mod`'s `go` line came down from 1.27.1 to 1.26.0, the highest any dependency needs, so more distro releases can build teachatty with their own Go.
+- Builds between releases are now versioned as the next patch (`0.1.1-dev.<commit>`), which apt and dnf sort below the 0.1.1 release.
+- README, roadmap, site and docs: v0.1.0 as the current release, man pages mentioned, Go 1.26, and "in your package manager" as the next step.
+- **Tested:** `go vet` and `go test -race` with the 1.26 directive; `groff -man -ww` reports no warnings; the packages contain the man pages and `man teachatty`/`man teachatty-server` work after installing the `.deb` in a clean Debian container.
+
 ## 2026-10-12 19:05 — README: separate client and server downloads
 
 - The README's Install section matches the site: **1 · Download the client** (everyone needs it) and **2 · Download the server** (optional, to host your own rooms). Each has a download table (Debian/Ubuntu, Fedora/RHEL, macOS, any other Linux; amd64 and arm64) with direct links, then the install commands per OS and `go install`. The server `.rpm` has its own row and command instead of a mention in a sentence.
