@@ -48,7 +48,7 @@ go run ./cmd/server
 # in another terminal: no flags needed, you land in the "local" room
 go run ./cmd/client
 
-# help
+# help (also: `help`, or any unknown argument)
 go run ./cmd/client -h
 ```
 
@@ -83,7 +83,7 @@ go run ./cmd/client --server 192.168.0.10:7347
 |---|---|---|
 | `--server` | `localhost:7347` | Address of the teachat server |
 | `--room` | `local` | Room to join. `local` is created when the server starts and always exists, so everyone who skips `--room` meets there |
-| `--alias` | your login (`$USER`) | Name shown in front of your messages. Falls back to `anonimo` when `$USER` is unset |
+| `--alias` | your login (`$USER`) | Name shown in front of your messages. Falls back to `anonymous` when `$USER` is unset |
 
 ## Project layout
 

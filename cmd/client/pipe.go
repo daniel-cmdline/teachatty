@@ -39,7 +39,7 @@ func pipe(conn *websocket.Conn) {
 			// linha vazia aparece no eco, mas não vai para a sala
 			if strings.TrimSpace(line) != "" {
 				if err := conn.WriteMessage(websocket.TextMessage, []byte(line)); err != nil {
-					log.Fatal("conexão encerrada: ", err)
+					log.Fatal("connection closed: ", err)
 				}
 			}
 		}
@@ -47,7 +47,7 @@ func pipe(conn *websocket.Conn) {
 			break
 		}
 		if err != nil {
-			log.Fatal("erro lendo a entrada: ", err)
+			log.Fatal("error reading input: ", err)
 		}
 	}
 

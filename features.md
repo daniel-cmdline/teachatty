@@ -2,6 +2,21 @@
 
 Registro das features entregues, da mais nova para a mais antiga. Adicione uma entrada a cada commit.
 
+## 2026-10-12 11:45 — Ajuda quando o comando não ativa nada
+
+- Argumento solto (`teachat dev`, `teachat-server start`) era ignorado em silêncio: o servidor subia e o cliente tentava conectar. Agora os dois mostram `unknown argument: ...` e a ajuda, e saem com código 2 sem fazer nada.
+- `teachat help` e `teachat-server help` mostram a ajuda com código 0.
+- Flag que não existe (`--romm`) já mostrava a ajuda, pelo pacote `flag` do Go.
+- Código: `checkArgs()` no `usage.go` de cada binário, chamado logo depois do `flag.Parse()`.
+- Docs: tabela de códigos de saída e referência do servidor no `docs.html`, README e roadmap.
+
+## 2026-10-12 11:43 — Saída do terminal em inglês
+
+- Tudo que o programa mostra no terminal passou para o inglês: `connection closed` (antes `conexão encerrada`), `error reading input`, a linha de início do servidor (`teachat-server listening on :7347 · default room: local`), e os nomes e mensagens dos testes.
+- O alias de quem não tem `$USER` passou de `anonimo` para `anonymous`, porque aparece no chat.
+- Continuam em português: comentários do código, o site e a documentação (`docs/`), e estes registros.
+- O site e a documentação foram ajustados para citar as mensagens novas, e os trechos de código do cliente foram regenerados.
+
 ## 2026-10-12 11:38 — Porta 7347, ajuda no -h e primeiros testes
 
 - **Porta 7347** no servidor e no padrão do cliente (antes 23456). A porta virou a constante `addr` no servidor.

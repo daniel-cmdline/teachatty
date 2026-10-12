@@ -67,7 +67,7 @@ cd teachat
 
 <span class="c"># servidor</span>
 go run ./cmd/server
-<span class="c"># teachat-server escutando em :7347 · sala padrão: local</span>
+<span class="c"># teachat-server listening on :7347 · default room: local</span>
 
 <span class="c"># cliente, em outro terminal: sem flags, entra na sala local</span>
 go run ./cmd/client
@@ -98,7 +98,7 @@ go build -o teachat-server ./cmd/server
       <tbody>
         <tr><td><code>--server</code></td><td><code>localhost:7347</code></td><td>endereço do servidor, <code>host:porta</code></td></tr>
         <tr><td><code>--room</code></td><td><code>local</code></td><td>sala para entrar. Se não existe, é criada. A <code>local</code> existe sempre</td></tr>
-        <tr><td><code>--alias</code></td><td>seu usuário (<code>$USER</code>)</td><td>seu nome no chat, na frente de cada mensagem. Sem <code>$USER</code> (cron, alguns containers): <code>anonimo</code></td></tr>
+        <tr><td><code>--alias</code></td><td>seu usuário (<code>$USER</code>)</td><td>seu nome no chat, na frente de cada mensagem. Sem <code>$USER</code> (cron, alguns containers): <code>anonymous</code></td></tr>
       </tbody>
     </table>
   </div>
@@ -128,10 +128,12 @@ go build -o teachat-server ./cmd/server
       <thead><tr><th>situação</th><th>mensagem</th><th class="num">código</th></tr></thead>
       <tbody>
         <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>—</td><td class="num">0</td></tr>
-        <tr><td>a conexão cai (servidor parou, rede caiu)</td><td><code>conexão encerrada</code></td><td class="num">1</td></tr>
+        <tr><td>a conexão cai (servidor parou, rede caiu)</td><td><code>connection closed</code></td><td class="num">1</td></tr>
         <tr><td>não conseguiu conectar</td><td>o erro da conexão, ex.: <code>connection refused</code></td><td class="num">1</td></tr>
+        <tr><td><code>teachat help</code></td><td>a ajuda</td><td class="num">0</td></tr>
+        <tr><td>argumento solto ou flag que não existe (<code>teachat dev</code>, <code>--romm</code>)</td><td><code>unknown argument: dev</code> + a ajuda</td><td class="num">2</td></tr>
         <tr><td>modo pipe: a entrada acabou e tudo foi enviado</td><td>—</td><td class="num">0</td></tr>
-        <tr><td>modo pipe: a conexão caiu no meio</td><td><code>conexão encerrada: ...</code></td><td class="num">1</td></tr>
+        <tr><td>modo pipe: a conexão caiu no meio</td><td><code>connection closed: ...</code></td><td class="num">1</td></tr>
       </tbody>
     </table>
   </div>
@@ -155,7 +157,7 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># transmite até
 <section id="ref-servidor">
   <div class="read">
     <div class="sec-head"><span class="sec-num">04</span><h2>Referência do servidor</h2></div>
-    <p>O servidor não tem flags ainda (só o <code>-h</code>). Ele escuta em <code>:7347</code>, em todas as interfaces, e expõe um único endpoint.</p>
+    <p>O servidor não tem flags ainda (só o <code>-h</code>; <code>help</code> também mostra a ajuda, e qualquer outro argumento mostra a ajuda e sai com código 2, sem subir o servidor). Ele escuta em <code>:7347</code>, em todas as interfaces, e expõe um único endpoint.</p>
   </div>
   <h3>Endpoint</h3>
   <pre style="max-width:88ch">GET /ws?room=&lt;sala&gt;&amp;alias=&lt;alias&gt;   <span class="c">upgrade para WebSocket</span></pre>
@@ -179,7 +181,7 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># transmite até
     <dt>estado</dt><dd>Tudo em memória. Reiniciar o servidor derruba todo mundo e apaga todas as salas.</dd>
   </dl>
   <h3>Saída no terminal</h3>
-  <p class="read">Imprime <code>teachat-server escutando em :7347 · sala padrão: local</code> ao subir e registra erros de upgrade com <code>log</code>. Se a porta estiver ocupada, sai com o erro do <code>ListenAndServe</code>.</p>
+  <p class="read">Imprime <code>teachat-server listening on :7347 · default room: local</code> ao subir e registra erros de upgrade com <code>log</code>. Se a porta estiver ocupada, sai com o erro do <code>ListenAndServe</code>.</p>
 </section>
 
 <section id="arquitetura">
@@ -723,7 +725,7 @@ if lines &lt;= 5 {
       <div class="tl">
         <div><span class="who">receb.</span><span>ReadMessage dá erro → close(closed) → screen.Stop()</span></div>
         <div><span class="who">main</span><span>Run() devolve o terminal ao modo normal e retorna</span></div>
-        <div class="good"><span class="who">main</span><span>closed está fechado → log.Fatal("conexão encerrada")</span></div>
+        <div class="good"><span class="who">main</span><span>closed está fechado → log.Fatal("connection closed")</span></div>
       </div>
       <div class="verdict good">✓ a mensagem aparece num terminal já restaurado, código 1</div>
     </div>
@@ -817,7 +819,7 @@ if err := screen.Run(); err != nil {
 // o terminal já voltou ao normal; agora dá para avisar se foi a conexão que caiu
 select {
 case &lt;-closed:
-	log.Fatal("conexão encerrada")
+	log.Fatal("connection closed")
 default:
 }</pre></div>
     <div style="min-width:0"><div class="file">internal/ui/ui.go · trechos</div><pre class="go">// aliasColor escolhe a cor pelo hash do alias: o mesmo alias tem sempre a mesma cor,
@@ -886,7 +888,7 @@ func pipe(conn *websocket.Conn) {
 			// linha vazia aparece no eco, mas não vai para a sala
 			if strings.TrimSpace(line) != "" {
 				if err := conn.WriteMessage(websocket.TextMessage, []byte(line)); err != nil {
-					log.Fatal("conexão encerrada: ", err)
+					log.Fatal("connection closed: ", err)
 				}
 			}
 		}
@@ -894,7 +896,7 @@ func pipe(conn *websocket.Conn) {
 			break
 		}
 		if err != nil {
-			log.Fatal("erro lendo a entrada: ", err)
+			log.Fatal("error reading input: ", err)
 		}
 	}
 

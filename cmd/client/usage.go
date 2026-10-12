@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 )
 
 // usage é a ajuda do -h, em inglês para servir a qualquer usuário. Os padrões vêm
@@ -31,4 +32,22 @@ Examples:
   teachat --server chat.company:7347 --room dev
   make 2>&1 | teachat --room ops             send the build output to the room
 `)
+}
+
+// checkArgs trata o que sobrou depois das flags. Os dois binários não usam argumentos
+// soltos, então qualquer um (ex.: "teachat start") não ativaria nada: mostra a ajuda
+// em vez de seguir em silêncio. "help" é tratado como pedido de ajuda.
+// Flag que não existe já cai na ajuda sozinha, pelo pacote flag.
+func checkArgs() {
+	if flag.NArg() == 0 {
+		return
+	}
+	if flag.Arg(0) == "help" {
+		flag.CommandLine.SetOutput(os.Stdout)
+		flag.Usage()
+		os.Exit(0)
+	}
+	fmt.Fprintf(flag.CommandLine.Output(), "unknown argument: %s\n\n", flag.Arg(0))
+	flag.Usage()
+	os.Exit(2)
 }

@@ -18,10 +18,11 @@ func main() {
 	server := flag.String("server", "localhost:7347", "teachat server address, host:port")
 	room := flag.String("room", "local", "room to join; created if it doesn't exist")
 	// alias padrão: o seu usuário do sistema ($USER). cmp.Or devolve o primeiro
-	// valor não vazio, então sem $USER (cron, alguns containers) fica "anonimo".
-	alias := flag.String("alias", cmp.Or(os.Getenv("USER"), "anonimo"), "your name in the chat")
+	// valor não vazio, então sem $USER (cron, alguns containers) fica "anonymous".
+	alias := flag.String("alias", cmp.Or(os.Getenv("USER"), "anonymous"), "your name in the chat")
 	flag.Usage = usage
 	flag.Parse()
+	checkArgs()
 
 	// monta ws://SERVER/ws?room=...&alias=... a partir das flags
 	//deferencia o valor do ponteiro para obter a string
@@ -75,7 +76,7 @@ func main() {
 	// o terminal já voltou ao normal; agora dá para avisar se foi a conexão que caiu
 	select {
 	case <-closed:
-		log.Fatal("conexão encerrada")
+		log.Fatal("connection closed")
 	default:
 	}
 }

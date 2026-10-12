@@ -51,7 +51,8 @@ Nesta ordem. Cada um é pequeno de propósito.
 - Modo pipe sai quando a entrada acaba, sem nunca abrir a tela. Entrar no chat depois travaria scripts e cron (ninguém para apertar Ctrl+C), e o stdin já é o pipe, não o teclado.
 - Modo pipe repete cada linha no terminal (como o `tee`), para quem roda o comando continuar vendo a saída. Uma mensagem por linha, sem agrupar: o caminho mais simples. Logs grandes inundam a sala; agrupar fica para depois, se incomodar.
 - Porta padrão 7347 (antes 23456).
-- `-h` nos dois binários, com os padrões lidos das próprias flags para a ajuda nunca ficar desatualizada. Todo texto de ajuda no terminal é em inglês, por ser mais universal; comentários do código e docs do projeto seguem em português.
+- `-h` nos dois binários, com os padrões lidos das próprias flags para a ajuda nunca ficar desatualizada. Tudo que o programa mostra no terminal (ajuda, logs, erros, mensagens de início, saída dos testes) é em inglês, por ser mais universal. Em português, por enquanto: comentários do código, o site e a documentação (`docs/`), e os registros do projeto.
+- Comando que não ativa nada (argumento solto, flag que não existe) mostra a ajuda, nos dois binários, com código 2. `help` mostra a ajuda com código 0.
 - O módulo se chama `github.com/daniel-cmdline/teachat`, igual ao caminho do repositório, para os imports internos e o `go install` funcionarem.
 
 ## Perguntas em aberto

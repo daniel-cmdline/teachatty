@@ -34,9 +34,10 @@ func main() {
 	// ainda não há flags, mas o Parse faz o -h mostrar a ajuda em vez de subir o servidor
 	flag.Usage = usage
 	flag.Parse()
+	checkArgs()
 
 	http.HandleFunc("/ws", handleWS)
-	fmt.Printf("teachat-server escutando em %s · sala padrão: %s\n", addr, defaultRoom)
+	fmt.Printf("teachat-server listening on %s · default room: %s\n", addr, defaultRoom)
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 

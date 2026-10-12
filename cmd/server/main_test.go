@@ -45,39 +45,39 @@ func eventually(t *testing.T, what string, cond func() bool) {
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	t.Fatal("não aconteceu: " + what)
+	t.Fatal("did not happen: " + what)
 }
 
-func TestSalaLocalExisteDesdeOInicio(t *testing.T) {
+func TestLocalRoomExistsAtStart(t *testing.T) {
 	if members(defaultRoom) != 0 {
-		t.Fatalf("a sala %q devia existir vazia antes de qualquer conexão", defaultRoom)
+		t.Fatalf("room %q should exist, empty, before any connection", defaultRoom)
 	}
 }
 
-func TestSemSalaCaiNaLocalEElaSobreviveVazia(t *testing.T) {
+func TestNoRoomLandsInLocalAndLocalSurvivesEmpty(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(handleWS))
 	defer srv.Close()
 
 	conn := connect(t, srv, "alias=ana") // sem room
-	eventually(t, "ana entrar na local", func() bool { return members(defaultRoom) == 1 })
+	eventually(t, "ana joins local", func() bool { return members(defaultRoom) == 1 })
 
 	conn.Close()
-	eventually(t, "ana sair da local", func() bool { return members(defaultRoom) == 0 })
+	eventually(t, "ana leaves local", func() bool { return members(defaultRoom) == 0 })
 	// vazia, mas continua existindo (0, não -1)
 }
 
-func TestOutrasSalasSomemQuandoEsvaziam(t *testing.T) {
+func TestOtherRoomsVanishWhenEmpty(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(handleWS))
 	defer srv.Close()
 
 	conn := connect(t, srv, "room=dev&alias=ana")
-	eventually(t, "a sala dev ser criada", func() bool { return members("dev") == 1 })
+	eventually(t, "room dev is created", func() bool { return members("dev") == 1 })
 
 	conn.Close()
-	eventually(t, "a sala dev sumir", func() bool { return members("dev") == -1 })
+	eventually(t, "room dev vanishes", func() bool { return members("dev") == -1 })
 }
 
-func TestMensagemNaSalaLocal(t *testing.T) {
+func TestMessageInLocalRoom(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(handleWS))
 	defer srv.Close()
 
@@ -85,7 +85,7 @@ func TestMensagemNaSalaLocal(t *testing.T) {
 	defer ana.Close()
 	bia := connect(t, srv, "room=local&alias=bia") // pedir "local" explicitamente dá no mesmo
 	defer bia.Close()
-	eventually(t, "as duas entrarem", func() bool { return members(defaultRoom) == 2 })
+	eventually(t, "both join", func() bool { return members(defaultRoom) == 2 })
 
 	if err := ana.WriteMessage(websocket.TextMessage, []byte("oi")); err != nil {
 		t.Fatal(err)
@@ -96,6 +96,6 @@ func TestMensagemNaSalaLocal(t *testing.T) {
 		t.Fatal(err)
 	}
 	if string(msg) != "ana: oi" {
-		t.Fatalf("bia recebeu %q, esperava %q", msg, "ana: oi")
+		t.Fatalf("bia got %q, want %q", msg, "ana: oi")
 	}
 }
