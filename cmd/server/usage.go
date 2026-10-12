@@ -6,21 +6,34 @@ import (
 	"os"
 )
 
-// usage é a ajuda do -h, em inglês para servir a qualquer usuário
+// usage é a ajuda do -h, em inglês para servir a qualquer usuário. Como no cliente,
+// os padrões vêm das próprias flags (flag.VisitAll).
 func usage() {
-	fmt.Fprintf(flag.CommandLine.Output(), `teachat-server: the server for teachat, a terminal chat
+	out := flag.CommandLine.Output()
+	fmt.Fprint(out, `teachat-server: the server for teachat, a terminal chat
 
 Usage:
-  teachat-server
+  teachat-server [flags]
 
-Listens on %s, on all interfaces. Rooms live in memory: joining a room
-that doesn't exist creates it, and it disappears when the last member leaves.
-The %q room is the exception: it starts with the server and exists as long
-as the server runs. Anyone who connects without choosing a room lands there.
+Flags:
+`)
+	flag.VisitAll(func(f *flag.Flag) {
+		fmt.Fprintf(out, "  --%-8s %s\n  %-10s default: %s\n", f.Name, f.Usage, "", f.DefValue)
+	})
+	fmt.Fprintf(out, `
+Rooms live in memory: joining a room that doesn't exist creates it, and it
+disappears when the last member leaves. The %q room is the exception: it
+starts with the server and exists as long as the server runs. Anyone who
+connects without choosing a room lands there.
 
-No flags yet. The port is fixed and traffic is not encrypted (ws://):
-only use it on networks you trust.
-`, addr, defaultRoom)
+Messages larger than %d MB are refused and that connection is closed.
+Traffic is not encrypted (ws://): only use it on networks you trust.
+
+Examples:
+  teachat-server                       listen on port 7347, all interfaces
+  teachat-server --addr :9000          listen on port 9000
+  teachat-server --addr 10.0.0.5:7347  listen only on the internal network
+`, defaultRoom, maxMessage>>20)
 }
 
 // checkArgs trata o que sobrou depois das flags. Os dois binários não usam argumentos

@@ -15,7 +15,7 @@ Chat de terminal para desenvolvedores e sysadmins. Minimalista: leve, sem distra
 
 ## Estado atual (2026-10-12)
 
-- **Servidor** (`cmd/server`): salas em memória, um mutex por sala, porta fixa `:7347`. A sala `local` nasce com o servidor e nunca é apagada.
+- **Servidor** (`cmd/server`): salas em memória, um mutex por sala, porta 7347 por padrão (`--addr` para mudar), mensagens até 1 MB. A sala `local` nasce com o servidor e nunca é apagada.
 - **Cliente** (`cmd/client`): flags `--server`, `--room` e `--alias`. Tela cheia com tview (`internal/ui`): mensagens em cima, caixa de digitação embaixo.
 - Modo pipe: `comando | teachat` envia cada linha para a sala, mostra no terminal e sai no fim da entrada.
 - Ainda sem criptografia: o tráfego é `ws://` em texto aberto.
@@ -25,9 +25,8 @@ Chat de terminal para desenvolvedores e sysadmins. Minimalista: leve, sem distra
 
 Nesta ordem. Cada um é pequeno de propósito.
 
-1. **Flag `--addr` no servidor.** Hoje a porta é fixa no código. Para auto-hospedar, ela precisa ser configurável.
-2. **Salas com senha + TLS, juntos.** Senha nunca deve trafegar em `ws://` aberto. TLS significa `ListenAndServeTLS` no servidor e `wss://` no cliente, com um certificado autoassinado fixado no cliente (pinning) para uso em rede local.
-3. **Histórico de mensagens.** Necessário para o modo pipe ser útil quando não há ninguém na sala, e para salas persistentes. Plano: SQLite com `modernc.org/sqlite` (Go puro, então continua sendo um binário único).
+1. **Salas com senha + TLS, juntos.** Senha nunca deve trafegar em `ws://` aberto. TLS significa `ListenAndServeTLS` no servidor e `wss://` no cliente, com um certificado autoassinado fixado no cliente (pinning) para uso em rede local.
+2. **Histórico de mensagens.** Necessário para o modo pipe ser útil quando não há ninguém na sala, e para salas persistentes. Plano: SQLite com `modernc.org/sqlite` (Go puro, então continua sendo um binário único).
 
 ## Futuro
 
@@ -53,6 +52,8 @@ Nesta ordem. Cada um é pequeno de propósito.
 - Porta padrão 7347 (antes 23456).
 - `-h` nos dois binários, com os padrões lidos das próprias flags para a ajuda nunca ficar desatualizada. Tudo que o programa mostra no terminal (ajuda, logs, erros, mensagens de início, saída dos testes) é em inglês, por ser mais universal. Em português, por enquanto: comentários do código, o site e a documentação (`docs/`), e os registros do projeto.
 - Comando que não ativa nada (argumento solto, flag que não existe) mostra a ajuda, nos dois binários, com código 2. `help` mostra a ajuda com código 0.
+- Limite de 1 MB por mensagem no servidor (`SetReadLimit`). 64 KB bastaria para quem digita, mas quebraria linhas grandes de log no modo pipe (stack traces, JSON). Acima do limite, o servidor fecha só aquela conexão (close 1009).
+- `--addr` no servidor no formato do Go, `host:porta`: sem host escuta em todas as interfaces, com host só naquela.
 - O módulo se chama `github.com/daniel-cmdline/teachat`, igual ao caminho do repositório, para os imports internos e o `go install` funcionarem.
 
 ## Perguntas em aberto

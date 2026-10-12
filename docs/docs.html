@@ -78,6 +78,9 @@ go run ./cmd/server -h</pre>
   <h3>Outra máquina na rede</h3>
   <p class="read">Aponte o cliente para o endereço do servidor e garanta que a porta 7347 está aberta no firewall dele:</p>
   <pre style="max-width:88ch">go run ./cmd/client --server 192.168.0.10:7347</pre>
+  <p class="read">Para usar outra porta, ou escutar só numa interface, o servidor tem <code>--addr</code>. O cliente aponta para o mesmo endereço com <code>--server</code>:</p>
+  <pre style="max-width:88ch">go run ./cmd/server --addr :9000
+go run ./cmd/client --server 192.168.0.10:9000</pre>
   <h3>Gerar os binários</h3>
   <p class="read">O <code>go build</code> nomeia o binário pela pasta (<code>client</code>, <code>server</code>). Para ter o nome <code>teachat</code>:</p>
   <pre style="max-width:88ch">go build -o teachat ./cmd/client
@@ -128,12 +131,13 @@ go build -o teachat-server ./cmd/server
       <thead><tr><th>situação</th><th>mensagem</th><th class="num">código</th></tr></thead>
       <tbody>
         <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>—</td><td class="num">0</td></tr>
-        <tr><td>a conexão cai (servidor parou, rede caiu)</td><td><code>connection closed</code></td><td class="num">1</td></tr>
+        <tr><td>a conexão cai (servidor parou, rede caiu)</td><td><code>connection closed: </code> + o motivo, ex.: <code>close 1006 (abnormal closure)</code></td><td class="num">1</td></tr>
         <tr><td>não conseguiu conectar</td><td>o erro da conexão, ex.: <code>connection refused</code></td><td class="num">1</td></tr>
         <tr><td><code>teachat help</code></td><td>a ajuda</td><td class="num">0</td></tr>
         <tr><td>argumento solto ou flag que não existe (<code>teachat dev</code>, <code>--romm</code>)</td><td><code>unknown argument: dev</code> + a ajuda</td><td class="num">2</td></tr>
         <tr><td>modo pipe: a entrada acabou e tudo foi enviado</td><td>—</td><td class="num">0</td></tr>
-        <tr><td>modo pipe: a conexão caiu no meio</td><td><code>connection closed: ...</code></td><td class="num">1</td></tr>
+        <tr><td>modo pipe: a conexão caiu no meio</td><td><code>connection closed: </code> + o motivo</td><td class="num">1</td></tr>
+        <tr><td>modo pipe: uma linha passou de 1 MB</td><td><code>connection closed: websocket: close 1009 (message too big)</code></td><td class="num">1</td></tr>
       </tbody>
     </table>
   </div>
@@ -147,7 +151,7 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># transmite até
   <dl class="ref">
     <dt>uma mensagem por linha</dt><dd>Cada linha vira uma mensagem <code>alias: linha</code> na sala. Sem agrupar: um log de 5000 linhas são 5000 mensagens.</dd>
     <dt>eco</dt><dd>Toda linha aparece no seu terminal também, inclusive as vazias. Linhas vazias não vão para a sala.</dd>
-    <dt>tamanho</dt><dd>Sem limite de tamanho de linha. Uma linha de 200 KB chega inteira.</dd>
+    <dt>tamanho</dt><dd>Até 1 MB por linha, o limite do servidor. Uma linha maior é recusada: o pipe para e sai com código 1, dizendo <code>message too big</code>.</dd>
     <dt>a sala</dt><dd>O que os outros mandam enquanto o pipe roda não aparece; é lido e descartado.</dd>
     <dt>nunca abre a tela</dt><dd>Seguro em scripts, CI e cron: ninguém precisa apertar Ctrl+C no fim.</dd>
     <dt>sem histórico</dt><dd>Se ninguém estiver na sala, as linhas se perdem.</dd>
@@ -157,8 +161,18 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># transmite até
 <section id="ref-servidor">
   <div class="read">
     <div class="sec-head"><span class="sec-num">04</span><h2>Referência do servidor</h2></div>
-    <p>O servidor não tem flags ainda (só o <code>-h</code>; <code>help</code> também mostra a ajuda, e qualquer outro argumento mostra a ajuda e sai com código 2, sem subir o servidor). Ele escuta em <code>:7347</code>, em todas as interfaces, e expõe um único endpoint.</p>
+    <p>Uma flag, <code>--addr</code>, além do <code>-h</code> (<code>help</code> também mostra a ajuda, e qualquer outro argumento mostra a ajuda e sai com código 2, sem subir o servidor). Ele escuta em <code>:7347</code>, em todas as interfaces, e expõe um único endpoint.</p>
   </div>
+  <h3>Flags</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>flag</th><th>padrão</th><th>descrição</th></tr></thead>
+      <tbody>
+        <tr><td><code>--addr</code></td><td><code>:7347</code></td><td>onde escutar, <code>host:porta</code>. Sem host, todas as interfaces: <code>--addr :9000</code>. Com host, só aquela: <code>--addr 10.0.0.5:7347</code> escuta só na rede interna</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">Porta ocupada ou endereço inválido: o servidor sai com o erro (<code>address already in use</code>, <code>missing port in address</code>) e código 1, sem anunciar nada antes.</p>
   <h3>Endpoint</h3>
   <pre style="max-width:88ch">GET /ws?room=&lt;sala&gt;&amp;alias=&lt;alias&gt;   <span class="c">upgrade para WebSocket</span></pre>
   <dl class="ref">
@@ -170,7 +184,7 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># transmite até
   <dl class="ref">
     <dt>cliente → servidor</dt><dd>Um frame de texto com a mensagem pura: <code>oi</code>.</dd>
     <dt>servidor → cliente</dt><dd>Um frame de texto com o alias na frente: <code>daniel: oi</code>. Vai para todos os membros da sala, menos quem enviou.</dd>
-    <dt>tamanho</dt><dd>Sem limite configurado.</dd>
+    <dt>tamanho</dt><dd>Até 1 MB por mensagem (<code>maxMessage</code>). Acima disso, o servidor responde com close 1009 (<code>message too big</code>) e fecha só aquela conexão; a sala segue normal.</dd>
     <dt>histórico</dt><dd>Nenhum. A sala é uma lista de conexões, não guarda mensagens.</dd>
   </dl>
   <h3>Ciclo de vida das salas</h3>
@@ -464,6 +478,10 @@ func (r *Room) broadcast(myOwnConn *websocket.Conn, msg []byte) {
 	}
 	defer conn.Close()
 
+	// mensagem maior que o limite: o ReadMessage devolve erro, a gorilla responde com
+	// close 1009 ("message too big") e esta conexão sai do loop e da sala como qualquer outra
+	conn.SetReadLimit(maxMessage)
+
 	// sem sala na URL (cliente antigo, outro programa): vai para a sala padrão
 	name := cmp.Or(r.URL.Query().Get("room"), defaultRoom)
 	alias := r.URL.Query().Get("alias")
@@ -725,7 +743,7 @@ if lines &lt;= 5 {
       <div class="tl">
         <div><span class="who">receb.</span><span>ReadMessage dá erro → close(closed) → screen.Stop()</span></div>
         <div><span class="who">main</span><span>Run() devolve o terminal ao modo normal e retorna</span></div>
-        <div class="good"><span class="who">main</span><span>closed está fechado → log.Fatal("connection closed")</span></div>
+        <div class="good"><span class="who">main</span><span>closed está fechado → log.Fatal("connection closed: ", readErr)</span></div>
       </div>
       <div class="verdict good">✓ a mensagem aparece num terminal já restaurado, código 1</div>
     </div>
@@ -796,6 +814,7 @@ screen := ui.New(*room, *alias, func(text string) {
 
 // canal vazio para avisar que a conexão caiu; a goroutine de recebimento fecha o canal
 closed := make(chan struct{})
+var readErr error // o motivo da queda; escrito antes do close(closed), lido depois
 // recebe mensagens em paralelo enquanto você digita
 go func() {
 	for {
@@ -803,6 +822,7 @@ go func() {
 		if err != nil {
 			// não dá para usar log.Fatal aqui: ele sai sem restaurar o terminal.
 			// Avisa o main e fecha a tela; quem encerra é o main.
+			readErr = err
 			close(closed)
 			screen.Stop()
 			return
@@ -819,7 +839,7 @@ if err := screen.Run(); err != nil {
 // o terminal já voltou ao normal; agora dá para avisar se foi a conexão que caiu
 select {
 case &lt;-closed:
-	log.Fatal("connection closed")
+	log.Fatal("connection closed: ", readErr)
 default:
 }</pre></div>
     <div style="min-width:0"><div class="file">internal/ui/ui.go · trechos</div><pre class="go">// aliasColor escolhe a cor pelo hash do alias: o mesmo alias tem sempre a mesma cor,
@@ -868,15 +888,24 @@ func pipe(conn *websocket.Conn) {
 	// as mensagens da sala continuam chegando e precisam ser lidas, mesmo sem mostrar.
 	// Sem isso, os buffers de rede enchem e o broadcast do servidor trava a sala inteira
 	// esperando por nós. Esta goroutine é a única que lê; o pipe é o único que escreve.
+	// readErr guarda por que a leitura parou. É escrito antes do close(done), então quem
+	// vê done fechado já enxerga o valor certo (mesma garantia do "closed" no main.go).
 	done := make(chan struct{})
+	var readErr error
 	go func() {
 		for {
 			if _, _, err := conn.ReadMessage(); err != nil {
+				readErr = err
 				close(done)
 				return
 			}
 		}
 	}()
+	// a conexão caiu ou o servidor recusou algo (ex.: linha acima do limite, close 1009):
+	// a escrita ainda "funciona" porque vai para o buffer, então quem avisa é a leitura
+	dropped := func() {
+		log.Fatal("connection closed: ", readErr)
+	}
 
 	// ReadString não tem limite de tamanho de linha (o bufio.Scanner para em 64 KB)
 	r := bufio.NewReader(os.Stdin)
@@ -887,8 +916,20 @@ func pipe(conn *websocket.Conn) {
 			fmt.Println(line) // eco: você continua vendo a saída do comando
 			// linha vazia aparece no eco, mas não vai para a sala
 			if strings.TrimSpace(line) != "" {
+				select {
+				case &lt;-done:
+					dropped()
+				default:
+				}
 				if err := conn.WriteMessage(websocket.TextMessage, []byte(line)); err != nil {
-					log.Fatal("connection closed: ", err)
+					// o motivo de verdade costuma chegar pela leitura (ex.: close 1009, linha
+					// grande demais); espera ela um instante antes de mostrar o erro da escrita
+					select {
+					case &lt;-done:
+						dropped()
+					case &lt;-time.After(time.Second):
+						log.Fatal("connection closed: ", err)
+					}
 				}
 			}
 		}
@@ -905,6 +946,10 @@ func pipe(conn *websocket.Conn) {
 	conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	select {
 	case &lt;-done:
+		// fechamento normal (1000) é a resposta ao nosso close; qualquer outro é problema
+		if !websocket.IsCloseError(readErr, websocket.CloseNormalClosure) {
+			dropped()
+		}
 	case &lt;-time.After(2 * time.Second):
 	}
 }</pre></div>
@@ -974,7 +1019,6 @@ func pipe(conn *websocket.Conn) {
     <div class="limit"><b>Alias não é verificado</b><p>Qualquer um entra como <code>--alias daniel</code>. A senha vai proteger a sala, mas não prova quem é quem dentro dela.</p></div>
     <div class="limit"><b>Sem histórico</b><p>Mensagem enviada para sala vazia se perde, e quem entra depois não vê o passado. O modo pipe depende disso para registrar logs.</p></div>
     <div class="limit"><b>Qualquer origem</b><p>O servidor aceita WebSocket de qualquer origem, então uma página aberta num navegador da rede consegue conectar nele.</p></div>
-    <div class="limit"><b>Sem limite de tamanho</b><p>O servidor não limita o tamanho das mensagens que lê.</p></div>
   </div>
 </section>
 
@@ -984,7 +1028,6 @@ func pipe(conn *websocket.Conn) {
     <p>Nesta ordem, uma feature por vez. A lista completa, com as decisões tomadas e as perguntas em aberto, está no <a href="https://github.com/daniel-cmdline/teachat/blob/main/roadmap.md">roadmap.md</a>. O que já foi entregue está no <a href="https://github.com/daniel-cmdline/teachat/blob/main/features.md">features.md</a>.</p>
   </div>
   <ol class="road">
-    <li><div><b>--addr no servidor</b><p>A porta 7347 está fixa no código. Para cada empresa rodar a própria instância, ela precisa ser configurável.</p></div></li>
         <li><div><b>Salas com senha + TLS, juntos</b><p>Senha nunca trafega em texto aberto. <code>ListenAndServeTLS</code> no servidor, <code>wss://</code> no cliente, com certificado fixado (pinning) para rede local.</p></div></li>
     <li><div><b>Histórico de mensagens</b><p>SQLite com <code>modernc.org/sqlite</code>. Necessário para o modo pipe guardar logs e para salas persistentes.</p></div></li>
   </ol>

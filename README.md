@@ -28,7 +28,6 @@ What works today:
 
 What's coming next:
 
-- Configurable server port
 - Password-protected rooms and TLS (`wss://`)
 - Message history
 
@@ -76,6 +75,14 @@ To connect from another machine, point the client at the server and make sure po
 ```bash
 go run ./cmd/client --server 192.168.0.10:7347
 ```
+
+## Server flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `--addr` | `:7347` | Where to listen, `host:port`. No host means all interfaces (`--addr :9000`); a host limits it to that interface (`--addr 10.0.0.5:7347`) |
+
+Messages larger than 1 MB are refused, and only the connection that sent them is closed.
 
 ## Client flags
 

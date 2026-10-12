@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"sync"
 
@@ -17,8 +18,13 @@ var upgrader = websocket.Upgrader{
 }
 
 const (
-	// porta em que o servidor escuta, em todas as interfaces
-	addr = ":7347"
+	// endereço padrão: porta 7347 em todas as interfaces. Muda com --addr.
+	defaultAddr = ":7347"
+
+	// maior mensagem aceita, em bytes. Sem limite, alguém manda 1 GB e o servidor tenta
+	// guardar tudo na memória antes de repassar. 1 MB passa folgado qualquer mensagem
+	// digitada e quase toda linha de log no modo pipe (stack trace, JSON).
+	maxMessage = 1 << 20
 
 	// sala padrão: nasce junto com o servidor e nunca é apagada, mesmo vazia.
 	// Quem conecta sem dizer a sala cai nela, então todo mundo se encontra sem combinar nada.
@@ -31,14 +37,22 @@ var (
 )
 
 func main() {
-	// ainda não há flags, mas o Parse faz o -h mostrar a ajuda em vez de subir o servidor
+	// --addr: onde escutar. ":9000" = porta 9000 em todas as interfaces;
+	// "10.0.0.5:7347" = só nessa interface (por exemplo, só a rede interna)
+	addr := flag.String("addr", defaultAddr, "address to listen on, host:port (empty host = all interfaces)")
 	flag.Usage = usage
 	flag.Parse()
 	checkArgs()
 
+	// abre a porta antes de anunciar: com a porta ocupada ou o endereço errado,
+	// o erro aparece sozinho, sem um "listening" enganoso antes
+	ln, err := net.Listen("tcp", *addr)
+	if err != nil {
+		log.Fatal(err)
+	}
 	http.HandleFunc("/ws", handleWS)
-	fmt.Printf("teachat-server listening on %s · default room: %s\n", addr, defaultRoom)
-	log.Fatal(http.ListenAndServe(addr, nil))
+	fmt.Printf("teachat-server listening on %s · default room: %s\n", *addr, defaultRoom)
+	log.Fatal(http.Serve(ln, nil))
 }
 
 // handleWS atende cada conexão em /ws, na goroutine que o net/http cria para ela.
@@ -50,6 +64,10 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
+
+	// mensagem maior que o limite: o ReadMessage devolve erro, a gorilla responde com
+	// close 1009 ("message too big") e esta conexão sai do loop e da sala como qualquer outra
+	conn.SetReadLimit(maxMessage)
 
 	// sem sala na URL (cliente antigo, outro programa): vai para a sala padrão
 	name := cmp.Or(r.URL.Query().Get("room"), defaultRoom)

@@ -53,6 +53,7 @@ func main() {
 
 	// canal vazio para avisar que a conexão caiu; a goroutine de recebimento fecha o canal
 	closed := make(chan struct{})
+	var readErr error // o motivo da queda; escrito antes do close(closed), lido depois
 	// recebe mensagens em paralelo enquanto você digita
 	go func() {
 		for {
@@ -60,6 +61,7 @@ func main() {
 			if err != nil {
 				// não dá para usar log.Fatal aqui: ele sai sem restaurar o terminal.
 				// Avisa o main e fecha a tela; quem encerra é o main.
+				readErr = err
 				close(closed)
 				screen.Stop()
 				return
@@ -76,7 +78,7 @@ func main() {
 	// o terminal já voltou ao normal; agora dá para avisar se foi a conexão que caiu
 	select {
 	case <-closed:
-		log.Fatal("connection closed")
+		log.Fatal("connection closed: ", readErr)
 	default:
 	}
 }

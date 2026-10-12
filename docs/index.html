@@ -74,7 +74,7 @@
   </div>
   <div class="cards">
     <div class="card"><b>Flags, não URLs</b><p>Ninguém digita <code>ws://...?room=x</code>. É <code>teachat --room dev --alias daniel</code>, e o resto é detalhe interno.</p></div>
-    <div class="card"><b>Auto-hospedável</b><p>Um binário de servidor numa máquina interna. O tráfego não sai da rede da empresa. O cliente aponta para ela com <code>--server</code>.</p></div>
+    <div class="card"><b>Auto-hospedável</b><p>Um binário de servidor numa máquina interna, na porta e interface que você escolher (<code>--addr</code>). O tráfego não sai da rede da empresa. O cliente aponta para ela com <code>--server</code>.</p></div>
     <div class="card"><b>Funciona com pipes</b><p><code>make 2>&amp;1 | teachat --room ops</code> manda cada linha para a sala do time, mostra no seu terminal e sai no fim. Seguro em scripts e no cron.</p></div>
     <div class="card"><b>Minimalista</b><p>Só entra feature que se paga. O código todo tem cerca de 380 linhas, apoiadas em bibliotecas que fazem o trabalho pesado.</p></div>
   </div>
@@ -180,7 +180,6 @@ uptime | go run ./cmd/client</pre>
     <p>O teachat está no começo e cresce uma feature por vez.</p>
   </div>
   <ol class="road">
-    <li><div><b>--addr no servidor</b><p>Porta configurável, para cada empresa rodar a própria instância do jeito que quiser.</p></div></li>
     <li><div><b>Salas com senha + TLS</b><p>Senha nunca trafega aberta: <code>wss://</code> com certificado fixado para rede local.</p></div></li>
     <li><div><b>Histórico de mensagens</b><p>SQLite em Go puro. Quem entra vê o que já foi dito, e o modo pipe guarda logs.</p></div></li>
   </ol>

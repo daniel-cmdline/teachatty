@@ -2,6 +2,17 @@
 
 Registro das features entregues, da mais nova para a mais antiga. Adicione uma entrada a cada commit.
 
+## 2026-10-12 12:07 — `--addr` no servidor e limite de 1 MB por mensagem
+
+- **`--addr`:** o servidor escuta onde você mandar, no formato `host:porta`. `--addr :9000` = porta 9000 em todas as interfaces; `--addr 10.0.0.5:7347` = só na rede interna. Padrão `:7347`. O `-h` do servidor agora lista as flags (lidas das próprias flags, como no cliente) e tem exemplos.
+- O servidor abre a porta **antes** de anunciar `listening on ...`. Antes, com a porta ocupada ou o endereço inválido, ele anunciava e só depois falhava. Agora sai direto com o erro (`address already in use`, `missing port in address`) e código 1.
+- **Limite de 1 MB por mensagem** (`conn.SetReadLimit`, constante `maxMessage`). Sem limite, alguém mandava 1 GB e o servidor tentava guardar tudo na memória. Acima do limite, a gorilla responde close 1009 (`message too big`) e só aquela conexão sai; a sala segue normal. 1 MB e não 64 KB para não quebrar linhas grandes de log no modo pipe.
+- **O modo pipe agora percebe quando a conexão cai ou o servidor recusa uma linha.** Antes, uma linha de 2 MB era recusada e o pipe saía com código 0, como se tivesse dado certo: a escrita vai para o buffer e "funciona", e quem via o close era só a goroutine de leitura. Agora ela guarda o erro (`readErr`), o pipe confere antes de cada linha e no fim, e sai com `connection closed: websocket: close 1009 (message too big)` e código 1.
+- A tela cheia também mostra o motivo da queda: `connection closed: ` + o erro.
+- **Testes novos:** mensagem exatamente no limite passa; 1 byte acima fecha só aquela conexão com 1009, e a sala continua funcionando. Conferido que o teste falha sem o `SetReadLimit`. Agora são 6 testes, todos com `-race`.
+- **Testado ponta a ponta:** `--addr :9000` e `--addr 127.0.0.1:9001` (só loopback, conferido no `ss`), porta ocupada, endereço inválido, pipe com 2 MB (recusado, código 1), 900 KB (passa), servidor caindo no meio de um pipe lento (código 1 com o motivo).
+- **Docs:** README (seção de flags do servidor), roadmap (`--addr` sai dos próximos passos), e o HTML: flags e limite na referência do servidor, `--addr` no "Começando" e no site, códigos de saída novos, limitação "sem limite de tamanho" removida, trechos de código regenerados.
+
 ## 2026-10-12 11:45 — Ajuda quando o comando não ativa nada
 
 - Argumento solto (`teachat dev`, `teachat-server start`) era ignorado em silêncio: o servidor subia e o cliente tentava conectar. Agora os dois mostram `unknown argument: ...` e a ajuda, e saem com código 2 sem fazer nada.
