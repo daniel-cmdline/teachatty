@@ -2,6 +2,26 @@
 
 Registro das features entregues, da mais nova para a mais antiga. Adicione uma entrada a cada commit.
 
+## 2026-10-12 11:38 — Porta 7347, ajuda no -h e primeiros testes
+
+- **Porta 7347** no servidor e no padrão do cliente (antes 23456). A porta virou a constante `addr` no servidor.
+- **`-h` nos dois binários**, em inglês (mais universal; os comentários do código continuam em português): o que é, como usar, flags com padrão, teclas e exemplos. As descrições das flags também foram para o inglês, porque aparecem na ajuda. No cliente, os padrões vêm das próprias flags (`flag.Lookup`/`VisitAll`), então a ajuda acompanha qualquer mudança. O servidor não lia flags: `server -h` subia o servidor. Agora mostra a ajuda e sai.
+- A mensagem de início do servidor diz a porta e a sala padrão: `teachat-server escutando em :7347 · sala padrão: local`.
+- O handler de `/ws` saiu de dentro do `main` e virou a função `handleWS`, para os testes conseguirem usá-lo. Sem mudança de comportamento.
+- **Primeiros testes automatizados** (`cmd/server/main_test.go`, `go test ./...`): a sala `local` existe antes de qualquer conexão; quem conecta sem sala cai nela e ela sobrevive vazia; outras salas somem quando esvaziam; uma mensagem na `local` chega como `ana: oi`. Rodam com `-race`. Conferido que pegam erro: tirando a proteção da `local` no `leave`, o teste falha.
+- **Testado ponta a ponta** com os binários: cliente sem nenhuma flag abre em `local · del`; outro cliente na `local` recebe a mensagem; `echo ... | teachat` sem flags chega na `local`; todo mundo sai, alguém entra de novo, a `local` continua lá.
+- **Docs:** README, roadmap e o HTML (porta, sala padrão `local`, `-h`, testes no mapa do repositório, e o código do servidor regenerado a partir do `handleWS`).
+
+## 2026-10-12 11:29 — Sala padrão `local`
+
+- O servidor cria a sala `local` quando sobe, e ela nunca é apagada, mesmo vazia. As outras salas continuam nascendo e sumindo como antes.
+- Sem `--room`, o cliente entra na `local` (antes era `geral`). No servidor, uma conexão sem sala na URL também cai na `local`, em vez de numa sala de nome vazio.
+- **Por quê:** é só rodar `teachat` para todo mundo do mesmo servidor estar na mesma sala, sem combinar nome.
+- **Por que permanente:** criar a sala ao subir o servidor não adiantaria se ela fosse apagada na primeira saída.
+- No código: a constante `defaultRoom`, o mapa `rooms` já começa com ela, `cmp.Or` para o nome vazio, e o `leave` não apaga a sala padrão.
+- **Testado:** cliente sem `--room` abre com o título `local · ana`; uma conexão crua sem sala recebe as mensagens dela; sair e voltar mantém a sala funcionando; a sala `dev` continua igual. Sem race no servidor.
+- **Docs (HTML):** atualizados na entrada seguinte.
+
 ## 2026-10-12 11:14 — Site e documentação em dia
 
 - Resolve as pendências de HTML das cores por alias, do alias padrão e do modo pipe.

@@ -15,7 +15,7 @@ Chat de terminal para desenvolvedores e sysadmins. Minimalista: leve, sem distra
 
 ## Estado atual (2026-10-12)
 
-- **Servidor** (`cmd/server`): salas em memória, um mutex por sala, porta fixa `:23456`.
+- **Servidor** (`cmd/server`): salas em memória, um mutex por sala, porta fixa `:7347`. A sala `local` nasce com o servidor e nunca é apagada.
 - **Cliente** (`cmd/client`): flags `--server`, `--room` e `--alias`. Tela cheia com tview (`internal/ui`): mensagens em cima, caixa de digitação embaixo.
 - Modo pipe: `comando | teachat` envia cada linha para a sala, mostra no terminal e sai no fim da entrada.
 - Ainda sem criptografia: o tráfego é `ws://` em texto aberto.
@@ -40,8 +40,8 @@ Nesta ordem. Cada um é pequeno de propósito.
 ## Decisões tomadas
 
 - Entrar numa sala que não existe cria a sala.
-- A sala é apagada quando o último membro sai.
-- Sem `--room`, o cliente entra na sala `geral`.
+- A sala é apagada quando o último membro sai, menos a sala padrão.
+- A sala padrão é a `local`: nasce com o servidor, nunca é apagada, e é para onde vai quem não passa `--room` (no cliente) ou não manda sala na URL (no servidor). Assim todo mundo se encontra sem combinar nada. Antes era `geral`, criada e apagada como as outras.
 - O estado das conexões fica em RAM, não num banco de dados: ele só existe enquanto o processo está vivo. O banco entra junto com o histórico.
 - `Room` fica no `package main` (`cmd/server/room.go`) até alguma outra parte além do servidor precisar dela.
 - O cliente é tela cheia (tview), não inline. Inline, o chat iria para o scrollback do terminal e se perderia no meio da saída de comandos.
@@ -50,6 +50,8 @@ Nesta ordem. Cada um é pequeno de propósito.
 - A tela fica em `internal/ui`. O `Room` do servidor sai do `package main` depois, como mudança separada.
 - Modo pipe sai quando a entrada acaba, sem nunca abrir a tela. Entrar no chat depois travaria scripts e cron (ninguém para apertar Ctrl+C), e o stdin já é o pipe, não o teclado.
 - Modo pipe repete cada linha no terminal (como o `tee`), para quem roda o comando continuar vendo a saída. Uma mensagem por linha, sem agrupar: o caminho mais simples. Logs grandes inundam a sala; agrupar fica para depois, se incomodar.
+- Porta padrão 7347 (antes 23456).
+- `-h` nos dois binários, com os padrões lidos das próprias flags para a ajuda nunca ficar desatualizada. Todo texto de ajuda no terminal é em inglês, por ser mais universal; comentários do código e docs do projeto seguem em português.
 - O módulo se chama `github.com/daniel-cmdline/teachat`, igual ao caminho do repositório, para os imports internos e o `go install` funcionarem.
 
 ## Perguntas em aberto

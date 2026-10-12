@@ -35,7 +35,7 @@
         <a class="btn primary" href="docs.html">docs</a>
         <a class="btn" href="https://github.com/daniel-cmdline/teachat">github</a>
       </div>
-      <p class="cmd" style="margin-top:18px">$ <b>teachat --room dev --alias daniel</b></p>
+      <p class="cmd" style="margin-top:18px">$ <b>teachat</b></p>
     </div>
     <img class="logo" src="../assets/teachat.png" alt="Logo do teachat: uma xícara verde neon com um prompt de terminal e um balão de conversa âmbar">
   </div>
@@ -62,7 +62,7 @@
       <li><b>A caixa cresce com a mensagem</b>, até 5 linhas, para você ver tudo que escreveu.</li>
       <li><b><kbd>PgUp</kbd> para ler o passado</b> sem ser puxado de volta. Comece a digitar e a tela volta para as mais novas.</li>
       <li><b>Cada pessoa com sua cor.</b> O alias de cada um tem uma cor fixa, a mesma em qualquer cliente. O seu aparece em negrito.</li>
-      <li><b>Uma sala por comando.</b> Entrar numa sala que não existe cria a sala; quando o último sai, ela some.</li>
+      <li><b>Todo mundo na mesma sala, sem combinar.</b> Rodou <code>teachat</code>, caiu na <code>local</code>. Para outra sala, <code>--room</code>: se não existe, é criada.</li>
     </ul>
   </div>
 </section>
@@ -111,7 +111,7 @@
         <rect class="col-frame" x="374" y="30" width="252" height="362" rx="12"></rect>
         <rect class="col-frame" x="734" y="30" width="252" height="362" rx="12"></rect>
         <text class="col-title" x="140" y="22" text-anchor="middle">PC DO DANIEL · --room dev</text>
-        <text class="col-title" x="500" y="22" text-anchor="middle">SERVIDOR teachat · :23456</text>
+        <text class="col-title" x="500" y="22" text-anchor="middle">SERVIDOR teachat · :7347</text>
         <text class="col-title" x="860" y="22" text-anchor="middle">PC DO MATEUS · --room dev</text>
 
         <line class="wire" x1="262" y1="337" x2="378" y2="337"></line>
@@ -163,14 +163,14 @@
   <pre style="max-width:var(--read);margin-top:16px">git clone https://github.com/daniel-cmdline/teachat.git
 cd teachat
 
-<span class="c"># o servidor (porta 23456)</span>
+<span class="c"># o servidor (porta 7347, sala padrão local)</span>
 go run ./cmd/server
 
-<span class="c"># em outro terminal, ou em outra máquina</span>
-go run ./cmd/client --room dev
+<span class="c"># em outro terminal: sem flags, você cai na sala local</span>
+go run ./cmd/client
 
 <span class="c"># mandar a saída de um comando para a sala</span>
-uptime | go run ./cmd/client --room dev</pre>
+uptime | go run ./cmd/client</pre>
   <p class="muted" style="margin-top:14px">Flags, teclas, outra máquina na rede e como gerar os binários: na <a href="docs.html#comecando">documentação</a>.</p>
 </section>
 
@@ -219,7 +219,7 @@ uptime | go run ./cmd/client --room dev</pre>
     { at: "s-kern", pkt: "81 82 …", meta: "rede → kernel do servidor",
       title: "TCP atravessa a rede",
       body: "O TCP do kernel embrulha os bytes em segmentos e pacotes IP, manda pela rede, reenvia o que se perder e garante a ordem. No servidor, o kernel coloca os bytes no buffer de recebimento do socket fd 5 e avisa o epoll do runtime do Go.",
-      code: "[::1]:40974  →  [::1]:23456   (fd 5 no servidor)" },
+      code: "[::1]:40974  →  [::1]:7347   (fd 5 no servidor)" },
     { at: "s-gd", pkt: "oi", meta: "servidor · goroutine do Daniel",
       title: "ReadMessage acorda",
       body: "O runtime acorda a goroutine do Daniel, que estava parada no ReadMessage sem ocupar thread. A gorilla lê o cabeçalho, sabe que vêm 2 bytes mascarados, aplica o XOR com a chave e devolve msg = \"oi\".",
@@ -239,7 +239,7 @@ uptime | go run ./cmd/client --room dev</pre>
     { at: "m-kern", pkt: "81 0a …", meta: "rede → kernel do Mateus",
       title: "Mais uma viagem TCP",
       body: "A mesma história, na outra conexão: segmentos TCP até o PC do Mateus, buffer de recebimento do socket dele, aviso para o runtime do Go do cliente.",
-      code: "[::1]:23456  →  [::1]:40990   (fd 6 no cliente do Mateus)" },
+      code: "[::1]:7347  →  [::1]:40990   (fd 6 no cliente do Mateus)" },
     { at: "m-recv", pkt: "daniel: oi", meta: "cliente do Mateus",
       title: "A goroutine de recebimento acorda",
       body: "No cliente do Mateus, a goroutine de recebimento estava parada no ReadMessage enquanto o loop de eventos do tview esperava o teclado. Ela acorda com \"daniel: oi\". Sem máscara para tirar.",

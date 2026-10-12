@@ -18,7 +18,7 @@ It's built to be **self-hosted**. A team can run its own teachat server on an in
 
 What works today:
 
-- Rooms: joining a room that doesn't exist creates it, and a room disappears when its last member leaves.
+- Rooms: joining a room that doesn't exist creates it, and a room disappears when its last member leaves. The default room, `local`, is the exception: it exists as long as the server runs.
 - Aliases: your name appears in front of every message you send.
 - Command-line flags for server, room and alias.
 - A full-screen terminal UI: messages on top, an input box at the bottom that grows as you type. Incoming messages never overwrite what you're typing.
@@ -42,11 +42,14 @@ Requires Go 1.27 or newer.
 git clone https://github.com/daniel-cmdline/teachat.git
 cd teachat
 
-# start the server (listens on port 23456)
+# start the server (listens on port 7347)
 go run ./cmd/server
 
-# in another terminal, or on another machine
-go run ./cmd/client --room dev --alias daniel
+# in another terminal: no flags needed, you land in the "local" room
+go run ./cmd/client
+
+# help
+go run ./cmd/client -h
 ```
 
 Run a second client in the same room and start typing.
@@ -68,18 +71,18 @@ tail -f /var/log/app.log | go run ./cmd/client --room ops   # streams until you 
 
 You still see every line in your terminal. Empty lines are shown but not sent. Pipe mode never opens the chat screen, so it's safe in scripts and cron.
 
-To connect from another machine, point the client at the server and make sure port `23456` is open in the server's firewall:
+To connect from another machine, point the client at the server and make sure port `7347` is open in the server's firewall:
 
 ```bash
-go run ./cmd/client --server 192.168.0.10:23456 --room dev --alias mateus
+go run ./cmd/client --server 192.168.0.10:7347
 ```
 
 ## Client flags
 
 | Flag | Default | Description |
 |---|---|---|
-| `--server` | `localhost:23456` | Address of the teachat server |
-| `--room` | `geral` | Room to join |
+| `--server` | `localhost:7347` | Address of the teachat server |
+| `--room` | `local` | Room to join. `local` is created when the server starts and always exists, so everyone who skips `--room` meets there |
 | `--alias` | your login (`$USER`) | Name shown in front of your messages. Falls back to `anonimo` when `$USER` is unset |
 
 ## Project layout
@@ -92,5 +95,7 @@ docs/         project site and documentation
 ```
 
 Documentation lives in [docs/](docs/): `index.html` is the project site and `docs.html` is the full documentation (usage, client and server reference, protocol, internals). Both are in Portuguese.
+
+Run the tests with `go test ./...`.
 
 The roadmap and the feature log are in [roadmap.md](roadmap.md) and [features.md](features.md). Both are written in Portuguese for now.

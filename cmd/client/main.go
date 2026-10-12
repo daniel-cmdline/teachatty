@@ -15,11 +15,12 @@ import (
 
 func main() {
 	//flag.String retorna ponteiros (&value) 
-	server := flag.String("server", "localhost:23456", "endereço do servidor teachat")
-	room := flag.String("room", "geral", "sala para entrar")
+	server := flag.String("server", "localhost:7347", "teachat server address, host:port")
+	room := flag.String("room", "local", "room to join; created if it doesn't exist")
 	// alias padrão: o seu usuário do sistema ($USER). cmp.Or devolve o primeiro
 	// valor não vazio, então sem $USER (cron, alguns containers) fica "anonimo".
-	alias := flag.String("alias", cmp.Or(os.Getenv("USER"), "anonimo"), "seu nome no chat")
+	alias := flag.String("alias", cmp.Or(os.Getenv("USER"), "anonimo"), "your name in the chat")
+	flag.Usage = usage
 	flag.Parse()
 
 	// monta ws://SERVER/ws?room=...&alias=... a partir das flags

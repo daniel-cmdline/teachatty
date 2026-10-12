@@ -48,9 +48,9 @@
     <div class="callout"><p><b>Estado:</b> desenvolvimento inicial. Funciona para conversar entre máquinas, mas ainda <b>sem criptografia</b> (o tráfego é <code>ws://</code> aberto) e com mudanças incompatíveis a caminho. Use só em rede confiável. Veja as <a href="#limites">limitações</a>.</p></div>
   </div>
   <dl class="ref">
-    <dt>servidor</dt><dd><code>cmd/server</code>. Escuta na porta 23456, mantém as salas em memória, repassa cada mensagem para os outros membros da sala.</dd>
+    <dt>servidor</dt><dd><code>cmd/server</code>. Escuta na porta 7347, mantém as salas em memória, repassa cada mensagem para os outros membros da sala.</dd>
     <dt>cliente</dt><dd><code>cmd/client</code>. Num terminal, abre a tela cheia: mensagens em cima, caixa de digitação embaixo. Num pipe (<code>comando | teachat</code>), envia cada linha e sai.</dd>
-    <dt>sala</dt><dd>Um nome qualquer. Entrar numa sala que não existe cria a sala; quando o último membro sai, ela deixa de existir.</dd>
+    <dt>sala</dt><dd>Um nome qualquer. Entrar numa sala que não existe cria a sala; quando o último membro sai, ela deixa de existir. A exceção é a <code>local</code>, a sala padrão: nasce com o servidor e existe enquanto ele rodar. Quem não escolhe sala cai nela.</dd>
     <dt>alias</dt><dd>O nome que aparece na frente das suas mensagens: <code>daniel: oi</code>. Por padrão, o seu usuário do sistema. Não é verificado.</dd>
     <dt>mensagem</dt><dd>Uma linha de texto. Vai só para quem está na sala naquele momento: não há histórico.</dd>
   </dl>
@@ -59,7 +59,7 @@
 <section id="comecando">
   <div class="read">
     <div class="sec-head"><span class="sec-num">02</span><h2>Começando</h2></div>
-    <p>Requisitos: Go 1.27 ou mais novo, um terminal com UTF-8 e a porta 23456 liberada na máquina do servidor.</p>
+    <p>Requisitos: Go 1.27 ou mais novo, um terminal com UTF-8 e a porta 7347 liberada na máquina do servidor.</p>
   </div>
   <h3>Rodar a partir do código</h3>
   <pre style="max-width:88ch">git clone https://github.com/daniel-cmdline/teachat.git
@@ -67,13 +67,17 @@ cd teachat
 
 <span class="c"># servidor</span>
 go run ./cmd/server
-<span class="c"># Servidor iniciado na porta 23456</span>
+<span class="c"># teachat-server escutando em :7347 · sala padrão: local</span>
 
-<span class="c"># cliente, em outro terminal</span>
-go run ./cmd/client --room dev --alias daniel</pre>
+<span class="c"># cliente, em outro terminal: sem flags, entra na sala local</span>
+go run ./cmd/client
+
+<span class="c"># ajuda, nos dois</span>
+go run ./cmd/client -h
+go run ./cmd/server -h</pre>
   <h3>Outra máquina na rede</h3>
-  <p class="read">Aponte o cliente para o endereço do servidor e garanta que a porta 23456 está aberta no firewall dele:</p>
-  <pre style="max-width:88ch">go run ./cmd/client --server 192.168.0.10:23456 --room dev --alias mateus</pre>
+  <p class="read">Aponte o cliente para o endereço do servidor e garanta que a porta 7347 está aberta no firewall dele:</p>
+  <pre style="max-width:88ch">go run ./cmd/client --server 192.168.0.10:7347</pre>
   <h3>Gerar os binários</h3>
   <p class="read">O <code>go build</code> nomeia o binário pela pasta (<code>client</code>, <code>server</code>). Para ter o nome <code>teachat</code>:</p>
   <pre style="max-width:88ch">go build -o teachat ./cmd/client
@@ -92,8 +96,8 @@ go build -o teachat-server ./cmd/server
     <table>
       <thead><tr><th>flag</th><th>padrão</th><th>descrição</th></tr></thead>
       <tbody>
-        <tr><td><code>--server</code></td><td><code>localhost:23456</code></td><td>endereço do servidor, <code>host:porta</code></td></tr>
-        <tr><td><code>--room</code></td><td><code>geral</code></td><td>sala para entrar. Se não existe, é criada</td></tr>
+        <tr><td><code>--server</code></td><td><code>localhost:7347</code></td><td>endereço do servidor, <code>host:porta</code></td></tr>
+        <tr><td><code>--room</code></td><td><code>local</code></td><td>sala para entrar. Se não existe, é criada. A <code>local</code> existe sempre</td></tr>
         <tr><td><code>--alias</code></td><td>seu usuário (<code>$USER</code>)</td><td>seu nome no chat, na frente de cada mensagem. Sem <code>$USER</code> (cron, alguns containers): <code>anonimo</code></td></tr>
       </tbody>
     </table>
@@ -151,12 +155,12 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># transmite até
 <section id="ref-servidor">
   <div class="read">
     <div class="sec-head"><span class="sec-num">04</span><h2>Referência do servidor</h2></div>
-    <p>O servidor não tem flags ainda. Ele escuta em <code>:23456</code>, em todas as interfaces, e expõe um único endpoint.</p>
+    <p>O servidor não tem flags ainda (só o <code>-h</code>). Ele escuta em <code>:7347</code>, em todas as interfaces, e expõe um único endpoint.</p>
   </div>
   <h3>Endpoint</h3>
   <pre style="max-width:88ch">GET /ws?room=&lt;sala&gt;&amp;alias=&lt;alias&gt;   <span class="c">upgrade para WebSocket</span></pre>
   <dl class="ref">
-    <dt>room</dt><dd>Nome da sala. Qualquer texto, inclusive vazio. Não existe → é criada.</dd>
+    <dt>room</dt><dd>Nome da sala. Qualquer texto. Não existe → é criada. Ausente ou vazio → sala <code>local</code>.</dd>
     <dt>alias</dt><dd>Nome de quem conecta. Qualquer texto, inclusive vazio. Não é validado nem precisa ser único.</dd>
     <dt>origem</dt><dd>Aceita conexões de qualquer origem (<code>CheckOrigin</code> sempre retorna verdadeiro).</dd>
   </dl>
@@ -170,11 +174,12 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># transmite até
   <h3>Ciclo de vida das salas</h3>
   <dl class="ref">
     <dt>entrar</dt><dd>Se a sala não existe no mapa, é criada, e a conexão vira membro.</dd>
-    <dt>sair</dt><dd>Quando a conexão termina, sai da sala. Sala vazia é apagada do mapa.</dd>
+    <dt>sair</dt><dd>Quando a conexão termina, sai da sala. Sala vazia é apagada do mapa, menos a <code>local</code>.</dd>
+    <dt>sala padrão</dt><dd>A <code>local</code> já está no mapa quando o servidor sobe e nunca é apagada. É para onde vai quem não pede sala.</dd>
     <dt>estado</dt><dd>Tudo em memória. Reiniciar o servidor derruba todo mundo e apaga todas as salas.</dd>
   </dl>
   <h3>Saída no terminal</h3>
-  <p class="read">Imprime <code>Servidor iniciado na porta 23456</code> ao subir e registra erros de upgrade com <code>log</code>. Se a porta estiver ocupada, sai com o erro do <code>ListenAndServe</code>.</p>
+  <p class="read">Imprime <code>teachat-server escutando em :7347 · sala padrão: local</code> ao subir e registra erros de upgrade com <code>log</code>. Se a porta estiver ocupada, sai com o erro do <code>ListenAndServe</code>.</p>
 </section>
 
 <section id="arquitetura">
@@ -197,6 +202,7 @@ tail -f /var/log/app.log | teachat --room ops   <span class="c"># transmite até
   <div class="split">
     <pre>cmd/server/main.go   <span class="c">servidor: handler de /ws, mapa de salas</span>
 cmd/server/room.go   <span class="c">Room: join, leave, broadcast</span>
+cmd/server/main_test.go  <span class="c">testes da sala padrão (go test ./...)</span>
 cmd/client/main.go   <span class="c">cliente: flags, conexão, recebimento</span>
 cmd/client/pipe.go   <span class="c">cliente: modo pipe</span>
 internal/ui/ui.go    <span class="c">a tela do cliente (tview)</span>
@@ -242,7 +248,7 @@ features.md          <span class="c">registro do que foi entregue</span></pre>
   --room dev \
   --alias daniel</pre></div>
     <div class="arrow" aria-hidden="true">→</div>
-    <div class="panel"><h4>cliente monta</h4><pre>ws://localhost:23456
+    <div class="panel"><h4>cliente monta</h4><pre>ws://localhost:7347
   /ws?alias=daniel
      &amp;room=dev</pre></div>
     <div class="arrow" aria-hidden="true">→</div>
@@ -289,7 +295,7 @@ features.md          <span class="c">registro do que foi entregue</span></pre>
     </div>
     <div style="display:grid;gap:14px;min-width:0">
       <div><div class="file">cliente → servidor</div><pre>GET /ws?alias=daniel&amp;room=dev HTTP/1.1
-Host: localhost:23456
+Host: localhost:7347
 <span class="f">Upgrade: websocket</span>
 <span class="f">Connection: Upgrade</span>
 Sec-WebSocket-Key: <span class="s">dGhlIHNhbXBsZSBub25jZQ==</span>
@@ -378,7 +384,7 @@ Sec-WebSocket-Accept: <span class="s">s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</span></pre><
     <div class="panel">
       <h4>/proc/PID/fd do servidor (medido)</h4>
       <div class="fdlist">
-        <div><span class="fd">4</span><span>socket:[2305506] <em>· porta 23456 escutando</em></span></div>
+        <div><span class="fd">4</span><span>socket:[2305506] <em>· porta 7347 escutando</em></span></div>
         <div><span class="fd">5</span><span>socket:[2306269] <em>· conexão com o cliente 1</em></span></div>
         <div><span class="fd">6</span><span>anon_inode:[eventpoll] <em>· o epoll do runtime</em></span></div>
         <div><span class="fd">7</span><span>anon_inode:[eventfd] <em>· acorda o epoll</em></span></div>
@@ -448,41 +454,44 @@ func (r *Room) broadcast(myOwnConn *websocket.Conn, msg []byte) {
 		}
 	}
 }</pre></div>
-    <div style="min-width:0"><div class="file">cmd/server/main.go · handler de /ws</div><pre class="go">conn, err := upgrader.Upgrade(w, r, nil)
-if err != nil {
-	log.Println(err)
-	return
-}
-defer conn.Close()
-
-name := r.URL.Query().Get("room")
-alias := r.URL.Query().Get("alias")
-
-// entrar numa sala que não existe cria a sala
-mu.Lock()
-room := rooms[name]
-if room == nil {
-	room = &amp;Room{members: map[*websocket.Conn]string{}}
-	rooms[name] = room
-}
-room.join(conn, alias)
-mu.Unlock()
-
-for {
-	_, msg, err := conn.ReadMessage()
+    <div style="min-width:0"><div class="file">cmd/server/main.go · handleWS</div><pre class="go">func handleWS(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		break
+		log.Println(err)
+		return
 	}
-	// repassa a mensagem para os outros da mesma sala
-	room.broadcast(conn, []byte(alias+": "+string(msg)))
-}
+	defer conn.Close()
 
-// sai da sala; sala vazia deixa de existir
-mu.Lock()
-if room.leave(conn) {
-	delete(rooms, name)
-}
-mu.Unlock()</pre></div>
+	// sem sala na URL (cliente antigo, outro programa): vai para a sala padrão
+	name := cmp.Or(r.URL.Query().Get("room"), defaultRoom)
+	alias := r.URL.Query().Get("alias")
+
+	// entrar numa sala que não existe cria a sala
+	mu.Lock()
+	room := rooms[name]
+	if room == nil {
+		room = &amp;Room{members: map[*websocket.Conn]string{}}
+		rooms[name] = room
+	}
+	room.join(conn, alias)
+	mu.Unlock()
+
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+		// repassa a mensagem para os outros da mesma sala
+		room.broadcast(conn, []byte(alias+": "+string(msg)))
+	}
+
+	// sai da sala; sala vazia deixa de existir, menos a padrão
+	mu.Lock()
+	if room.leave(conn) &amp;&amp; name != defaultRoom {
+		delete(rooms, name)
+	}
+	mu.Unlock()
+}</pre></div>
   </div>
 </section>
 
@@ -973,7 +982,7 @@ func pipe(conn *websocket.Conn) {
     <p>Nesta ordem, uma feature por vez. A lista completa, com as decisões tomadas e as perguntas em aberto, está no <a href="https://github.com/daniel-cmdline/teachat/blob/main/roadmap.md">roadmap.md</a>. O que já foi entregue está no <a href="https://github.com/daniel-cmdline/teachat/blob/main/features.md">features.md</a>.</p>
   </div>
   <ol class="road">
-    <li><div><b>--addr no servidor</b><p>A porta 23456 está fixa no código. Para cada empresa rodar a própria instância, ela precisa ser configurável.</p></div></li>
+    <li><div><b>--addr no servidor</b><p>A porta 7347 está fixa no código. Para cada empresa rodar a própria instância, ela precisa ser configurável.</p></div></li>
         <li><div><b>Salas com senha + TLS, juntos</b><p>Senha nunca trafega em texto aberto. <code>ListenAndServeTLS</code> no servidor, <code>wss://</code> no cliente, com certificado fixado (pinning) para rede local.</p></div></li>
     <li><div><b>Histórico de mensagens</b><p>SQLite com <code>modernc.org/sqlite</code>. Necessário para o modo pipe guardar logs e para salas persistentes.</p></div></li>
   </ol>
