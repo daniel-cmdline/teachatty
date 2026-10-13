@@ -2,6 +2,12 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-10-13 12:25 — Developer guide: ARCHITECTURE.md
+
+- `ARCHITECTURE.md` documents the codebase for contributors: commands, wire protocol, server and client concurrency, pipe mode, TLS, packaging and releases, and a short overview of how the public instance runs (systemd, nginx, Let's Encrypt).
+- It also lists the project's conventions: English everywhere, no positional arguments, `dev`/`main` branches, this log, and commit message style.
+- **Tested:** documentation only; links in `ARCHITECTURE.md` point to files that exist.
+
 ## 2026-10-12 20:15 — A demo GIF at the top of the README
 
 - `assets/demo.gif` (205 KB, 26 s), right under the tagline in the README: daniel and ana in two terminals side by side join the room `tea` on teachatty.com, chat with mateus and joao, and each `@mention` lights up in amber on the mentioned person's screen. The site shows the same recording as a looping video under its hero.

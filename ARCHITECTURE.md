@@ -1,6 +1,6 @@
-# CLAUDE.md
+# ARCHITECTURE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Technical guide, design decisions, and developer workflow for teachatty.
 
 teachatty is a minimalist, self-hostable terminal chat: a WebSocket relay server (`teachatty-server`) and a full-screen terminal client (`teachatty`). Go module `github.com/daniel-cmdline/teachatty`, licensed AGPL-3.0. Public server and site at teachatty.com.
 
@@ -38,15 +38,22 @@ The release version is injected with `-ldflags "-X github.com/daniel-cmdline/tea
 
 **TLS (`internal/tlstrust`).** TLS is on by default. The server either generates and reuses a self-signed cert in `os.UserConfigDir()/teachatty/`, or serves `--tls-cert/--tls-key`, reloading the files when their mtime changes (certbot renewals need no restart). The client verifies CA-signed certs normally; self-signed ones get SSH-style trust on first use, pinned by fingerprint in `~/.config/teachatty/known_servers`. Unexported variants (`clientConfig`, `providedConfig`) take the root pool as a parameter so the tests can inject their own CA.
 
-`contrib/` has a hardened systemd unit and a certbot deploy hook that copies the root-only key into `/var/lib/teachatty/tls/`.
+`contrib/` has a hardened systemd unit and a certbot deploy hook that copies the root-only key into the service's own state directory, readable by the unprivileged service user.
 
-**Production (teachatty.com, Ubuntu 24.04, SSH key-only as root).** Source checkout in `/opt/teachatty` (builds `/usr/local/bin/teachatty-server`). The service uses the contrib unit plus a drop-in `/etc/systemd/system/teachatty-server.service.d/teachatty.com.conf` (Let's Encrypt cert, `--no-pipes --max-per-ip 10`). nginx serves the site from `/var/www/teachatty`, and packages from `/var/www/teachatty/downloads/`, where `*latest*` names are symlinks to the newest build. Certbot's deploy hook is in `/etc/letsencrypt/renewal-hooks/deploy/`. ufw allows 22, 80, 443 and 7347.
+## Production Architecture
+
+The public instance at teachatty.com runs on a single Linux host:
+
+- **Relay server.** `teachatty-server` is built from a source checkout and runs as a systemd service based on the hardened unit in `contrib/systemd/`, under its own unprivileged system user. A drop-in override supplies the production flags: a CA-signed certificate instead of the self-signed one, `--no-pipes`, and a per-IP connection cap.
+- **TLS.** Certificates come from Let's Encrypt. A certbot deploy hook (`contrib/certbot/`) copies each renewed certificate and key to where the service user can read them; the server notices the changed files and reloads them without a restart.
+- **Web and downloads.** Nginx serves the static website and hosts the release packages. Stable `*latest*` names point to the newest build, so download links don't change between releases.
+- **Network.** Only SSH, HTTP, HTTPS and the relay port (7347) are exposed.
 
 ## Conventions
 
 - **Everything is in English:** user-facing strings, code comments, docs and notes. Comments are plentiful and explain *why* (see any file). Match that density.
 - Neither binary takes positional arguments. A stray argument or unknown flag prints the help and exits 2; `help` exits 0. The `-h` text in each `usage.go` reads defaults from the flags via `flag.VisitAll`. Update the prose sections there when behavior changes.
 - Work happens on `dev`; PRs target `dev`, and `main` is the stable branch that `go install ...@latest` resolves to. See [CONTRIBUTING.md](CONTRIBUTING.md).
-- **Every commit adds an entry at the top of [features.md](features.md)** (`## YYYY-MM-DD HH:MM — title`, what changed and how it was tested). User-visible changes also update [README.md](README.md), [roadmap.md](roadmap.md) ("Current state", "Next steps", "Decisions made") and the website. **The website is not in this repo**: it's the private repo `daniel-cmdline/teachatty-site`, cloned at `~/docs` (`index.html`, `docs.html`, `style.css`, `assets/`), deployed with `rsync -a --delete --exclude downloads/ --exclude .git/ --exclude README.md --exclude demo/ ~/docs/ root@teachatty.com:/var/www/teachatty/` (never upload `.git/`). `assets/demo.gif` here and the site's demo video come from the recording kit in the site repo's `demo/` (`demo/record.sh`).
-- Commit messages have a short subject line and a body of bullet points. **Never add a co-author or attribution line** (no `Co-Authored-By`, no "Generated with" footers) to commits, PRs or anything else: the owner removed them from history on purpose.
+- **Every commit adds an entry at the top of [features.md](features.md)** (`## YYYY-MM-DD HH:MM — title`, what changed and how it was tested). User-visible changes also update [README.md](README.md), [roadmap.md](roadmap.md) ("Current state", "Next steps", "Decisions made") and the website. **The website is not in this repo**: it lives in the private repository `daniel-cmdline/teachatty-site` (`index.html`, `docs.html`, `style.css`, `assets/`) and is deployed separately; the deploy must never upload `.git/`. `assets/demo.gif` here and the site's demo video come from the recording kit in the site repo's `demo/` (`demo/record.sh`).
+- Commit messages should use concise imperative subject lines with bulleted detail in the body. Keep commits focused purely on technical changes without auxiliary footers or metadata tags.
 - Before adding a feature, read `roadmap.md`'s principles and "Decisions made". The project is deliberately minimalist (flags instead of URLs, pipe-friendly, a feature only goes in if it pays for itself), and many design questions are already settled there.
