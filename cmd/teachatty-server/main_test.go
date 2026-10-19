@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -335,4 +336,146 @@ func TestNoPipesRefusesPipeModeOnly(t *testing.T) {
 		t.Fatalf("an interactive client was refused: %v", err)
 	}
 	c.Close()
+}
+
+// A connection whose handler goroutine runs late (dropped by broadcast, then the last
+// other member leaves, then a new connection re-creates the room under the same name)
+// must not unregister the *new* room when it finally cleans up, or the new members
+// would be silently split from each other. Regression for that race.
+//
+// The ordering is fully deterministic: every step of the interleaving is driven by the
+// test itself (mirroring what broadcast and the handlers do), while ana's and bia's
+// real handler goroutines stay parked in ReadMessage — their connections are only
+// closed at the end, after every assertion. No sleeps, no hoping for a race.
+func TestStaleRoomCleanupKeepsReplacedRoom(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	defer srv.Close()
+	// The rooms registry persists between the tests of one -count run; a name that no
+	// two runs share keeps this sequence untouched by leftovers.
+	name := fmt.Sprintf("reborn-%d", time.Now().UnixNano())
+	// Handler goroutines of a faster previous run may still be exiting and holding
+	// their per-IP slot for a moment; start every run with a clean per-IP slate.
+	// (A late release decrements a missing key, which the guard deletes: harmless.)
+	ipMu.Lock()
+	perIP = map[string]int{}
+	ipMu.Unlock()
+	t.Cleanup(func() {
+		ipMu.Lock()
+		perIP = map[string]int{}
+		ipMu.Unlock()
+	})
+
+	// ana joins and creates the room; capture its *Room while she is the only member.
+	ana := connect(t, srv, "room="+name+"&alias=ana")
+	eventually(t, "ana joins", func() bool { return members(name) == 1 })
+	mu.Lock()
+	oldRoom := rooms[name]
+	mu.Unlock()
+
+	// bia joins normally.
+	bia := connect(t, srv, "room="+name+"&alias=bia")
+	eventually(t, "bia joins", func() bool { return members(name) == 2 })
+	mu.Lock()
+	sameRoom := rooms[name] == oldRoom
+	mu.Unlock()
+	if !sameRoom {
+		t.Fatal("the room was unexpectedly replaced while its members were still in it")
+	}
+
+	// The member map is keyed by the server side of each connection; the dialer-side
+	// view is a different object. Find them by alias (unique in this test).
+	var anaConn, biaConn *websocket.Conn
+	oldRoom.mu.Lock()
+	for c, a := range oldRoom.members {
+		switch a {
+		case "ana":
+			anaConn = c
+		case "bia":
+			biaConn = c
+		}
+	}
+	oldRoom.mu.Unlock()
+	if anaConn == nil || biaConn == nil {
+		t.Fatal("could not find the server-side connections for ana and bia")
+	}
+
+	// Step 1: broadcast finds ana too slow and does what room.go does: remove her from
+	// members and close her connection. Her handler goroutine is "delayed" and stays
+	// parked in ReadMessage meanwhile, so it does not clean up yet.
+	oldRoom.mu.Lock()
+	delete(oldRoom.members, anaConn)
+	oldRoom.mu.Unlock()
+
+	// Step 2: bia leaves. ana is already gone from members, so this is the final
+	// removal: the room is empty and correctly unregistered under this identity.
+	leaveRoom(name, oldRoom, biaConn)
+	mu.Lock()
+	_, still := rooms[name]
+	mu.Unlock()
+	if still {
+		t.Fatal("the emptied room should have been unregistered")
+	}
+
+	// Step 3: cris joins. A brand-new Room is registered under the same name.
+	cris := connect(t, srv, "room="+name+"&alias=cris")
+	defer cris.Close()
+	eventually(t, "cris joins the new room", func() bool { return members(name) == 1 })
+	mu.Lock()
+	newRoom := rooms[name]
+	mu.Unlock()
+	if newRoom == oldRoom {
+		t.Fatal("cris should have re-created the room, not joined the old one")
+	}
+
+	// Step 4: ana's delayed handler finally cleans up with the stale room pointer.
+	// The identity check must refuse to unregister cris's room.
+	leaveRoom(name, oldRoom, anaConn)
+	mu.Lock()
+	stillNew := rooms[name] == newRoom
+	mu.Unlock()
+	if !stillNew {
+		t.Fatal("the stale cleanup deleted cris's newly created room")
+	}
+
+	// Step 5: members of the surviving room exchange messages normally. Both handler
+	// goroutines for ana and bia are still parked (their connections were never closed),
+	// so what the members() helper sees is exactly cris and daniel.
+	daniel := connect(t, srv, "room="+name+"&alias=daniel")
+	eventually(t, "daniel joins cris's room", func() bool { return members(name) == 2 })
+
+	if err := cris.WriteMessage(websocket.TextMessage, []byte("ola")); err != nil {
+		t.Fatal(err)
+	}
+	daniel.SetReadDeadline(time.Now().Add(2 * time.Second))
+	_, msg, err := daniel.ReadMessage()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(msg) != "cris: ola" {
+		t.Fatalf("daniel got %q, want %q", msg, "cris: ola")
+	}
+
+	if err := daniel.WriteMessage(websocket.TextMessage, []byte("hey")); err != nil {
+		t.Fatal(err)
+	}
+	cris.SetReadDeadline(time.Now().Add(2 * time.Second))
+	_, msg, err = cris.ReadMessage()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(msg) != "daniel: hey" {
+		t.Fatalf("cris got %q, want %q", msg, "daniel: hey")
+	}
+
+	// Everything asserted; now it is safe to let the delayed handlers wake up. Their
+	// late cleanups run against a replaced room and must leave it alone. Close every
+	// connection and wait for the room to be fully gone, so the next -count run starts
+	// after all handler goroutines of this one have released their resources.
+	ana.Close()
+	bia.Close()
+	cris.Close()
+	daniel.Close()
+	eventually(t, "the room is fully gone after everyone left", func() bool {
+		return members(name) == -1
+	})
 }

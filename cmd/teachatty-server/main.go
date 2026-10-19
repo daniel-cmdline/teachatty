@@ -149,9 +149,20 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// leave the room; an empty room stops existing, except the default one
+	leaveRoom(name, room, conn)
+}
+
+// leaveRoom removes a connection from its room and, when the room is now empty and
+// still the one registered under that name, unregisters it (the default room is the
+// exception: it lives as long as the server). The identity check is not paranoia:
+// a handler goroutine can wake up long after its connection was dropped (by
+// broadcast's 5-second write deadline, say) and the room replaced — unregistering
+// by name alone would then erase the *new* room and silently split the new members
+// from each other. Lock order: room.mu (inside leave) under mu, as everywhere.
+func leaveRoom(name string, room *Room, conn *websocket.Conn) {
 	mu.Lock()
-	if room.leave(conn) && name != defaultRoom {
+	defer mu.Unlock()
+	if room.leave(conn) && name != defaultRoom && rooms[name] == room {
 		delete(rooms, name)
 	}
-	mu.Unlock()
 }
