@@ -121,7 +121,7 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 
 	// no room in the URL (old client, another program): goes to the default room
 	name := cmp.Or(r.URL.Query().Get("room"), defaultRoom)
-	alias := r.URL.Query().Get("alias")
+	alias := sanitizeAlias(r.URL.Query().Get("alias"))
 
 	// joining a room that doesn't exist creates it
 	mu.Lock()
