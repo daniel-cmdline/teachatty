@@ -2,6 +2,15 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-10-19 17:43 — Safer rooms and aliases, pipe-mode tests (PR #2)
+
+- Contributed by malcommathela in [PR #2](https://github.com/daniel-cmdline/teachatty/pull/2).
+- **Room cleanup fix:** a connection dropped by `broadcast` could wake up after its room had emptied and been recreated under the same name, then delete the *new* room and split its members. Leaving now unregisters a room only if it is still the one under that name (`leaveRoom` in `cmd/teachatty-server/main.go`).
+- **Aliases** are sanitized where they enter the server (`cmd/teachatty-server/alias.go`): control characters and invalid UTF-8 are dropped, the result is capped at 200 bytes without splitting a character, and an empty alias becomes `anonymous`. Accents, emoji and other scripts pass through unchanged.
+- **Pipe-mode tests** (`cmd/teachatty/pipe_test.go`): batching, EOF without a newline, splitting at the batch limit, ordering, Unicode, blank lines, and the disconnect paths that exit 1.
+- On merge: `TestPipeEchoesButDoesNotSendBlankLines` read the captured stdout before stopping the capture, a data race under `-race`; it now calls `stop()` first.
+- **Tested:** `go vet ./...`; `go test -race -count=5 ./...` passes.
+
 ## 2026-10-13 12:25 — Developer guide: ARCHITECTURE.md
 
 - `ARCHITECTURE.md` documents the codebase for contributors: commands, wire protocol, server and client concurrency, pipe mode, TLS, packaging and releases, and a short overview of how the public instance runs (systemd, nginx, Let's Encrypt).

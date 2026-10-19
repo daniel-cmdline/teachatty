@@ -362,6 +362,7 @@ func TestPipeEchoesButDoesNotSendBlankLines(t *testing.T) {
 		t.Fatalf("got %q, want a single aa\\nbb message without the blank line", got)
 	}
 	noMoreMessages(t, s)
+	stdout.stop()
 	if out := stdout.buf.String(); strings.Count(out, "\n") != 3 {
 		t.Errorf("echo should show all 3 stdin lines (blank included), got %q", out)
 	}
