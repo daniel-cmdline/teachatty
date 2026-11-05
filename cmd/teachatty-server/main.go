@@ -86,7 +86,7 @@ func main() {
 
 	http.HandleFunc("/ws", handleWS)
 	fmt.Printf("teachatty-server listening on %s · default room: %s · %s\n", *addr, defaultRoom, security)
-	log.Fatal(http.Serve(ln, nil))
+	log.Fatal(newServer(nil).Serve(ln))
 }
 
 // handleWS serves each connection on /ws, in the goroutine net/http creates for it.

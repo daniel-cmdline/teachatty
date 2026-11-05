@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -303,6 +304,92 @@ func TestConnectionsPerIPAreCapped(t *testing.T) {
 		c.Close()
 		return true
 	})
+}
+
+// limitedServer runs handleWS behind newServer, the HTTP server main uses, so the
+// request limits apply (httptest.NewServer would use Go's defaults)
+func limitedServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewUnstartedServer(nil)
+	srv.Config = newServer(http.HandlerFunc(handleWS))
+	srv.Start()
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestOversizedRequestIsRefused(t *testing.T) {
+	srv := limitedServer(t)
+	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws?room=big&alias=a"
+
+	// a normal request, even with a long alias, gets in
+	conn := connect(t, srv, "room=big&alias="+strings.Repeat("a", 1000))
+	conn.Close()
+	eventually(t, "the room empties", func() bool { return members("big") == -1 })
+
+	// 64 KB of padding is refused with 431 before handleWS runs, wherever it is
+	pad := strings.Repeat("x", 64<<10)
+	for where, dial := range map[string]func() (*http.Response, error){
+		"in the URL": func() (*http.Response, error) {
+			_, resp, err := websocket.DefaultDialer.Dial(url+"&junk="+pad, nil)
+			return resp, err
+		},
+		"in a header": func() (*http.Response, error) {
+			_, resp, err := websocket.DefaultDialer.Dial(url, http.Header{"X-Pad": {pad}})
+			return resp, err
+		},
+	} {
+		resp, err := dial()
+		if err == nil || resp == nil || resp.StatusCode != http.StatusRequestHeaderFieldsTooLarge {
+			t.Fatalf("padding %s: expected 431, got %v %v", where, resp, err)
+		}
+		if members("big") != -1 {
+			t.Fatalf("padding %s: a refused request created the room", where)
+		}
+	}
+}
+
+func TestSlowRequestIsCutOff(t *testing.T) {
+	old := readHeaderTimeout
+	readHeaderTimeout = 200 * time.Millisecond
+	defer func() { readHeaderTimeout = old }()
+	srv := limitedServer(t)
+
+	// start a request and never finish it: the server hangs up after readHeaderTimeout
+	c, err := net.Dial("tcp", srv.Listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	io.WriteString(c, "GET /ws HTTP/1.1\r\nHost: test\r\n")
+	start := time.Now()
+	c.SetReadDeadline(start.Add(3 * time.Second))
+	io.Copy(io.Discard, c)
+	if waited := time.Since(start); waited > 2*time.Second {
+		t.Fatalf("the server kept a half-sent request open for %v", waited)
+	}
+}
+
+func TestOpenChatOutlivesTheRequestTimeout(t *testing.T) {
+	old := readHeaderTimeout
+	readHeaderTimeout = 200 * time.Millisecond
+	defer func() { readHeaderTimeout = old }()
+	srv := limitedServer(t)
+
+	ana := connect(t, srv, "room=quiet&alias=ana")
+	defer ana.Close()
+	bob := connect(t, srv, "room=quiet&alias=bob")
+	defer bob.Close()
+	eventually(t, "both join", func() bool { return members("quiet") == 2 })
+
+	// a pause well past the timeout, then a message: the deadline only covered the request
+	time.Sleep(4 * readHeaderTimeout)
+	if err := ana.WriteMessage(websocket.TextMessage, []byte("still here?")); err != nil {
+		t.Fatal(err)
+	}
+	bob.SetReadDeadline(time.Now().Add(2 * time.Second))
+	if _, msg, err := bob.ReadMessage(); err != nil || string(msg) != "ana: still here?" {
+		t.Fatalf("got %q, %v", msg, err)
+	}
 }
 
 func TestNoPipesRefusesPipeModeOnly(t *testing.T) {

@@ -38,7 +38,7 @@ What works today:
 - Pipe mode: `some-command | teachatty --room ops` sends the output to the room (lines arriving together go as one message), still prints it to your terminal, and exits when the input ends. A server can refuse pipes with `--no-pipes`.
 - TLS by default, with trust on first use: no certificates to manage. Or bring your own (Let's Encrypt) with `--tls-cert`/`--tls-key`.
 - A member that stops reading (laptop asleep, dropped network) is dropped after 5 seconds instead of freezing the room.
-- Abuse limits for the open internet: 5 messages/s per connection (senders are slowed down, nothing is dropped), 10 connections per IP, 1 MB per message.
+- Abuse limits for the open internet: 5 messages/s per connection (senders are slowed down, nothing is dropped), 10 connections per IP, 1 MB per message, 16 KB per connection request (URL and headers), 10 seconds to send it.
 - A hardened systemd unit and a certbot hook for running the server as a service.
 - `--version` on both binaries.
 - Server and client as separate binaries, installable with `go install`, or as `.deb` and `.rpm` packages from [teachatty.com/downloads](https://teachatty.com/downloads/).
@@ -204,7 +204,7 @@ go run ./cmd/teachatty --server 192.168.0.10:7347
 | `--no-pipes` | off | Refuse clients in pipe mode (`command \| teachatty`), for rooms that want chat and no build logs |
 | `--tls-cert`, `--tls-key` | self-signed | Your own certificate and key (PEM), e.g. Let's Encrypt's `fullchain.pem` and `privkey.pem`. Clients that trust the authority verify it like a browser, and the files are reloaded when they change, so renewals need no restart |
 
-Messages larger than 1 MB are refused, and only the connection that sent them is closed. Each connection may send 5 messages a second (bursts of 20) and 256 KB a second; above that, the server slows the sender down instead of dropping anything.
+Messages larger than 1 MB are refused, and only the connection that sent them is closed. Each connection may send 5 messages a second (bursts of 20) and 256 KB a second; above that, the server slows the sender down instead of dropping anything. The request that opens a connection (its URL and headers) may be at most 16 KB and must arrive within 10 seconds; a real client sends well under 1 KB.
 
 ### Running with a Let's Encrypt certificate
 

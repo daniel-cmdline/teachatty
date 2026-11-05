@@ -38,6 +38,8 @@ Messages larger than %d MB are refused and that connection is closed. Each
 connection may send 5 messages a second (bursts of 20) and 256 KB a second;
 above that the server reads it more slowly, so senders are slowed down, not cut
 off. Each IP may hold --max-per-ip connections; use 0 behind a company NAT.
+The request that opens a connection may be at most 16 KB and must arrive
+within 10 seconds.
 
 Traffic is encrypted with TLS by default. On first start the server creates
 a self-signed certificate in ~/.config/teachatty/ and prints its fingerprint
