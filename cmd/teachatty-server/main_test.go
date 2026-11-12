@@ -26,6 +26,10 @@ func connect(t *testing.T, srv *httptest.Server, query string) *websocket.Conn {
 	return conn
 }
 
+func newTestHandler() http.Handler {
+	return http.HandlerFunc(newChatServer().handleWS)
+}
+
 // members counts who is in the room right now; -1 if the room doesn't exist
 func members(name string) int {
 	mu.Lock()
@@ -59,7 +63,7 @@ func TestLocalRoomExistsAtStart(t *testing.T) {
 }
 
 func TestNoRoomLandsInLocalAndLocalSurvivesEmpty(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	srv := httptest.NewServer(newTestHandler())
 	defer srv.Close()
 
 	conn := connect(t, srv, "alias=ana") // no room
@@ -71,7 +75,7 @@ func TestNoRoomLandsInLocalAndLocalSurvivesEmpty(t *testing.T) {
 }
 
 func TestOtherRoomsVanishWhenEmpty(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	srv := httptest.NewServer(newTestHandler())
 	defer srv.Close()
 
 	conn := connect(t, srv, "room=dev&alias=ana")
@@ -82,7 +86,7 @@ func TestOtherRoomsVanishWhenEmpty(t *testing.T) {
 }
 
 func TestMessageInLocalRoom(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	srv := httptest.NewServer(newTestHandler())
 	defer srv.Close()
 
 	ana := connect(t, srv, "alias=ana")
@@ -106,7 +110,7 @@ func TestMessageInLocalRoom(t *testing.T) {
 
 // size limit: up to maxMessage gets through; above it, only the sender's connection is closed
 func TestMessageAtLimitPasses(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	srv := httptest.NewServer(newTestHandler())
 	defer srv.Close()
 
 	ana := connect(t, srv, "room=limit&alias=ana")
@@ -129,7 +133,7 @@ func TestMessageAtLimitPasses(t *testing.T) {
 }
 
 func TestMessageTooBigClosesOnlyThatConnection(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	srv := httptest.NewServer(newTestHandler())
 	defer srv.Close()
 
 	ana := connect(t, srv, "room=big&alias=ana")
@@ -172,7 +176,7 @@ func TestStuckMemberIsDroppedAndTheRoomKeepsGoing(t *testing.T) {
 	defer func() { writeWait = old }()
 	noRateLimit(t) // this test pushes 20 MB on purpose
 
-	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	srv := httptest.NewServer(newTestHandler())
 	defer srv.Close()
 
 	stuck := connect(t, srv, "room=stuck&alias=stuck") // connects and never reads
@@ -224,7 +228,7 @@ func TestStuckMemberIsDroppedAndTheRoomKeepsGoing(t *testing.T) {
 
 // browsers send an Origin header; the teachatty client doesn't
 func TestBrowserOriginIsRefused(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	srv := httptest.NewServer(newTestHandler())
 	defer srv.Close()
 
 	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws?alias=web"
@@ -246,7 +250,7 @@ func noRateLimit(t *testing.T) {
 
 // over the rate limit, messages are slowed down, never dropped
 func TestFloodIsSlowedDownNotDropped(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	srv := httptest.NewServer(newTestHandler())
 	defer srv.Close()
 
 	ana := connect(t, srv, "room=flood&alias=ana")
@@ -281,7 +285,7 @@ func TestConnectionsPerIPAreCapped(t *testing.T) {
 	maxPerIP = 2
 	defer func() { maxPerIP = old }()
 
-	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	srv := httptest.NewServer(newTestHandler())
 	defer srv.Close()
 
 	a := connect(t, srv, "alias=a")
@@ -393,7 +397,7 @@ func TestOpenChatOutlivesTheRequestTimeout(t *testing.T) {
 }
 
 func TestNoPipesRefusesPipeModeOnly(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	srv := httptest.NewServer(newTestHandler())
 	defer srv.Close()
 	base := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws?alias=ci"
 
@@ -435,7 +439,7 @@ func TestNoPipesRefusesPipeModeOnly(t *testing.T) {
 // real handler goroutines stay parked in ReadMessage — their connections are only
 // closed at the end, after every assertion. No sleeps, no hoping for a race.
 func TestStaleRoomCleanupKeepsReplacedRoom(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	srv := httptest.NewServer(newTestHandler())
 	defer srv.Close()
 	// The rooms registry persists between the tests of one -count run; a name that no
 	// two runs share keeps this sequence untouched by leftovers.

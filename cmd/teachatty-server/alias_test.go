@@ -4,7 +4,6 @@ package main
 // WebSocket boundary, before the alias reaches any room, relay or screen.
 
 import (
-	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -144,7 +143,7 @@ func readAlone(t *testing.T, conn *websocket.Conn, timeout time.Duration) string
 func auditServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	noRateLimit(t)
-	srv := httptest.NewServer(http.HandlerFunc(handleWS))
+	srv := httptest.NewServer(newTestHandler())
 	t.Cleanup(srv.Close)
 	return srv
 }
