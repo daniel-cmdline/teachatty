@@ -72,6 +72,8 @@ closed. Each connection may send 5 messages a second (bursts of 20) and 256 KB a
 second; above that, the server reads it more slowly, so senders are slowed down
 instead of anything being dropped. A member that stops reading (a laptop asleep, a
 dropped network) is dropped after 5 seconds, so it can't freeze the room.
+The request that opens a connection (its URL and headers) may be at most 16 KB
+and must arrive within 10 seconds, TLS handshake included.
 Connections from web browsers are refused.
 .SH SECURITY
 Traffic is encrypted with TLS by default. Without

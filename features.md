@@ -2,6 +2,14 @@
 
 Log of shipped features, newest first. Add an entry with every commit.
 
+## 2026-11-04 20:54 — Opening request capped at 16 KB and 10 seconds
+
+- The server ran on `http.Serve` with Go's defaults: up to 1 MB of URL and headers per request, and no deadline to send them. `handleWS` keeps the request for the connection's whole life (it waits on `r.Context()`), so every idle connection could hold 1 MB, whichever field carried the padding: room name, alias, or any header.
+- `newServer` in `cmd/teachatty-server/limits.go` is now the `http.Server` `main` runs: `MaxHeaderBytes` 16 KB (over it, net/http answers 431 before `handleWS` runs) and `ReadHeaderTimeout` 10 s, which also bounds the TLS handshake. Before, a request sent a byte at a time held its connection forever, uncounted by `--max-per-ip`, which only sees connections that reached `handleWS`. The deadline is lifted once the request is in, so open chats are unaffected.
+- Measured with 40 idle connections, each padded with junk in the URL: +35.3 MB of server heap before; with 900 KB of padding all 40 are now refused, and with the largest padding still accepted (15 KB) they hold +1.5 MB.
+- Docs: README, the server man page's LIMITS, the server's `-h`, `ARCHITECTURE.md` and `roadmap.md`.
+- **Tested:** new tests `TestOversizedRequestIsRefused` (431 for 64 KB of padding in the URL or in a header, and no room created; a 1000-byte alias still gets in), `TestSlowRequestIsCutOff` and `TestOpenChatOutlivesTheRequestTimeout`. The first two fail against Go's default server settings. `go vet ./...`, `gofmt` and `go test -race -count=3 ./...` pass.
+
 ## 2026-10-19 17:43 — Safer rooms and aliases, pipe-mode tests (PR #2)
 
 - Contributed by malcommathela in [PR #2](https://github.com/daniel-cmdline/teachatty/pull/2).

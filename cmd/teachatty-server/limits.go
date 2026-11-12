@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
 	"golang.org/x/time/rate"
 )
@@ -27,6 +28,24 @@ var (
 // limiters returns one connection's message and byte budgets
 func limiters() (msgs, bytes *rate.Limiter) {
 	return rate.NewLimiter(msgRate, msgBurst), rate.NewLimiter(byteRate, maxMessage)
+}
+
+// largest request that may open a connection: its URL (room, alias) plus headers. Go's
+// default is 1 MB, and handleWS keeps the request for as long as the connection lasts
+// (it waits on r.Context()), so every idle connection could hold 1 MB. A real client
+// sends well under 1 KB. Over the limit, net/http answers 431 before handleWS runs.
+const maxRequest = 16 << 10
+
+// how long a new connection gets for the TLS handshake and its request. Without it,
+// a script can open connections and send the request a byte at a time, holding them
+// forever: the per-IP cap only counts connections that reached handleWS. Once the
+// request is in, the deadline is lifted, so open chats are not affected. A var for the tests.
+var readHeaderTimeout = 10 * time.Second
+
+// newServer is the HTTP server main runs, with the request limits above. A nil handler
+// means http.DefaultServeMux, where main registers /ws.
+func newServer(h http.Handler) *http.Server {
+	return &http.Server{Handler: h, MaxHeaderBytes: maxRequest, ReadHeaderTimeout: readHeaderTimeout}
 }
 
 // noPipes refuses clients that declare pipe mode (--no-pipes)
