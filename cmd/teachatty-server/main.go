@@ -2,14 +2,19 @@ package main
 
 import (
 	"cmp"
+	"context"
 	"crypto/tls"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
+	"time"
 
 	"github.com/gorilla/websocket"
 
@@ -37,6 +42,9 @@ const (
 	// default room: created with the server and never deleted, even when empty.
 	// Anyone who connects without naming a room lands in it, so people meet without arranging anything.
 	defaultRoom = "local"
+
+	shutdownGracePeriod = 10 * time.Second
+	closeWriteWait      = time.Second
 )
 
 var (
@@ -84,14 +92,93 @@ func main() {
 		security = "TLS · " + desc
 	}
 
-	http.HandleFunc("/ws", handleWS)
 	fmt.Printf("teachatty-server listening on %s · default room: %s · %s\n", *addr, defaultRoom, security)
-	log.Fatal(http.Serve(ln, nil))
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	if err := newChatServer().serve(ctx, ln, shutdownGracePeriod); err != nil {
+		log.Fatal(err)
+	}
 }
 
-// handleWS serves each connection on /ws, in the goroutine net/http creates for it.
-// It's a named function (not an anonymous one inside main) so the tests can use it.
-func handleWS(w http.ResponseWriter, r *http.Request) {
+type chatServer struct {
+	connections *connectionManager
+	http        *http.Server
+}
+
+func newChatServer() *chatServer {
+	return &chatServer{connections: newConnectionManager()}
+}
+
+func (s *chatServer) serve(ctx context.Context, ln net.Listener, grace time.Duration) error {
+	s.http = &http.Server{Handler: http.HandlerFunc(s.handleWS)}
+	serveErr := make(chan error, 1)
+	go func() { serveErr <- s.http.Serve(ln) }()
+
+	var err error
+	select {
+	case err = <-serveErr:
+		if errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
+	case <-ctx.Done():
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), grace)
+	defer cancel()
+	shutdownErr := s.shutdown(shutdownCtx)
+	if err == nil {
+		err = <-serveErr
+	}
+	if errors.Is(err, http.ErrServerClosed) {
+		err = nil
+	}
+	if shutdownErr != nil {
+		return shutdownErr
+	}
+	return err
+}
+
+func (s *chatServer) shutdown(ctx context.Context) error {
+	s.connections.stopAccepting()
+	err := s.http.Shutdown(ctx)
+	if err != nil {
+		_ = s.http.Close()
+	}
+	if s.connections.waitPending(ctx) != nil {
+		s.connections.rejectPending()
+	}
+
+	connections := s.connections.snapshot()
+	message := websocket.FormatCloseMessage(websocket.CloseGoingAway, "server shutting down")
+	writesDone := make(chan struct{}, len(connections))
+	for conn := range connections {
+		go func(conn *websocket.Conn) {
+			_ = conn.WriteControl(websocket.CloseMessage, message, time.Now().Add(closeWriteWait))
+			writesDone <- struct{}{}
+		}(conn)
+	}
+	writeTimer := time.NewTimer(closeWriteWait)
+	for i := 0; i < len(connections); i++ {
+		select {
+		case <-writesDone:
+		case <-writeTimer.C:
+			i = len(connections)
+		}
+	}
+	writeTimer.Stop()
+	if s.connections.waitEmpty(ctx) != nil {
+		s.connections.forceClose()
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), closeWriteWait)
+		_ = s.connections.waitEmpty(cleanupCtx)
+		cancel()
+	}
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return nil
+	}
+	return err
+}
+
+func (s *chatServer) handleWS(w http.ResponseWriter, r *http.Request) {
 	// --no-pipes: the teachatty client declares pipe mode in the URL. A courtesy rule, not
 	// a security boundary: a client that doesn't declare it isn't stopped (the rate limit
 	// is what holds back abuse); it keeps teammates' build logs out of a chat room.
@@ -99,6 +186,12 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "this server doesn't accept pipe mode (it was started with --no-pipes)", http.StatusForbidden)
 		return
 	}
+	reservation, ok := s.connections.reserve()
+	if !ok {
+		http.Error(w, "server shutting down", http.StatusServiceUnavailable)
+		return
+	}
+	defer reservation.release()
 
 	// one IP can't hold more than --max-per-ip connections (see limits.go)
 	release, ok := acquireIP(r)
@@ -106,26 +199,43 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "too many connections from your address", http.StatusTooManyRequests)
 		return
 	}
-	defer release()
+	keepIP := false
+	defer func() {
+		if !keepIP {
+			release()
+		}
+	}()
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	defer conn.Close()
+	if !reservation.register(conn) {
+		_ = conn.Close()
+		return
+	}
+	keepIP = true
+	name := cmp.Or(r.URL.Query().Get("room"), defaultRoom)
+	alias := sanitizeAlias(r.URL.Query().Get("alias"))
+	var room *Room
+	defer func() {
+		if room != nil {
+			leaveRoom(name, room, conn)
+		}
+		_ = conn.Close()
+		release()
+		s.connections.remove(conn)
+	}()
 
 	// a message over the limit: ReadMessage returns an error, gorilla answers with
 	// close 1009 ("message too big") and this connection leaves the loop and the room like any other
 	conn.SetReadLimit(maxMessage)
 
 	// no room in the URL (old client, another program): goes to the default room
-	name := cmp.Or(r.URL.Query().Get("room"), defaultRoom)
-	alias := sanitizeAlias(r.URL.Query().Get("alias"))
-
 	// joining a room that doesn't exist creates it
 	mu.Lock()
-	room := rooms[name]
+	room = rooms[name]
 	if room == nil {
 		room = &Room{members: map[*websocket.Conn]string{}}
 		rooms[name] = room
@@ -147,9 +257,6 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 		// relay the message to the others in the same room
 		room.broadcast(conn, []byte(alias+": "+string(msg)))
 	}
-
-	// leave the room; an empty room stops existing, except the default one
-	leaveRoom(name, room, conn)
 }
 
 // leaveRoom removes a connection from its room and, when the room is now empty and
