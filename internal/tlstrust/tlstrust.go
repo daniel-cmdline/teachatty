@@ -89,10 +89,11 @@ func generate(certFile, keyFile string) error {
 	if err != nil {
 		return err
 	}
-	// POSIX mode 0600 restricts the private key to its owner. Windows does not
-	// implement Unix permission bits; the key inherits the ACL of its parent
-	// directory (the per-user config directory in normal use). The certificate
-	// is public anyway.
+	// On POSIX systems, mode 0600 restricts the private key to its owner.
+	// Windows does not use these Unix permission bits to configure access: the
+	// key inherits the ACL of its parent directory. The effective access on
+	// Windows therefore depends on that directory's ACL; this mode argument
+	// does not create an owner-only ACL. The certificate is public anyway.
 	if err := writePEM(keyFile, "PRIVATE KEY", keyDER, 0o600); err != nil {
 		return err
 	}
