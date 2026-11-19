@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -61,12 +62,17 @@ func TestCertificateIsGeneratedOnceAndReused(t *testing.T) {
 	if !strings.HasPrefix(fp1, "SHA256:") {
 		t.Fatalf("fingerprint %q should start with SHA256:", fp1)
 	}
-	info, err := os.Stat(filepath.Join(dir, "server.key"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if mode := info.Mode().Perm(); mode != 0o600 {
-		t.Fatalf("server.key has mode %o, want 600", mode)
+	// Unix exposes permission bits through FileMode; Windows does not. On
+	// Windows the key inherits the ACL of its parent config directory, so a
+	// POSIX mode-bit assertion would report a misleading 0666.
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(filepath.Join(dir, "server.key"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if mode := info.Mode().Perm(); mode != 0o600 {
+			t.Fatalf("server.key has mode %o, want 600", mode)
+		}
 	}
 }
 
