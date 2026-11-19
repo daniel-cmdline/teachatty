@@ -89,7 +89,10 @@ func generate(certFile, keyFile string) error {
 	if err != nil {
 		return err
 	}
-	// the private key is readable only by its owner; the certificate is public anyway
+	// POSIX mode 0600 restricts the private key to its owner. Windows does not
+	// implement Unix permission bits; the key inherits the ACL of its parent
+	// directory (the per-user config directory in normal use). The certificate
+	// is public anyway.
 	if err := writePEM(keyFile, "PRIVATE KEY", keyDER, 0o600); err != nil {
 		return err
 	}
